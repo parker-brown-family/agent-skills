@@ -14,14 +14,11 @@ A skill is a SKILL.md file: YAML frontmatter (name, triggers, tools) followed by
 
 **Option B** — copy the body into your agent framework skill/rule system (Augment, Claude Code, Cursor, Codex, etc.).
 
-**Option C** — APES users: drop the SKILL.md into your local skills/<name>/ directory. APES picks it up automatically on the next apes_orient call.
-
 ## Skills
 
 | Skill | Triggers | Description |
 |---|---|---|
 | [code-taste](./code-taste/SKILL.md) | code-taste, audit, anti-patterns | Scan a codebase for five structural anti-patterns, rank by risk, open one ticket per finding |
-| [boot-apes](./boot-apes/SKILL.md) | boot apes, start apes | Standard APES session preamble: server check, project resolve, context load, crisp summary |
 
 ## Contributing
 

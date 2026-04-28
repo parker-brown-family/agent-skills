@@ -64,7 +64,7 @@ Work findings in priority order: 🔴 first, then 🟡, then 🟢. Fix and verif
 
 ## Reference: 10 Ground-Truth Examples
 
-These are real tickets from a cleanup session on `imt-tool-campaign-manager`. Use them to calibrate what counts as a finding and how to phrase tickets.
+Use these to calibrate what counts as a finding and how to phrase tickets.
 
 | # | Pattern | Before | After |
 |---|---|---|---|
