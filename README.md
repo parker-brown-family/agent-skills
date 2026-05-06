@@ -19,6 +19,7 @@ A skill is a SKILL.md file: YAML frontmatter (name, triggers, tools) followed by
 | Skill | Triggers | Description |
 |---|---|---|
 | [code-taste](./code-taste/SKILL.md) | code-taste, audit, anti-patterns | Scan a codebase for five structural anti-patterns, rank by risk, open one ticket per finding |
+| [udev-rule-deploy](./udev-rule-deploy/SKILL.md) | udev, udev-rule, deploy rules, udevadm, cloud udev | Deploy a udev rules file to a Linux host and reload the device subsystem without rebooting |
 
 ## Contributing
 
