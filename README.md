@@ -19,6 +19,7 @@ A skill is a SKILL.md file: YAML frontmatter (name, triggers, tools) followed by
 | Skill | Triggers | Description |
 |---|---|---|
 | [code-taste](./code-taste/SKILL.md) | code-taste, audit, anti-patterns | Scan a codebase for five structural anti-patterns, rank by risk, open one ticket per finding |
+| [stripe-projects-cloud-deploy](./stripe-projects-cloud-deploy/SKILL.md) | stripe projects, agent deployment, cloudflare provisioning, zero-setup deploy, buy domain agent | Zero-to-production cloud deploy via Stripe Projects: provision a Cloudflare account, obtain an API token, buy a domain, and ship an app — no dashboard, no manual credential steps |
 
 ## Contributing
 
