@@ -19,6 +19,7 @@ A skill is a SKILL.md file: YAML frontmatter (name, triggers, tools) followed by
 | Skill | Triggers | Description |
 |---|---|---|
 | [code-taste](./code-taste/SKILL.md) | code-taste, audit, anti-patterns | Scan a codebase for five structural anti-patterns, rank by risk, open one ticket per finding |
+| [crisis-pinboard](./crisis-pinboard/SKILL.md) | pin board, social sweep, evac board | Build + maintain a dated, evidence-linked HTML pin board of a breaking local event from logged-in social sweeps (FB search/groups, IG hashtags); collapsible line-item UX; same-model update rounds |
 | [improve-seo-geo](./improve-seo-geo/SKILL.md) | improve-seo-geo, /improve-seo-geo, seo geo, ai search optimization | Improve website SEO and AI-agent discoverability, or block immediately when the repo is not a public website |
 
 ## Contributing
