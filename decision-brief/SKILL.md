@@ -103,12 +103,21 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
 [...document.querySelectorAll('[data-dlg]')].filter(b => !document.getElementById(b.dataset.dlg))
 // every dialog actually has content
 [...document.querySelectorAll('dialog')].map(d => [d.id, d.querySelector('.dlg-body')?.innerText.length])
-// notes wired
-document.querySelectorAll('.notable').length
+// notes COVERAGE — never a bare count. [selector, present, tagged]; present > tagged is a defect
+// (tbody, not tr: notes.js skips header rows on purpose, and a check that cries wolf gets ignored)
+['.grill .ask, .grill .q, .grill-q', '.card', '.finding', '.tile',
+ '.esc-list li', 'table.wide tbody tr', '.callout'].map(s => [s,
+  document.querySelectorAll(s).length,
+  [...document.querySelectorAll(s)].filter(e => e.classList.contains('notable')).length])
 ```
 
-Then add a note, export the map, and confirm the anchors are readable. A map full of
-`finding-one-standing-rule-is-wrong-but-the-stack-aro` is a broken map.
+**A count is not coverage.** `document.querySelectorAll('.notable').length` returning 52 says
+nothing about *which* 52, and two briefs shipped with grills nobody could comment on while that
+check passed. The grill row is the one to read first: a section asking for a decision that cannot
+carry a note has failed at the only job the document has.
+
+Then add a note **on a grill item**, export the map, and confirm the anchors are readable. A map
+full of `finding-one-standing-rule-is-wrong-but-the-stack-aro` is a broken map.
 
 Serve it over `http://127.0.0.1:<port>` rather than `file://` — browser automation refuses
 `file://`, and the served URL is a second clickable row in the Links table.
