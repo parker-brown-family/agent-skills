@@ -123,6 +123,45 @@ These are not.
 7. **The story does not soften the finding.** If the answer is that the thing
    doesn't work, the arc lands there.
 
+## House voice
+
+Three rules that outrank every contract below them. They are house style, not
+article structure, so they apply to anything published — a talk, a post, a case
+study, a README.
+
+### The title is a coined term, and it is short
+
+Name the thing, then spend the article earning the name. *Agentic Attention
+Surface.* *Taskeroids.* Two or three words, no verb, no colon, no clause after a
+dash. The body's job is to walk the reader to the point where that term means
+something, so the title does not need to explain itself and should not try.
+
+What this replaces: the summarising sentence-title, and worse, the two-beat
+construction — *"I built a control plane. It was a map."* It reads as a caption
+for the article rather than a name for the idea, and it spends the punchline on
+the first line.
+
+### Tell the story. Do not lead with the conclusion, labelled
+
+The worst opening is a bolded label, a colon, and a compressed finding. The
+second worst is the same sentence without the label — a punchy declarative that
+summarises the piece before the reader has any reason to care about it.
+
+Open where the reader already is. What was happening, what you saw, the question
+it raised. The finding lands harder three paragraphs later inside a situation the
+reader recognises than it does in the first line with nothing underneath it.
+
+A working opening is usually the honest answer to *what made you look into
+this?* — and that answer is nearly always a scene, not a thesis.
+
+### Plainer, more human, fewer words
+
+Every example gets one pass asking whether a person would say it that way out
+loud. Concrete nouns beat abstractions, a short sentence beats a qualified one,
+and an example a reader can picture beats a precise one they cannot. If an
+explanation needs three sentences and a definition, the example is wrong — find
+a better one rather than propping up the one you have.
+
 ## Building the page
 
 `reference/mechanism.md` carries the implementation: the tab component built

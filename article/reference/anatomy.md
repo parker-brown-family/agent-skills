@@ -17,7 +17,7 @@ the reader meets these in this order — so it's worth holding to.
 | 9a | register kicker | **per register** | Names the register. |
 | 9b | register headline | **per register** | Its own, written for its voice. |
 | 9c | copy button | **per register** | Scoped to this register only. |
-| 9d | lead callout | **per register** | Exactly one. |
+| 9d | *(retired)* | — | A register used to open with a labelled callout. It is a house AI-ism — see the House voice section of SKILL.md. |
 | 9e | prose body | **per register** | |
 | 9f | closing CTA | **per register** | The conversion ask, at the end of the register the reader actually finished. Pitched to that register's depth. |
 | 10 | sources | shared | One list. Article-level. |
@@ -32,7 +32,7 @@ per-register copy of a fact is a copy that will drift. Sources are the clearest
 case: three lists means three lists that disagree within a month.
 
 **Per register means it belongs to the telling.** The kicker, the headline, the
-lead callout, the prose, and the copy button. Everything that changes when you
+the prose, and the copy button. Everything that changes when you
 change who you're talking to.
 
 The tab bar itself is shared, and it is the seam. Above it, one article. Below
@@ -102,7 +102,6 @@ article-frame          the whole piece
           register-kicker
           register-headline
           copy-button    receives THIS register's content; never queries upward
-          callout        the lead callout
           article-prose
           register-cta   the conversion ask, pitched to this register's depth
     source-box         ol.source-list

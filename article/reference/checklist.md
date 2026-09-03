@@ -17,8 +17,8 @@ nobody runs is not a gate. Two rules make it worth having:
   producing a warning nobody reads.
 
 A first pass takes an hour and covers a surprising amount: register word counts,
-exactly one lead callout per register, headlines distinct and none repeating the
-h1, banned elements per register, the technical register actually containing its
+no labelled declarative opener, headlines short and distinct and not restating
+the h1, banned elements per register, the technical register actually containing its
 falsification, no conversion ask above the prose, and no link the property's
 funnel guard forbids. Everything left over is genuinely a judgement call, and a
 shorter human list gets read.
@@ -35,7 +35,11 @@ shorter human list gets read.
 ## Registers
 
 - [ ] The default register exists and carries the finding.
-- [ ] Each register opens with exactly one lead callout.
+- [ ] No register opens with a labelled declarative — "The one X:", "The claim:",
+      "The picture to hold:".
+- [ ] Each register opens with narrative, not a summary of itself.
+- [ ] The article title is a short coined term, not a sentence describing the
+      piece.
 - [ ] Each register has its own headline — not the h1 repeated, not the h1 with
       a suffix.
 - [ ] No register defers to another for the real explanation.

@@ -32,7 +32,7 @@ sophistication. Default register: **tl;dr** — the reader lands on the hook.
 | **Length** | 120–200 words | 500–900 words | no cap |
 | **Job** | Deliver the finding. Earn the click to the others. | Make a stranger care, and hand them the vocabulary without them noticing. | Let a peer check the work and attack it. |
 | **Voice** | Compressed narrative. No preamble. | One governing metaphor, held to the end. Concrete nouns. | Plain and exact. Numbers over adjectives. |
-| **Opens with** | *The one mistake / number / idea* — a single sentence | *The picture to hold* — the metaphor, stated once | *The claim* — falsifiable, in one sentence |
+| **Opens with** | The situation, in one or two sentences | A scene | The problem, stated as a problem |
 | **Allowed** | One figure at most. Links out. | Figures, drawings, scenes. Real terms in parentheses, once each. | Tables, code, equations, citations, stat strips, comparison cards. |
 | **Banned** | Citations, tables, subheadings, throat-clearing. | Citations, tables, equations, jargon before its plain-language version. | Nothing — but every number carries a source. |
 | **Ends with** | An invitation naming what the other registers *add* — never where the answer is. | The reader holding the real terms. | What would falsify it. |
@@ -87,7 +87,7 @@ useful to do* at that level, not about vocabulary.
 | **Length** | 400–800 words | 800–1,500 words | no cap |
 | **Job** | One rule they can follow tomorrow, safely. | The protocol, and which decisions are theirs. | The mechanism, the numbers, and the edge cases. |
 | **Voice** | Direct, warm, second person. | Practical, specific, still second person. | Peer-to-peer. Precise. |
-| **Opens with** | *The one rule* — a single instruction | *The protocol* — what to do, in order | *The claim* — the mechanism being asserted |
+| **Opens with** | The situation the reader is in | What they are about to be asked to do | The problem, stated as a problem |
 | **Allowed** | Plain analogies, one scale or table. | Tables, protocols, dosing, decision points. | Physiology, citations, equations, contraindications. |
 | **Banned** | Jargon, hedged ranges, anything requiring equipment not named. | Unsourced numbers. | Nothing. |
 | **Ends with** | The bottom line, restated as an action. | What to change first, and what to leave alone. | What would falsify it, and where the guidance stops. |
@@ -119,9 +119,13 @@ softened for the beginner or assumed for the advanced.
 
 - **Each register gets its own headline**, written for its voice. Not the H1
   repeated, and not the H1 with a suffix.
-- **Each register opens with exactly one lead callout** — the one rule, the one
-  idea, the claim, the picture to hold. One. A second callout in the opening
-  position means neither is the point.
+- **Never open with a labelled declarative.** *"The one mistake:"*, *"The
+  claim:"*, *"The picture to hold:"*, *"The one rule:"* — a bolded label and a
+  colon standing in for an opening. It is the single most reliable tell that a
+  machine wrote the page, and no amount of styling rescues it. The register
+  opens with narrative and the point arrives inside the story, where a reader
+  will actually believe it. This one is worth automating: it is easy to detect
+  and it comes back the moment nobody is looking.
 - **Invite, never defer.** A register may name what another one adds; it may not
   send the reader there for the answer. "The mechanism is in Technical" invites,
   and is correct — the finding was already delivered here. "For the real

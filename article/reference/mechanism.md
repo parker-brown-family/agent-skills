@@ -169,6 +169,5 @@ the ink, the accent and the rules still change with the theme, so the page still
 reads as part of the site. It just stays readable. Where a property wants the
 decorative face somewhere, give it the headline and leave the body alone.
 
-Give each register one token so its kicker, its active tab, and its lead callout
-agree, and keep those hues low-saturation — they have to sit on both a near-black
+Give each register one token so its kicker and its active tab agree, and keep those hues low-saturation — they have to sit on both a near-black
 and a near-white ground.
