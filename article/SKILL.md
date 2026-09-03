@@ -34,6 +34,13 @@ written to find out what it thinks, and it ships still looking.
 The finding is not the headline and not the dek. It is the thing all registers
 are telling, and it is what you check them against at the end.
 
+**A guide has a finding too — it's the thesis it teaches**, not a dispute it
+settles. "Heat is a training stimulus you can bank, not only a race-day tax" is
+a finding, and everything in that guide serves it. What fails this bar is the
+piece with no thesis at all: a tour of a topic, organised by subheading,
+arriving nowhere. That's a useful document and it isn't an article — publish it
+as reference material instead of dressing it as one.
+
 ## Step 1 — load the property profile
 
 Every property publishes differently. Read `ARTICLE-PROFILE.md` at the root of

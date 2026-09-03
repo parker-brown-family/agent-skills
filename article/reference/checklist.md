@@ -31,7 +31,13 @@ nearly ready; the failing items are the ones a reader hits first.
 
 - [ ] The dek states the question and the stake and does **not** contain the
       finding.
-- [ ] One category chip, drawn from the property's vocabulary.
+- [ ] At most one category chip, drawn from the property's vocabulary — or none,
+      where the property has fewer than two categories in use.
+- [ ] No conversion CTA above the article. A utility CTA in the meta row is
+      fine; an ask is not.
+- [ ] Each register's closing CTA is pitched to that register's depth.
+- [ ] Nothing the profile's funnel guard forbids appears anywhere in the
+      article — a booking or meeting link most commonly.
 - [ ] Sources are a single article-level list.
 - [ ] Every citation in the technical register resolves to an entry in it.
 - [ ] Where the profile declares a liability gate, the full warning appears in
@@ -60,6 +66,11 @@ nearly ready; the failing items are the ones a reader hits first.
       something the image doesn't.
 - [ ] Metadata is filled: title, description, canonical URL, published and
       modified dates, author, category, social card image with alt text.
+- [ ] The meta description carries the **finding**, taken from the default
+      register — not the dek. A search snippet that poses the question without
+      answering it spends the impression and gets nothing back.
+- [ ] Body text is readable on every theme the property ships. Where themes
+      change the typeface, the article's reading face is fixed.
 
 ## Craft
 

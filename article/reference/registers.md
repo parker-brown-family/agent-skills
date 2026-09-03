@@ -35,7 +35,7 @@ sophistication. Default register: **tl;dr** — the reader lands on the hook.
 | **Opens with** | *The one mistake / number / idea* — a single sentence | *The picture to hold* — the metaphor, stated once | *The claim* — falsifiable, in one sentence |
 | **Allowed** | One figure at most. Links out. | Figures, drawings, scenes. Real terms in parentheses, once each. | Tables, code, equations, citations, stat strips, comparison cards. |
 | **Banned** | Citations, tables, subheadings, throat-clearing. | Citations, tables, equations, jargon before its plain-language version. | Nothing — but every number carries a source. |
-| **Ends with** | A pointer to the other registers. | The reader holding the real terms. | What would falsify it. |
+| **Ends with** | An invitation naming what the other registers *add* — never where the answer is. | The reader holding the real terms. | What would falsify it. |
 | **Required** | **Always** — it's the landing register | Optional | Optional |
 
 ### Writing the tl;dr
@@ -88,6 +88,24 @@ useful to do* at that level, not about vocabulary.
 | **Ends with** | The bottom line, restated as an action. | What to change first, and what to leave alone. | What would falsify it, and where the guidance stops. |
 | **Required** | **Always** — it's the landing register | Optional | Optional |
 
+### On this axis the prescription may differ in substance
+
+This is the one place the two axes behave differently, and getting it wrong is a
+safety problem rather than a style problem.
+
+On the **treatment axis** the substance is identical across registers and only
+the telling changes — three voices, one set of facts. On the **expertise axis**
+the finding and the spine are still shared, but *what you tell the reader to do*
+legitimately differs: a beginner is given one rule they can follow safely, an
+advanced reader is given the dosing and the edge cases. Those are different
+prescriptions, not one prescription in two voices.
+
+So "SHAPE once" holds either way — the spine belongs to the finding — but on the
+expertise axis do not force the registers to converge on the same instruction.
+Forcing it produces either advice a beginner can't use safely or advice that
+wastes an advanced reader's time, which is exactly what the axis exists to
+prevent.
+
 **The safety floor is not a register.** Where the property profile declares a
 liability gate, the warning appears in *every* register, in full, and is never
 softened for the beginner or assumed for the advanced.
@@ -99,8 +117,13 @@ softened for the beginner or assumed for the advanced.
 - **Each register opens with exactly one lead callout** — the one rule, the one
   idea, the claim, the picture to hold. One. A second callout in the opening
   position means neither is the point.
-- **No register may defer to another.** "For the real explanation see the
-  technical tab" is an admission that this register isn't finished.
+- **Invite, never defer.** A register may name what another one adds; it may not
+  send the reader there for the answer. "The mechanism is in Technical" invites,
+  and is correct — the finding was already delivered here. "For the real
+  explanation see Technical" defers, and is an admission that this register
+  isn't finished. The test is whether a reader who stops at this register got
+  the finding: if yes, the closing line is an invitation; if no, it's a
+  confession.
 - **The default register carries the finding**, because it's what a reader who
   reads nothing else will take away.
 - **Registers are optional except the default.** Three registers per article

@@ -25,9 +25,13 @@ carelessness.
 4. **Is the byline a named person or an editorial entity?** A named
    practitioner's byline carries their professional standing, which changes what
    may be published without review.
-5. **What should a convinced reader do next?** The primary call to action —
-   book, calculate, subscribe, submit data, get in touch. If there isn't one,
-   say so; a decorative button is worse than none.
+5. **What should a convinced reader do next — and what must an article never
+   ask for?** Both halves. The ask is usually one step, not the last step: see
+   the work, get the tool, join the list. The forbidden one is usually a booking
+   or meeting link, because an article is top-of-funnel and a calendar is
+   bottom. Name it explicitly, with the URL if one exists in the codebase — a
+   guard that lives only in someone's head gets pasted over. If there is no ask
+   at all, say so; a decorative button is worse than none.
 6. **Does this content need a review or disclaimer gate?** Clinical, legal and
    financial content usually does. If yes: who signs off, what the banner says,
    and whether unreviewed drafts may publish behind a notice.
@@ -84,8 +88,10 @@ a guessed one is a mistake to find later.
 
 ## Call to action
 
-- **Primary:** <label and destination>
-- **Secondary:** <label and destination, or none>
+- **Utility CTA (may sit in the meta row):** <a tool or dataset the article is about, or none>
+- **Closing CTA, short register:** <a quiet line — label and destination>
+- **Closing CTA, long register:** <a real invitation — label and destination>
+- **Never in an article:** <the forbidden asks, with URLs if they exist in the codebase>
 
 ## Sources
 

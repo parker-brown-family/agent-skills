@@ -135,6 +135,24 @@ Decorative graphics that must survive every ground use `currentColor`, which is
 also the reason to inline an SVG rather than reference it with `<img>`: an
 embedded SVG can't inherit the page's colour.
 
+### Colour follows the theme. Typography shouldn't.
+
+On a property with several themes it's tempting to let articles inherit
+everything, and that's the wrong split. **Let the colour tokens follow the
+theme, and fix the reading face for long-form.**
+
+A decorative theme is chosen for how the site *feels*, and a display or
+monospace face that works beautifully on a landing page is a poor vehicle for
+three thousand words — a monospace body face roughly halves reading speed, and a
+display face used at body size was never designed for the job. Meanwhile every
+article component has to be engineered to survive the worst face in the set,
+which is a permanent tax paid for an outcome nobody wanted.
+
+Fixing the face costs the article page almost nothing in identity: the ground,
+the ink, the accent and the rules still change with the theme, so the page still
+reads as part of the site. It just stays readable. Where a property wants the
+decorative face somewhere, give it the headline and leave the body alone.
+
 Give each register one token so its kicker, its active tab, and its lead callout
 agree, and keep those hues low-saturation — they have to sit on both a near-black
 and a near-white ground.

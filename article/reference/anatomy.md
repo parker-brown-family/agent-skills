@@ -6,11 +6,11 @@ the reader meets these in this order — so it's worth holding to.
 | # | Part | Scope | Notes |
 |---|---|---|---|
 | 1 | back-link | shared | To the property's article index. |
-| 2 | category chip | shared | From the profile's category vocabulary. One only. |
+| 2 | category chip | shared | One only, from the profile's vocabulary. Omitted entirely where the property has fewer than two categories in use — a chip that always reads the same is ceremony. |
 | 3 | h1 title | shared | The article's name. Not any register's headline. |
 | 4 | dek | shared | The question and the stake. **Never the finding.** |
 | 5 | series nav | shared | Only when the piece is one part of several. |
-| 6 | byline · date · share | shared | Byline form comes from the profile. |
+| 6 | byline · date · share · utility CTA | shared | Byline form comes from the profile. A **utility** CTA may sit here — a calculator, a dataset, a tool the article is about. A **conversion** CTA may not; see below. |
 | 7 | liability banner | shared | Only where the profile declares a gate. Full text, every register. |
 | 8 | update banner | shared | Timestamped. Only when the piece has been overtaken by events. |
 | 9 | register tabs | shared | Absent entirely when only the default register exists. |
@@ -19,6 +19,7 @@ the reader meets these in this order — so it's worth holding to.
 | 9c | copy button | **per register** | Scoped to this register only. |
 | 9d | lead callout | **per register** | Exactly one. |
 | 9e | prose body | **per register** | |
+| 9f | closing CTA | **per register** | The conversion ask, at the end of the register the reader actually finished. Pitched to that register's depth. |
 | 10 | sources | shared | One list. Article-level. |
 | 11 | back-to-top | shared | |
 | 12 | footer note | shared | |
@@ -49,20 +50,48 @@ and that is the most common structural fault in a converted article.
 A dek that can be deleted without the reader losing the stakes was doing nothing.
 A dek that makes the tl;dr redundant was doing too much.
 
+## The CTA, and the funnel
+
+Two different things get called a call to action, and they belong in different
+places.
+
+- **A utility CTA** is part of the article's value — the calculator the piece
+  explains, the dataset it analyses, the tool it reviews. It may sit up in the
+  meta row, because offering it costs the reader nothing and using it deepens
+  the read.
+- **A conversion CTA** asks the reader for something: their attention on your
+  portfolio, their email, their business. It goes at the **end of the register
+  they finished**, and never at the top. A conversion ask above the article is
+  asking before delivering.
+
+**Pitch it to the register's depth.** A reader leaving the tl;dr has spent
+fifteen seconds; a reader who finished the technical register has spent twenty
+minutes and is far warmer. The same ask under both wastes the warm reader and
+crowds the cold one. Scale it: a quiet line after the short register, a real
+invitation after the long one.
+
+**Respect the property's funnel guard.** The profile names what an article may
+*not* ask for. The usual case is a booking or meeting link: an article is
+top-of-funnel, a calendar is bottom, and putting the calendar in the article
+asks a stranger to commit before they have any reason to. Where a booking link
+exists elsewhere in the codebase, it is one copy-paste from an article — so the
+guard belongs in the profile as an explicit "never", not as a shared
+understanding.
+
 ## Component vocabulary
 
 Framework-agnostic names, kept close to the ones already in use on the BFS
 properties so two implementations stay legible side by side:
 
 ```
-article-frame          the whole piece, the copy root
+article-frame          the whole piece
   article-head
     back-link
     article-tag        the category chip
     article-title      h1
     article-dek
     series-nav         .now marks the current part
-    article-meta       byline, date, primary CTA, share row
+    article-meta       byline, date, share row, utility CTA only
   article-inner
     liability-banner
     update-banner
@@ -72,9 +101,10 @@ article-frame          the whole piece, the copy root
         register-panel role=tabpanel  (one per register)
           register-kicker
           register-headline
-          copy-button
-          callout      the lead callout
+          copy-button    receives THIS register's content; never queries upward
+          callout        the lead callout
           article-prose
+          register-cta   the conversion ask, pitched to this register's depth
     source-box         ol.source-list
     back-to-top
     article-footer-note
