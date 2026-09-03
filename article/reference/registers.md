@@ -40,6 +40,11 @@ sophistication. Default register: **tl;dr** — the reader lands on the hook.
 
 ### Writing the tl;dr
 
+**The closing invitation sits outside the word band.** It's required by the
+contract but it's navigation, not the telling, so a 200-word cap that counted it
+would buy the reader less of the finding in exchange for a signpost. Count the
+prose; let the invitation be its own line.
+
 It is not a summary. A summary of prose reads like a summary — flat, hedged,
 and obviously downstream of something better. The tl;dr is written *from the
 finding*, in past tense, as the shortest complete telling that still has a turn
