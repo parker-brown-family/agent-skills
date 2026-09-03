@@ -4,6 +4,25 @@ Pass/fail. Every item is verifiable by reading the rendered page or pressing one
 control — none of them is a judgement call. An article failing any item is not
 nearly ready; the failing items are the ones a reader hits first.
 
+## Automate the machine-checkable half, against the artifact
+
+Most of this list can be a script, and where it can be, it should be — a gate
+nobody runs is not a gate. Two rules make it worth having:
+
+- **Check the built HTML, not the source.** The artifact is what ships, and it
+  needs no module resolution, no framework and no test runner to inspect. A
+  contract asserted in a type comment beside the content is prose.
+- **Wire it into the build, so the deploy can't route around it.** Where the
+  publish step calls the build, a failing contract stops publication rather than
+  producing a warning nobody reads.
+
+A first pass takes an hour and covers a surprising amount: register word counts,
+exactly one lead callout per register, headlines distinct and none repeating the
+h1, banned elements per register, the technical register actually containing its
+falsification, no conversion ask above the prose, and no link the property's
+funnel guard forbids. Everything left over is genuinely a judgement call, and a
+shorter human list gets read.
+
 ## The finding
 
 - [ ] The finding exists as one written sentence, separate from the headline and

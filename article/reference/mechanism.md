@@ -124,6 +124,22 @@ receives one register's HTML as a parameter cannot reach the others — the bug 
 impossible by construction rather than avoided by care. That's the shape to
 build.
 
+## Register bodies as strings: two things that bite
+
+Where the registers are stored as HTML strings rather than as component trees —
+which is what makes the contracts checkable — two implementation details cost an
+afternoon each if you meet them by surprise.
+
+- **A utility-CSS framework cannot see class names inside a string.** Tailwind
+  and its equivalents scan source files for literal class names and drop
+  everything they don't find, so utilities written inside a register body are
+  silently purged and the prose renders unstyled. Register bodies use plain
+  classes defined in the stylesheet, and only those.
+- **An ignore rule can swallow the gate.** A blanket `/scripts/*` in
+  `.gitignore` will happily exclude the contract checker the build now depends
+  on, and a fresh clone then fails in a way that looks like a broken toolchain
+  rather than a missing file. Carve the gate out explicitly.
+
 ## Theme discipline
 
 Where the property ships more than one theme, every article component takes its
