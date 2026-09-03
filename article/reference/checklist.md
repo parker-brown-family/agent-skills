@@ -26,7 +26,7 @@ shorter human list gets read.
 ## The finding
 
 - [ ] The finding exists as one written sentence, separate from the headline and
-      the dek.
+      the title.
 - [ ] Every register tells that same finding. None has drifted to a different
       conclusion.
 - [ ] Nothing concrete in the article was invented. Every number, date, quote,
@@ -52,8 +52,9 @@ shorter human list gets read.
 
 ## Structure
 
-- [ ] The dek states the question and the stake and does **not** contain the
-      finding.
+- [ ] No dek: the landing register follows the title directly.
+- [ ] The landing register has no headline — the h1 is its headline.
+- [ ] No other register restates the h1.
 - [ ] At most one category chip, drawn from the property's vocabulary — or none,
       where the property has fewer than two categories in use.
 - [ ] No conversion CTA above the article. A utility CTA in the meta row is
@@ -90,7 +91,7 @@ shorter human list gets read.
 - [ ] Metadata is filled: title, description, canonical URL, published and
       modified dates, author, category, social card image with alt text.
 - [ ] The meta description carries the **finding**, taken from the default
-      register — not the dek. A search snippet that poses the question without
+      register. A search snippet that poses the question without
       answering it spends the impression and gets nothing back.
 - [ ] Body text is readable on every theme the property ships. Where themes
       change the typeface, the article's reading face is fixed.

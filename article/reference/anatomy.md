@@ -8,14 +8,14 @@ the reader meets these in this order — so it's worth holding to.
 | 1 | back-link | shared | To the property's article index. |
 | 2 | category chip | shared | One only, from the profile's vocabulary. Omitted entirely where the property has fewer than two categories in use — a chip that always reads the same is ceremony. |
 | 3 | h1 title | shared | The article's name. Not any register's headline. |
-| 4 | dek | shared | The question and the stake. **Never the finding.** |
+| 4 | *(retired)* | — | A dek used to sit here carrying the question and the stake. It does not survive a page where the landing register is directly beneath it — see below. |
 | 5 | series nav | shared | Only when the piece is one part of several. |
 | 6 | byline · date · share · utility CTA | shared | Byline form comes from the profile. A **utility** CTA may sit here — a calculator, a dataset, a tool the article is about. A **conversion** CTA may not; see below. |
 | 7 | liability banner | shared | Only where the profile declares a gate. Full text, every register. |
 | 8 | update banner | shared | Timestamped. Only when the piece has been overtaken by events. |
 | 9 | register tabs | shared | Absent entirely when only the default register exists. |
 | 9a | register kicker | **per register** | Names the register. |
-| 9b | register headline | **per register** | Its own, written for its voice. |
+| 9b | register headline | **per register** | Its own, written for its voice. **The landing register has none** — the h1 above is its headline. |
 | 9c | copy button | **per register** | Scoped to this register only. |
 | 9d | *(retired)* | — | A register used to open with a labelled callout. It is a house AI-ism — see the House voice section of SKILL.md. |
 | 9e | prose body | **per register** | |
@@ -32,23 +32,36 @@ per-register copy of a fact is a copy that will drift. Sources are the clearest
 case: three lists means three lists that disagree within a month.
 
 **Per register means it belongs to the telling.** The kicker, the headline, the
-the prose, and the copy button. Everything that changes when you
-change who you're talking to.
+prose, and the copy button. Everything that changes when you change who you're
+talking to.
 
 The tab bar itself is shared, and it is the seam. Above it, one article. Below
 it, several tellings.
 
-## The dek, specifically
+## Title, then the landing register. Nothing between.
 
-The dek and the default register sit inches apart on the rendered page. If both
-carry the finding, the page repeats itself in the reader's first four seconds,
-and that is the most common structural fault in a converted article.
+The dek was supposed to carry the question and the stake while the landing
+register carried the answer — a clean split on paper. On a rendered page where
+the landing register sits directly beneath the title, it does not hold.
 
-- **Dek:** what was in question, and why it mattered. Ends without resolving.
-- **Default register:** the resolution.
+The two are inches apart, they are about the same thing, and the reader meets
+the weaker one first. A dek written well enough to earn its place is competing
+with the register for the same job; a dek written badly enough not to compete is
+padding under a headline. There is no width of dek that escapes both, which is
+why the element is gone rather than constrained.
 
-A dek that can be deleted without the reader losing the stakes was doing nothing.
-A dek that makes the tl;dr redundant was doing too much.
+**The landing register does the dek's job by starting where the reader is.**
+That is already its contract — it opens with the situation rather than the
+conclusion — so the stake arrives in the first two sentences of something the
+reader is going to read anyway.
+
+**The landing register also carries no headline of its own.** The h1 is directly
+above it, so a headline there is the title printed twice. The title *is* the
+landing register's headline. Every other register needs its own, and none of
+them may restate the h1.
+
+Both are mechanically checkable, and worth checking — a dek grows back the
+moment somebody feels a page looks bare.
 
 ## The CTA, and the funnel
 
@@ -89,7 +102,7 @@ article-frame          the whole piece
     back-link
     article-tag        the category chip
     article-title      h1
-    article-dek
+    (no dek — see anatomy.md)
     series-nav         .now marks the current part
     article-meta       byline, date, share row, utility CTA only
   article-inner

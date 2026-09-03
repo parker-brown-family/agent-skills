@@ -31,7 +31,7 @@ If that sentence won't come, there is no article yet — there is research. Say 
 and stop. This is the single most common way an article goes wrong: it gets
 written to find out what it thinks, and it ships still looking.
 
-The finding is not the headline and not the dek. It is the thing all registers
+The finding is not the headline. It is the thing all registers
 are telling, and it is what you check them against at the end.
 
 **A guide has a finding too — it's the thesis it teaches**, not a dispute it
@@ -105,9 +105,10 @@ Everything else in this skill is a default you may override for a property.
 These are not.
 
 1. **The finding is one sentence, written first.** No finding, no article.
-2. **The dek states the question and the stake. The default register states the
-   finding.** Never both — they sit inches apart on the page and the repetition
-   is the first thing a reader sees.
+2. **Title, then the landing register. Nothing between them**, and the landing
+   register carries no headline of its own — the title is its headline. A dek
+   beneath the title is a second summary of the same thing, and the reader
+   meets the weaker one first.
 3. **Every register is a finished telling.** None is the simplified version of
    another, and none may end by telling the reader to go read a better one.
 4. **Copy is scoped to the visible register**, and carries a metadata header
@@ -182,7 +183,7 @@ Articles written before the register system get converted, not rewritten:
    prose reads like a summary; the tl;dr is its own telling.
 4. ELI5 last, and only if the subject has a metaphor worth holding. A forced
    ELI5 is worse than an absent one — and the axis makes it optional.
-5. Move the dek off the finding if it was carrying it.
+5. Delete the dek. The landing register replaces it, and the title replaces the landing register's headline.
 
 ## Related skills
 
