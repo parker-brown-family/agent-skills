@@ -30,15 +30,25 @@
   var KEY = 'notes:' + FILE;
 
   /* Default targets. A prefix keeps exported anchors readable and grouped.
-     Override wholesale with window.NOTES_TARGETS if a brief's shape differs. */
+     Override wholesale with window.NOTES_TARGETS if a brief's shape differs.
+
+     THE GRILL COMES FIRST, AND IT IS NOT OPTIONAL. Until 2026-09-02 this list
+     covered five of the seven components layout.md tells you to build and
+     omitted the grill — so the one section whose entire purpose is a decision
+     the reader has to make was the one section the reader could not comment on.
+     Two briefs shipped that way, each having invented its own class name
+     (`grill-q`, then `q`) because nothing here named one. Both spellings are
+     matched below; `.ask` is the name to use going forward. If you add a
+     component, add it here in the same commit. */
   var TARGETS = window.NOTES_TARGETS || [
+    ['.grill .q, .grill-q, .ask', 'ask'],
     ['.card', 'verdict'],
     ['.esc-list li', 'readfirst'],
     ['.finding', 'finding'],
     ['.tile', 'stat'],
     ['table.wide tr', 'row'],
     ['.bar-row', 'chart'],
-    ['dialog .dlg-body > .callout', 'callout'],
+    ['.callout', 'callout'],
     ['dialog .dlg-body > h4', 'sub']
   ];
 

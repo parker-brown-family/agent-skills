@@ -72,6 +72,27 @@ When decisions remain, ask them properly:
 Use `AskUserQuestion` for the round itself (cap: 4). Record the answers in the brief afterwards
 so the document carries the decision, not just the question.
 
+**Mark it up as `.ask` inside a `.grill`, and never invent a class name here.** The grill is the
+section the whole document exists to get answered, so it has to be annotatable — and `notes.js`
+can only tag what it has a selector for. Two briefs shipped with uncommentable grills because
+each invented its own name (`grill-q`, then `q`) and neither was in `TARGETS`. Both are matched
+now for the sake of those files; new work uses `.ask`:
+
+```html
+<div class="grill">
+  <div class="ask">
+    <h3>1 · The question, as a question</h3>
+    <p>What is actually at stake, and why it is his call and not yours.</p>
+    <p class="rec"><b>Recommendation:</b> your answer, with the reason.</p>
+  </div>
+</div>
+```
+
+When the round comes back answered, the grill does not get filled with invented questions to
+keep it alive. Move the answers up into the settled record and say plainly that nothing is
+waiting on him — then name the *next* decision and what triggers it, so it is parked rather
+than lost.
+
 ## Verification checklist
 
 Run before delivering. Screenshots crop, and return blank frames at deep scroll — the DOM does
@@ -81,7 +102,30 @@ not lie.
 - [ ] every `[data-dlg]` resolves to a `<dialog>` that exists
 - [ ] every dialog has non-trivial `.dlg-body` content
 - [ ] `<script>` and `<dialog>` tags balance
-- [ ] `.notable` count is non-zero; a note can be added and the badge appears
+- [ ] **every component you built is annotatable** — not "the count is non-zero". A count passes
+      while the most important section is uncovered, which is exactly how two briefs shipped with
+      uncommentable grills. Assert coverage per component and read the failures:
+
+      ```js
+      ['.grill .ask, .grill .q, .grill-q', '.card', '.finding', '.tile',
+       '.esc-list li', 'table.wide tbody tr', '.callout'].map(s => [s,
+        document.querySelectorAll(s).length,
+        [...document.querySelectorAll(s)].filter(e => e.classList.contains('notable')).length])
+      ```
+      Any row where present > 0 and tagged < present is a defect. A grill row of `[n, 0]` is the
+      one that matters most. Note `tbody tr`, not `tr` — `notes.js` skips header rows deliberately
+      (`el.tagName === 'TR' && el.querySelector('th')`), and an assertion that flags an intentional
+      exclusion is an assertion people learn to ignore, which is how the grill defect survived.
+
+### Two undocumented hooks in notes.js, since both are easy to get wrong
+
+- **Read-first numbering is `.esc-n`, not `.num`.** With `<span class="esc-n">3</span>` present,
+  the anchor becomes `readfirst-3`; without it you silently fall back to a four-word title slug.
+  Both work, but the numbered form is shorter in the exported map and stable when you reword a
+  heading.
+- **Anything inside `#d-note`, `#d-export` or `.notebar` is skipped**, so the notes UI never
+  tags itself. Do not reuse those ids.
+- [ ] a note can be added on a grill item specifically, and the badge appears
 - [ ] the exported map has readable anchors, and reports its own token cost
 - [ ] a chart's longest label is inside the figure, not overflowing it
 - [ ] grid columns do not orphan the last card (4 cards in a 3-wide grid looks broken)
