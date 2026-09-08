@@ -17,9 +17,19 @@ or `avoid-ai-writing`; it sequences them and supplies the container they were
 missing.
 
 ```
-finding  →  profile  →  SHAPE once  →  cast per register  →  slop pass  →  gate
-            (property)   (storytelling)  (hook + flesh each)  (avoid-ai-writing)
+finding → profile → ai-slop → SHAPE once → cast per register → slop pass → gate
+          (property) (read it) (storytelling) (hook + flesh each)  (avoid-ai-writing
+                                                                    + ai-slop again)
 ```
+
+**Neither `storytelling` nor `ai-slop` is optional, and both fail silently.**
+On 2026-09-04 an article shipped whose landing register Parker called *"just
+nonsense"*: SHAPE had been skipped and the register was a compressed abstract
+with no setting and no turn. Two of its four flagged AI-isms were already banned
+in `house-style.md`, dated the day before, and `avoid-ai-writing` passed the text
+because those are Parker's flags rather than upstream's. A skipped stage does not
+announce itself — it produces confident prose that reads fine to whoever skipped
+it.
 
 ## Before anything: the finding
 
@@ -82,8 +92,9 @@ and which parts are shared across registers versus written per register.
 
 ## Step 4 — the slop pass
 
-Run `avoid-ai-writing` on each register separately, as the last pass before the
-gate. **Do not show the audit, the intermediate draft, or the rewrite notes** —
+**Two passes, not one.** Run `avoid-ai-writing` on each register separately, then re-read `~/.claude/writing/ai-slop.md` against the result. The first catches the industry's tells; the second catches Parker's, and the overlap is smaller than it looks. The four specimens in that ledger all survived `avoid-ai-writing`.
+
+Run it as the last pass before the gate. **Do not show the audit, the intermediate draft, or the rewrite notes** —
 return the finished prose. Where the operator keeps a house-style file, it wins
 over both that skill and this one.
 
