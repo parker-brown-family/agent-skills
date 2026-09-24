@@ -45,6 +45,14 @@ emailed as one file, so no external `src`.
 | **save into file** | downloads the HTML with notes in a JSON island **and** a plain-text comment | localStorage is invisible to an agent; this is what makes the loop work |
 | localStorage | live persistence between reloads | |
 
+Every decision in the grill also gets a **concur** space on its right, added by `notes.js`
+with no markup from you. Concur is the answer most decisions get and the quickest way for
+Parker to say the work was good, so it costs one click: the space shows a grey `?`, throbs
+light grey on hover, and takes a green rubber stamp that peels off on a second click. A
+concur rides in the map as `[<anchor>] <question>  ✓ concur` and is baked into
+`#report-concurs` by save-into-file, so "read my notes" carries agreement as well as
+objection. Read a decision with a concur and no note as *approved as recommended*.
+
 Never ship a brief without it.
 
 ### 2 · The reading budget drives the structure
