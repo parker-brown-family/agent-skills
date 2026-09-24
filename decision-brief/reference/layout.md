@@ -135,6 +135,12 @@ now for the sake of those files; new work uses `.ask`:
 </div>
 ```
 
+**Every `.ask` takes a concur stamp**, which `notes.js` adds on its own: a space on the
+decision's right, clear of the note button in the top-right corner. It forces the decision's
+right padding, so a brief's own `.grill .ask` padding shorthand cannot run the question under
+it. Write the decision so that a bare concur is a complete answer — the recommendation line
+is what he is stamping, so it has to say what happens if he agrees.
+
 When the round comes back answered, the grill does not get filled with invented questions to
 keep it alive. Move the answers up into the settled record and say plainly that nothing is
 waiting on him — then name the *next* decision and what triggers it, so it is parked rather
@@ -173,6 +179,9 @@ not lie.
 - **Anything inside `#d-note`, `#d-export` or `.notebar` is skipped**, so the notes UI never
   tags itself. Do not reuse those ids.
 - [ ] a note can be added on a grill item specifically, and the badge appears
+- [ ] every grill item has a concur space — `[...document.querySelectorAll('.ask')].filter(a =>
+      !a.querySelector(':scope > .concur-zone')).length === 0` — and a stamp shows up in the map
+      as `✓ concur`
 - [ ] the exported map has readable anchors, and reports its own token cost
 - [ ] every group of option cards has **exactly one** `.card.rec`, and it names its own cost —
       `[...document.querySelectorAll('.grid, .cards, section')].map(g =>
