@@ -39,9 +39,18 @@
      Two briefs shipped that way, each having invented its own class name
      (`grill-q`, then `q`) because nothing here named one. Both spellings are
      matched below; `.ask` is the name to use going forward. If you add a
-     component, add it here in the same commit. */
+     component, add it here in the same commit.
+
+     FIGURES ARE SECOND, for the same reason. The 2026-09-15 attention-spine
+     brief carried eleven pictures and had to override NOTES_TARGETS wholesale
+     to make any of them annotatable, because `figure` was not here — a fork of
+     this list living in one report, where nothing else would inherit it. The
+     pictures are the part a reader argues with, so they are in the default list
+     now. `titleOf()` already reads `.lbl`, so a figure labelled `03 · What
+     opening costs` anchors as `fig-03-what-opening-costs`. */
   var TARGETS = window.NOTES_TARGETS || [
     ['.grill .q, .grill-q, .ask', 'ask'],
+    ['figure', 'fig'],
     ['.card', 'verdict'],
     ['.esc-list li', 'readfirst'],
     ['.finding', 'finding'],
