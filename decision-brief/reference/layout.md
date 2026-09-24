@@ -11,7 +11,7 @@ Four rungs. A reader who stops at any rung has enough to act at that level of de
 |---|---|---|
 | 1 · **Headline** | The one sentence he needs if he reads nothing else. A verdict, not a summary. | ~40 words |
 | 2 · **The scannable layer** | Verdicts, Read-first. What must be looked at, ranked. | ~4 minutes |
-| 3 · **The page** | Sections that carry an argument each — comparisons, one chart, a table. | ~20 minutes |
+| 3 · **The page** | Sections that carry an argument each, and this is where the pictures live — a mockup, a diagram, a comparison, a table. | ~20 minutes |
 | 4 · **Modals** | Everything a reader would ask "why?" about. Unbounded; nobody is forced through it. | as long as it takes |
 
 The mistake is putting rung-4 material on rung 3. If a section runs past a screen or two on
@@ -35,16 +35,63 @@ None of these is required. Build what the material needs.
 
 | Component | Earns its place when | Do not use it when |
 |---|---|---|
+| **A mockup figure** | The reader has to judge a surface — what it will look like, at the width he will read it | The surface already exists and he has seen it |
+| **An SVG diagram** | The reader has to judge a mechanism — flow, geometry, ordering, resolution, sequence | The mechanism is two steps; a sentence is faster |
 | **Verdict cards** | Several things are being compared and each gets its own call | There is one subject — a card of one is a header |
 | **Read-first list** | The reader is time-boxed and items differ in urgency | Everything matters equally; then it is just the page |
 | **Stat tiles** | One number per thing carries an argument on its own | The numbers only mean something next to each other — use a table |
 | **A chart** | A comparison is genuinely visual and spans one order of magnitude | The spread is 4 orders of magnitude (243,648 vs 41 — that is a tile row, not a bar chart) |
+| **Option cards, one lit** | Alternatives are being weighed and you have a recommendation — see *The recommended path* below | You have no recommendation; then lighting one is a lie |
 | **Findings list** | There are cross-cutting conclusions that do not belong to any one subject | |
 | **A grill section** | Real decisions remain that are the reader's to make | You are presenting a conclusion, not asking for one |
 | **Modal sub-report** | A reader would ask "why?" and the answer is longer than a paragraph | |
 
+The two figure rows are first because they carry the most. `reference/pictures.md` holds the
+figure contract, the repertoire of eleven drawn from the attention-spine brief, what each
+colour means, and the provenance modals that keep a drawing from reading as a measurement.
+
 Before adding a chart, read the `dataviz` skill. One good chart beats four; a bad one is worse
-than a table. If nothing is worth plotting, plot nothing.
+than a table. If nothing is worth plotting, plot nothing. A chart and a diagram answer
+different questions — a chart argues with quantities, a diagram argues with structure, and
+most briefs need the second one more often than they reach for it.
+
+## The recommended path, drawn as a path
+
+Whenever a section lays out alternatives — A/B/C, "as specced" vs "re-cut", two depths of the
+same feature — **mark the one you recommend on the card itself**, not only in the prose under
+it. Parker's words, on the slice-4.5 brief that first did this by hand: *"visually seeing the
+recommended path helps to weight decisions."* A reader scanning three equal-looking cards has to
+read all three before he can start weighing; a reader scanning three cards where one is lit
+starts from your recommendation and spends his attention on whether to overrule it. That is the
+whole job of the section.
+
+Self-contained, because `base.css` leaves cards to the brief:
+
+```css
+.card.rec { border-color: var(--s3); box-shadow: 0 0 0 1px var(--s3) inset; }
+.card.rec .badge { color: var(--s3); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+```
+
+```html
+<div class="card rec">
+  <span class="badge">recommended</span>
+  <h3>B · contract core, flip, then undo</h3>
+  <p>What it is.</p>
+  <p class="why">Why this one — and what it costs you.</p>
+</div>
+```
+
+Three rules, all learnable the hard way:
+
+- **Exactly one card per group is lit.** Two recommendations is no recommendation, and the badge
+  stops meaning anything the second time a reader sees it hedged.
+- **The unlit cards still get their honest case.** A recommendation the reader cannot argue with
+  is a decision you took from him. Each alternative says what it is genuinely better at.
+- **Say the cost of the one you lit.** The lit card carries the "safest on paper; slowest to the
+  thing the feature exists for" line too, or the badge is marketing.
+
+`.card` is already in `notes.js` TARGETS, so a lit card is annotatable with no extra work — he
+can disagree on the card itself, which is where the disagreement belongs.
 
 ## Scoring
 
@@ -107,7 +154,7 @@ not lie.
       uncommentable grills. Assert coverage per component and read the failures:
 
       ```js
-      ['.grill .ask, .grill .q, .grill-q', '.card', '.finding', '.tile',
+      ['.grill .ask, .grill .q, .grill-q', 'figure', '.card', '.finding', '.tile',
        '.esc-list li', 'table.wide tbody tr', '.callout'].map(s => [s,
         document.querySelectorAll(s).length,
         [...document.querySelectorAll(s)].filter(e => e.classList.contains('notable')).length])
@@ -127,5 +174,16 @@ not lie.
   tags itself. Do not reuse those ids.
 - [ ] a note can be added on a grill item specifically, and the badge appears
 - [ ] the exported map has readable anchors, and reports its own token cost
+- [ ] every group of option cards has **exactly one** `.card.rec`, and it names its own cost —
+      `[...document.querySelectorAll('.grid, .cards, section')].map(g =>
+       [g.querySelectorAll('.card').length, g.querySelectorAll('.card.rec').length])`
+      — any row reading `[2+, 0]` or `[n, 2+]` is a section that asks the reader to weigh
+      alternatives and refuses to say which way you lean
 - [ ] a chart's longest label is inside the figure, not overflowing it
 - [ ] grid columns do not orphan the last card (4 cards in a 3-wide grid looks broken)
+- [ ] every `<figure>` has a numbered `.lbl` and a `<figcaption>` that asserts something —
+      a caption describing what the reader can already see is a wasted line
+- [ ] every `<svg>` has a `viewBox`, no fixed `width`, and an `aria-label`
+- [ ] nothing external: `[...document.querySelectorAll('img, [src], link[href]')]` is empty
+- [ ] the page reads at **968 px** (Parker's tiled pane) and at 390 px — wide diagrams sit in
+      their own `.scroller`, and the page itself never scrolls sideways

@@ -1,6 +1,6 @@
 ---
 name: decision-brief
-description: Produce a single self-contained HTML brief that Parker annotates in the browser and then prompts back from — an audit, a review, a technology-intake assessment, a findings write-up, any analysis whose point is that a decision gets made. Reader notes are anchored to elements and export as a token-cheap map, so "read my notes in <file>" replaces pasting the document. Use when asked for an audit, an intake assessment, a review, an analysis, a findings report, a comparison of options, or when Parker says "/decision-brief". NOT for planning docs that end in tickets — that is /tps-report.
+description: Produce a single self-contained HTML brief that Parker annotates in the browser and then prompts back from — an audit, a review, a technology-intake assessment, a findings write-up, any analysis whose point is that a decision gets made. The brief is drawn: hand-built mockups and SVG diagrams carry it and the prose captions them. Reader notes are anchored to elements and export as a token-cheap map, so "read my notes in <file>" replaces pasting the document. Use when asked for an audit, an intake assessment, a review, an analysis, a findings report, a comparison of options, a visual or illustrated write-up, or when Parker says "/decision-brief". NOT for planning docs that end in tickets — that is /tps-report.
 license: MIT
 ---
 
@@ -19,9 +19,9 @@ you write the brief  →  Parker annotates it in the browser  →  💾 save int
 That loop is the reason for the notes system. Without it a report is a dead end: he reads it,
 forms opinions, and then has to retype them into a prompt.
 
-## Three invariants
+## Four invariants
 
-Everything else in this skill is a default you may override. These three are not.
+Everything else in this skill is a default you may override. These four are not.
 
 ### 1 · Notes on every element
 
@@ -69,6 +69,29 @@ A claim you have not tested is not a finding, and saying so costs nothing.
 Anything you assert as a defect also carries an **invalidation criterion**: the check that
 would prove it wrong, which the picker-upper runs *first*. See `reference/evidence.md`.
 
+### 4 · The brief is drawn
+
+Pictures are the medium of this format, and the prose ends up as captions on them. A brief
+that could have been an email was not worth the format, and how much of it Parker can *see*
+decides whether he reads it or reacts to it.
+
+The 2026-09-15 attention-spine brief carried eleven figures for a plan two earlier prose
+briefs had already covered, and it is the standard:
+`/home/parker/Work/reports/2026-09-15-attention-spine-groundwork.html`. Mockups of the
+surface at the size he would read it, SVG diagrams of the mechanism, an anatomy picture with
+numbered pins, a fence, a timeline — all hand-built HTML, CSS and inline SVG, no library, no
+image files. **Read `reference/pictures.md` before writing the body**, because the pictures
+decide the body.
+
+A brief with a surface in it draws that surface, and a brief with a mechanism in it draws
+that mechanism. Where a section's argument really is a list of sentences, leave it as
+sentences — a picture of nothing is worse than a paragraph. Everywhere else, when you are
+unsure whether to draw one more, draw it.
+
+**When the change touches more than one system, draw the architecture and build it up** —
+the same diagram three or four times, each adding a piece, the earlier boxes never moving.
+It is the picture Parker asks for by name, and `reference/pictures.md` has the grammar.
+
 ## Structure is yours
 
 There are **no section schemas here, deliberately.** The shape comes from the material.
@@ -80,6 +103,9 @@ Decide the shape by answering these, and let the answers build the page:
 
 - What is the single sentence he needs if he reads nothing else? → that is the headline, and
   it goes first.
+- What must he **see** to judge this — a surface, a flow, an order, a boundary? → a figure
+  each, and the caption carries the claim. Answer this before you answer the rest; a section
+  built around a picture is shaped differently from one built around paragraphs.
 - What are the top five things he must look at closely? → Read-first.
 - Are there **things being compared**? → some card or tile per thing. Not otherwise.
 - Is there **one number** that carries an argument? → a chart, or a stat row. One good chart
@@ -103,9 +129,12 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
 [...document.querySelectorAll('[data-dlg]')].filter(b => !document.getElementById(b.dataset.dlg))
 // every dialog actually has content
 [...document.querySelectorAll('dialog')].map(d => [d.id, d.querySelector('.dlg-body')?.innerText.length])
+// every svg scales and is described — [hasViewBox, noFixedWidth, hasLabel]
+[...document.querySelectorAll('svg')].map(s =>
+  [!!s.getAttribute('viewBox'), !s.getAttribute('width'), !!s.getAttribute('aria-label')])
 // notes COVERAGE — never a bare count. [selector, present, tagged]; present > tagged is a defect
 // (tbody, not tr: notes.js skips header rows on purpose, and a check that cries wolf gets ignored)
-['.grill .ask, .grill .q, .grill-q', '.card', '.finding', '.tile',
+['.grill .ask, .grill .q, .grill-q', 'figure', '.card', '.finding', '.tile',
  '.esc-list li', 'table.wide tbody tr', '.callout'].map(s => [s,
   document.querySelectorAll(s).length,
   [...document.querySelectorAll(s)].filter(e => e.classList.contains('notable')).length])
@@ -153,6 +182,8 @@ URL second.
 
 ## Reference
 
+- `reference/pictures.md` — **read this first**: the figure contract, the repertoire of
+  eleven, what colour means, and how to say which parts of a drawing were guessed
 - `reference/layout.md` — the disclosure ladder, and which components earn their place
 - `reference/evidence.md` — confidence labels, invalidation criteria, recording confounds
 - `reference/notes-markup.html` — the markup block the notes system needs
