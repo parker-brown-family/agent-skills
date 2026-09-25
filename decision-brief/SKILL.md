@@ -42,7 +42,7 @@ emailed as one file, so no external `src`.
 | Output | What it does | Why |
 |---|---|---|
 | **copy map** | `[anchor] Title` + notes, in document order | ~1% of the tokens of the full document, and still tethered to the passage |
-| **save into file** | downloads the HTML with notes in a JSON island **and** a plain-text comment | localStorage is invisible to an agent; this is what makes the loop work |
+| **save into file** | downloads the HTML with notes in JSON islands **and** a plain-text comment | localStorage is invisible to an agent; this is what makes the loop work |
 | localStorage | live persistence between reloads | |
 
 Every decision in the grill also gets a **concur** space on its right, added by `notes.js`
@@ -54,6 +54,36 @@ concur rides in the map as `[<anchor>] <question>  ✓ concur` and is baked into
 objection. Read a decision with a concur and no note as *approved as recommended*.
 
 Never ship a brief without it.
+
+#### The notes format
+
+Terminal Delight edits a brief's notes in place, so what 💾 save into file writes is a
+format another program follows byte for byte. Format 1:
+
+- **Two islands.** `#report-notes` holds `{ anchor: [{text, title, ts}] }`,
+  `#report-concurs` holds `{ anchor: ts }`, `ts` in UTC to the minute. The first of each
+  is the one read and written. Leave them in the markup, with their `data-format="1"`.
+- **Escaping.** Island JSON is `JSON.stringify(map, null, 1)` with `</` written `<\/` and
+  `<!` written `\u003c!`, so no note can end the script element. The `READER NOTES`
+  comment turns `--!>` into `--! >` and `-->` into `-- >`, and a save replaces the last
+  such comment instead of adding another. Its first line and `[anchor] title` lines are
+  what agents grep; they do not change.
+- **A revision.** Every save stamps `data-rev`, the time of the write, on both islands.
+  notes.js remembers the revision it last took in. When a file arrives carrying another
+  one, or none, the page shows its stored notes **plus** every note and concur in the file
+  it has not seen: a browser never drops a note it holds, and a note the reader deleted
+  stays deleted. The price is that a deletion made by another writer does not reach a
+  browser that still holds the note.
+- **The version.** `data-format` names the format, and a writer refuses one it does not
+  know. Bump it when a change alters what a correct writer must put in the file: the
+  island shapes or fields, the escaping, where the islands or the mirror go, the mirror's
+  lines, or what the revision means. New targets, styling and UI do not bump it.
+
+`fixtures/notes-format/` is the source of truth: fifteen cases, each a brief, its edits
+and the exact bytes a correct write leaves, with `writer.mjs` as the reference writer.
+Terminal Delight vendors it. Change `notes.js`, `notes.css` or the markup block and the
+same commit runs `fixtures/notes-format/build.mjs`, `check.mjs` and
+`tests/notes-js.test.mjs` (see the fixtures' README).
 
 ### 2 · The reading budget drives the structure
 
@@ -195,3 +225,5 @@ URL second.
 - `reference/layout.md` — the disclosure ladder, and which components earn their place
 - `reference/evidence.md` — confidence labels, invalidation criteria, recording confounds
 - `reference/notes-markup.html` — the markup block the notes system needs
+- `fixtures/notes-format/README.md` — the notes format in bytes, the cases that pin it,
+  and how to run them
