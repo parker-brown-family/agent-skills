@@ -55,9 +55,10 @@
   </div>
 </dialog>
 
-<!-- Notes and concurs are baked in here by "save into file". Leave them empty and leave them in. -->
-<script type="application/json" id="report-notes">{}</script>
-<script type="application/json" id="report-concurs">{}</script>
+<!-- Notes and concurs are baked in here by "save into file". Leave them empty and leave them in,
+     with their data-format: it names the format notes.js writes, and other writers check it. -->
+<script type="application/json" id="report-notes" data-format="1">{}</script>
+<script type="application/json" id="report-concurs" data-format="1">{}</script>
 
 <script>
   /* Set before notes.js runs. Used for the storage key and the download filename. */
