@@ -155,6 +155,46 @@ Decide the shape by answering these, and let the answers build the page:
 Skip any of these that the material does not support. A brief with three sections that
 earn their place beats one with eight that fill a template.
 
+## The look
+
+Every brief is built over a random Omarchy wallpaper, in the colours of that wallpaper's
+theme, with the glass of the Terminal Delight docs redesign. **Read `reference/glass.md`
+before drawing anything**: it says what the look is for, what makes it work, and carries
+the two examples Parker singled out (chopped bars, and a readout that shows two numbers at
+once). It describes rather than prescribes; the shape of each brief is still yours.
+
+Four blocks go in `<head>`, in this order:
+
+1. `assets/base.css`, inline.
+2. The `<style id="brief-wall">` block, straight after it. One run per brief picks a theme,
+   then one of its wallpapers, and bakes both in:
+   ```bash
+   python3 ~/.claude/skills/decision-brief/scripts/brief-wall --out /tmp/brief-wall.html
+   ```
+   Run it through `python3`; the lean-ctx shell gate refuses the bare script name. It adds
+   4–335 KB. Take the random pick, and never choose a theme to match the subject; the
+   variety is the point. `--theme` and `--image` exist so a rebuild keeps the wallpaper it
+   already has: the block's opening comment names the theme, the wallpaper and the
+   contrast it measured.
+3. The brief's own `<style>`.
+4. `assets/notes.css`.
+
+**Use what `base.css` styles instead of restyling it.** The masthead (`header.top`,
+`.eyebrow`, `h1`, `.lede`, `.stamps`), `h2` with a `.n` number, `h2.sec`, `.esc-list`,
+`.tiles`, `.cards` with one `.card.rec`, `.finding`, `.grill .ask` with `.rec`, `figure`,
+`.pair` with `.facts`, `pre`, `table`, `.callout`, `.tag`, `.linkbtn` and `dialog` are all
+done. `base.css` sits in `@layer brief`, so the brief's own CSS always wins, and a component
+restyled from an older brief (`background: var(--surface-1)`) replaces its glass with a flat
+box. Build what the material needs beyond that list.
+
+**`.glass` is the milky, lit card**: bright glass with dark ink, the element the reader must
+not miss. Put the headline verdict in it, and use one or two per page at most.
+
+Colours: the theme owns the ground, the ink and the accent (`--bg`, `--fg`, `--dim`, `--acc`
+and the rest of the kiosk role names). The status and categorical colours are fixed in every
+theme, so red always means a decision is waiting. Figures colour themselves with classes;
+see `reference/pictures.md`.
+
 ## Verify before you deliver
 
 Screenshots lie — they crop, and they return blank frames at deep scroll positions. **Check the
@@ -168,7 +208,8 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
 // every dialog actually has content
 [...document.querySelectorAll('dialog')].map(d => [d.id, d.querySelector('.dlg-body')?.innerText.length])
 // every svg scales and is described — [hasViewBox, noFixedWidth, hasLabel]
-[...document.querySelectorAll('svg')].map(s =>
+// (an aria-hidden svg is decoration, like a readout's plate, and needs no label)
+[...document.querySelectorAll('svg:not([aria-hidden="true"])')].map(s =>
   [!!s.getAttribute('viewBox'), !s.getAttribute('width'), !!s.getAttribute('aria-label')])
 // notes COVERAGE — never a bare count. [selector, present, tagged]; present > tagged is a defect
 // (tbody, not tr: notes.js skips header rows on purpose, and a check that cries wolf gets ignored)
@@ -176,6 +217,9 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
  '.esc-list li', 'table.wide tbody tr', '.callout'].map(s => [s,
   document.querySelectorAll(s).length,
   [...document.querySelectorAll(s)].filter(e => e.classList.contains('notable')).length])
+// the wallpaper is baked in — empty means the brief-wall block is missing, and the page is
+// quietly wearing the fallback glow
+getComputedStyle(document.documentElement).getPropertyValue('--wall-label')
 ```
 
 **A count is not coverage.** `document.querySelectorAll('.notable').length` returning 52 says
@@ -193,8 +237,9 @@ Serve it over `http://127.0.0.1:<port>` rather than `file://` — browser automa
 
 Named from the tps-report post-mortem, because these are the ways this goes wrong:
 
-- **No theme system.** One palette. tps-report has four themes and 165 theme rules; nobody
-  switches. Style is not where the value is.
+- **No theme toggle.** One design, and the palette is never the reader's choice: brief-wall
+  picks it when the brief is built. tps-report had four themes, 165 theme rules and a
+  switcher nobody used.
 - **No template to populate.** Ship components and constraints. The moment there is a
   `body.html` with slots, the agent stops designing.
 - **No prescribed sections.** See above.
@@ -222,8 +267,11 @@ URL second.
 
 - `reference/pictures.md` — **read this first**: the figure contract, the repertoire of
   eleven, what colour means, and how to say which parts of a drawing were guessed
+- `reference/glass.md` — the look: what it is for, what makes it work, and two examples
 - `reference/layout.md` — the disclosure ladder, and which components earn their place
 - `reference/evidence.md` — confidence labels, invalidation criteria, recording confounds
 - `reference/notes-markup.html` — the markup block the notes system needs
+- `scripts/brief-wall` — picks the wallpaper and the palette, measures the contrast, and
+  prints the block that follows `base.css`; its docstring says how
 - `fixtures/notes-format/README.md` — the notes format in bytes, the cases that pin it,
   and how to run them

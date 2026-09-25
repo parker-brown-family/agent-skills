@@ -65,12 +65,8 @@ read all three before he can start weighing; a reader scanning three cards where
 starts from your recommendation and spends his attention on whether to overrule it. That is the
 whole job of the section.
 
-Self-contained, because `base.css` leaves cards to the brief:
-
-```css
-.card.rec { border-color: var(--s3); box-shadow: 0 0 0 1px var(--s3) inset; }
-.card.rec .badge { color: var(--s3); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
-```
+`base.css` styles `.cards`, `.card`, `.card.rec`, `.badge` and `.why` — the lit card glows
+green with its badge — so the markup is all a brief needs:
 
 ```html
 <div class="card rec">
