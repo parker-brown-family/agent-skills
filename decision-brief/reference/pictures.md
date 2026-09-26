@@ -20,18 +20,11 @@ every picture in it survives that.
 
 ## Every picture is a `<figure>`
 
-`base.css` does not style `figure`, so carry this in the brief's own style block:
-
-```css
-figure { margin: 0 0 22px; border: 1px solid var(--line); border-radius: 10px;
-  background: var(--surface-1); padding: 16px 18px 14px; }
-figure > .lbl { display: block; font-family: var(--mono); font-size: 10.5px; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--text-muted); margin: 0 0 13px; }
-figcaption { margin-top: 13px; font-size: 13.5px; color: var(--text-secondary); }
-figcaption b { color: var(--text-primary); }
-.scroller { overflow-x: auto; }
-svg { display: block; width: 100%; height: auto; }
-```
+`base.css` styles `figure`, `.lbl`, `figcaption`, `.scroller` and `.gutter`: a pane of dark
+glass, near-opaque so a drawing made for a dark page still reads over any wallpaper, with a
+lamp beside the numbered label. **Do not restyle them in the brief's own block.** A brief's CSS
+beats `base.css` by design (it sits in `@layer brief`), so a pasted `figure { background:
+var(--surface-1) }` from an older brief silently replaces the glass with a flat box.
 
 ```html
 <figure>
@@ -68,9 +61,25 @@ drawn at the true pixel width beside a column of prose — is the one that catch
 says the wrong thing" before code exists.
 
 SVG rules that keep them legible: `viewBox` and no fixed `width`/`height`, `role="img"` with
-an `aria-label`, `font-family="ui-monospace, monospace"` at 10–12px, one `<marker>` in `defs`
-for arrowheads, and hex colours matching the brief's tokens (SVG cannot read `var()` from a
-stylesheet reliably enough to trust).
+an `aria-label`, `font-family="ui-monospace, monospace"` at 10–12px, and one `<marker>` in
+`defs` for arrowheads.
+
+**Colour a drawing with classes, so it wears the brief's theme.** Every brief now takes its
+ground and ink from a random Omarchy theme (see *The look* in `SKILL.md`), so a box
+hard-coded `#1a1a19` is a neutral grey slab on a tokyo-night blue or a quattrocento brown. A
+presentation attribute (`fill="var(--bg2)"`) cannot read `var()`; a CSS class or a `style`
+attribute can, and `base.css` ships a small set:
+
+| Class | On a shape | On `text` |
+|---|---|---|
+| `.box` | panel fill, hairline stroke | — |
+| `.wire` | a connector line, muted | — |
+| `.ink`, `.ink2`, `.ink-acc` | — | bright ink, muted ink, the theme's accent |
+| `.crit` `.fail` `.ready` `.struct` `.mine` `.unk` | the meaning's colour as stroke over a tinted fill; `.unk` is dashed | the meaning's colour |
+
+Gradients take `style="stop-color: var(--acc)"`. Hex is still fine for the six meanings below,
+because those colours do not change with the theme. The 2026-09-25 brief
+`~/Work/reports/2026-09-25-briefs-in-glass.html` draws its figure 1 this way.
 
 ## The repertoire
 
@@ -142,16 +151,17 @@ where the change touches other systems.
 
 ## Colour carries the same meaning as the prose
 
-Bind it once and never re-bind it inside a picture:
+Bind it once and never re-bind it inside a picture. These are fixed across every theme; the
+wallpaper changes the ground and the ink, never what red means.
 
-| Token | Means | Hex for SVG |
-|---|---|---|
-| `--critical` | a decision is waiting, or a claim is contradicted | `#d03b3b` |
-| `--serious` | something failed | `#ec835a` |
-| `--s3` | ready, or the recommended path | `#199e70` |
-| `--s1` | structure and identity | `#3987e5` |
-| `--s4` / `--warning` | **mine — argue with it**: an amendment, an estimate, an unbuilt assumption | `#c98500` / `#f5c95f` |
-| `--text-muted` | unknown, unreadable, unavailable | `#8b8a80` |
+| Token | Means | SVG class | Hex for SVG |
+|---|---|---|---|
+| `--critical` | a decision is waiting, or a claim is contradicted | `.crit` | `#d03b3b` |
+| `--serious` | something failed | `.fail` | `#ec835a` |
+| `--s3` | ready, or the recommended path | `.ready` | `#199e70` |
+| `--s1` | structure and identity | `.struct` | `#3987e5` |
+| `--s4` / `--warning` | **mine — argue with it**: an amendment, an estimate, an unbuilt assumption | `.mine` | `#c98500` / `#f5c95f` |
+| `--dim` | unknown, unreadable, unavailable | `.unk` | `#8b8a80` (the theme's own muted ink, if you use the class) |
 
 The amber column is the one that makes a brief honest. When a picture carries your additions
 on top of someone else's design, put a legend line inside the picture saying so —
