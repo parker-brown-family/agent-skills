@@ -35,7 +35,12 @@ has never seen those words, which puts it where the reader is: a term the
 brief never explained in plain language is a term it cannot use.
 
 Before Step 1, the writer reads the whole learning brief, then its story beats
-or its loop, and finds the finding in them. When the brief is missing a fact
+or its loop, and **settles the meaning with Parker**. The meaning comes from
+his words: his dictation, or the beats labelled [Parker]. Every beat labelled
+[agent], and every beat left blank, becomes a short plain question to him, a few
+at a time, and drafting waits for his answers. Reflect his answers back in his
+own words. Offer framings only if he asks for options. Then find the finding in
+what he said. When the brief is missing a fact
 the piece needs, ask for it: from the field agent if its pane is still open,
 otherwise from Parker. Never invent it (invariant 5).
 

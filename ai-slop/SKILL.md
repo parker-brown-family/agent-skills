@@ -1,6 +1,6 @@
 ---
 name: ai-slop
-description: Record a sentence Parker has flagged as AI-sounding into the machine-global slop ledger, inferring the reason from his own words, so it stops coming back. FIRES ON HIS PHRASING, NOT A COMMAND — invoke whenever he quotes text and objects to it, however he says it: "ai-slop", "AI slop:", "/ai-slop", "this is slop", "AI-ism", "adds nothing", "literally adds nothing", "says nothing", "nobody talks like that", "why is this here", "cut this", "this is nonsense", "hammering the same thing", or a quoted line followed by any complaint. He often flags several at once in one message; each is its own entry. Also the mandatory pre-draft read for any user-facing prose — the ledger holds the flags his own eye has caught, which the generic anti-AI-writing skills do not carry and will pass.
+description: Record a sentence Parker has flagged as AI-sounding into the machine-global slop ledger, inferring the reason from his own words, so it stops coming back. FIRES ON HIS PHRASING, NOT A COMMAND — invoke whenever he quotes text and objects to it, however he says it: "ai-slop", "AI slop:", "/ai-slop", "this is slop", "AI-ism", "adds nothing", "literally adds nothing", "says nothing", "nobody talks like that", "why is this here", "cut this", "this is nonsense", "hammering the same thing", or a quoted line followed by any complaint. He often flags several at once in one message; each is its own entry. ALSO FIRES ON PRAISE: when he points at a sentence, figure or piece and praises it ("THIS IS EXACTLY IT", "award winning", "love this", "keep this", "one of the best … I have read"), record it in the keepers file the same way. Also the mandatory pre-draft read for any user-facing prose — the ledger holds the flags his own eye has caught, which the generic anti-AI-writing skills do not carry and will pass.
 license: MIT
 ---
 
@@ -72,7 +72,14 @@ one you would infer.
    reader lose by passing through this sentence? Almost always the answer is
    *nothing was added*, and the useful part is saying what the sentence was
    pretending to add.
-4. **Say what to do instead**, concretely enough to act on at 2am.
+4. **Say what to do instead**, concretely enough to act on at 2am. **If he
+   rewrote it, his rewrite is the entry's most valuable line**: record it
+   verbatim as `- **His rewrite:**`. If he gave none, write yours as
+   `- **Instead (unconfirmed):**` so nobody later mistakes it for his, and ask
+   him for his version when the moment allows. Spotting a bad sentence is the
+   easy part; the editing study behind the 2026-09-28 writing sweep (CHI 2025)
+   found the rewrite is where AI-assisted prose succeeds or fails, and his
+   rewrites are the only corrections this system has that he confirmed.
 5. **Write a regex only if it can be honest.** A pattern that fires on
    legitimate prose is worse than no pattern: it gets disabled, and then nothing
    is enforced. Test it against the specimen *and* against a paragraph of
@@ -84,6 +91,15 @@ one you would infer.
 
 Ask Parker for the *why* if it is not obvious. His reason is usually sharper
 than the one you would infer, and the reason is the part that transfers.
+
+## Keepers — what he praised
+
+The ledger alone records only what he disliked, and a system that learns only
+from flags learns what to avoid and never what to aim at. So praise is captured
+with the same speed as a flag, into `~/.claude/writing/keepers.md`: the exact
+text (or the file and element it was on), his words verbatim, what the thing did
+that landed, and the date and place. Same rules as a flag: quote, never
+paraphrase; one entry per thing he praised; his words are the reason.
 
 ## Prevent — the read
 
