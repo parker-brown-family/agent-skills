@@ -1,6 +1,6 @@
 ---
 name: article
-description: Write a publishable article for a Brown Family Sports property or a client — one finding told in several registers (tl;dr / ELI5 / technical, or beginner / intermediate / advanced), in the house page structure, with the narrative pass and the anti-slop pass already run. Use when asked to write, restructure, or review an article, guide, build log, investigation or explainer for a site; when converting an existing post to the multi-register format; or when onboarding a new property or client to the article system. NOT for a decision that ends in a ticket — that is decision-brief.
+description: Write a publishable article for a Brown Family Sports property or a client — one finding told in several registers (tl;dr / ELI5 / technical, or beginner / intermediate / advanced), in the house page structure, with the narrative pass and the anti-slop pass already run. Use when asked to write, restructure, or review an article, guide, build log, investigation or explainer for a site; when converting an existing post to the multi-register format; or when onboarding a new property or client to the article system. Runs in the writers-block repo, from a learning brief: an agent that just did the work does NOT draft the piece, it hands off with `learning-brief` instead. NOT for a decision that ends in a ticket — that is decision-brief.
 license: MIT
 ---
 
@@ -17,10 +17,27 @@ or `avoid-ai-writing`; it sequences them and supplies the container they were
 missing.
 
 ```
-finding → profile → ai-slop → SHAPE once → cast per register → slop pass → gate
-          (property) (read it) (storytelling) (hook + flesh each)  (avoid-ai-writing
-                                                                    + ai-slop again)
+learning brief → finding → profile → ai-slop → SHAPE once → cast per register → slop pass → gate
+(inbox/)                     (property) (read it) (storytelling) (hook + flesh each)  (avoid-ai-writing
+                                                                                      + ai-slop again)
 ```
+
+## Who runs this, and where
+
+**The writer, in `~/Work/writers-block`, working from a learning brief in
+`inbox/`.** Not the agent that did the work.
+
+If you are that agent — you ran the investigation, built the thing, sat
+through the session — stop here and run `learning-brief`. Your context is full
+of the run's own words, and that is what produced the Trap Sets glossary opener
+and the Frozen Questions confession (both in `style/ai-slop.md`). The writer
+has never seen those words, which puts it where the reader is: a term the
+brief never explained in plain language is a term it cannot use.
+
+Before Step 1, the writer reads the whole learning brief, then its story beats
+or its loop, and finds the finding in them. When the brief is missing a fact
+the piece needs, ask for it: from the field agent if its pane is still open,
+otherwise from Parker. Never invent it (invariant 5).
 
 **Neither `storytelling` nor `ai-slop` is optional, and both fail silently.**
 On 2026-09-04 an article shipped whose landing register Parker called *"just
