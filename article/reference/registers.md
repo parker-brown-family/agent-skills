@@ -32,7 +32,7 @@ sophistication. Default register: **tl;dr** — the reader lands on the hook.
 | **Length** | 120–200 words | 500–900 words | no cap |
 | **Job** | Deliver the finding. Earn the click to the others. | Make a stranger care, and hand them the vocabulary without them noticing. | Let a peer check the work and attack it. |
 | **Voice** | Compressed narrative. No preamble. | One governing metaphor, held to the end. Concrete nouns. | Plain and exact. Numbers over adjectives. |
-| **Opens with** | The situation, in one or two sentences | A scene | The problem, stated as a problem |
+| **Opens with** | The situation, in one or two sentences | The thing itself in plain words, or a real scene. Never a staged metaphor | The problem, stated as a problem |
 | **Allowed** | One figure at most. Links out. | Figures, drawings, scenes. Real terms in parentheses, once each. | Tables, code, equations, citations, stat strips, comparison cards. |
 | **Banned** | Citations, tables, subheadings, throat-clearing. | Citations, tables, equations, jargon before its plain-language version. | Nothing — but every number carries a source. |
 | **Ends with** | An invitation naming what the other registers *add* — never where the answer is. | The reader holding the real terms. | What would falsify it. |
@@ -63,6 +63,22 @@ Scene, then complication, then the turn, then what it means. No citations: a
 superscript breaks the spell, and the article-level sources list already covers
 it. When a real term has to appear, it arrives in parentheses after the plain
 version, once, and is never explained twice.
+
+**"Held to the last" means woven through, not staged up front.** A scene is
+something that happened. A metaphor is a way of seeing the real thing, and it
+arrives a clause at a time alongside the example and the explanation. It never
+gets its own opening paragraphs for the reader to decode before they know what
+the piece is about. Define the terms, then tell the story. Parker, 2026-09-25,
+on an ELI5 that opened with two paragraphs about an exam marked with the wrong
+key, explained them, and then said *"We did this to ourselves"*: *"premise -
+explain - self-deprecate is really awful.... should be more like: define terms,
+DELICATELY bandy the example and explanation and metaphor together .. DON'T slap
+our own face! --- the segue is more like JUST TELL THE STORY."*
+
+**The turn is an event, never a confession.** Say what happened and what changed.
+No verdict on the writer, no size of the mistake, no excuse for it, no moral
+about how good the lesson was. The story carries the weight, and a writer who
+comments on it is asking the reader to feel something the story didn't earn.
 
 The test: a reader who finishes the ELI5 can use the real vocabulary in a
 sentence, and can't point to where they learned it.

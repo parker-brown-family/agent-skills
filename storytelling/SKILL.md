@@ -140,6 +140,7 @@ A coaching story that ends in a feeling has failed. End on the session.
 
 ## Where this lives
 
-Canonical: `~/BROWN-FAMILY-SPORTS/Software/agent-skills/storytelling/`, published
-in the public `agent-skills` repo. `~/.claude/skills/storytelling` is a symlink to
-it — one file, every agent. Never edit a copy.
+Canonical: `~/Work/writers-block/skills/storytelling/`, in the private
+`writers-block` repo since 2026-09-28 (history carried over from `agent-skills`).
+`~/.claude/skills/storytelling` is a symlink to it — one file, every agent. Never
+edit a copy.

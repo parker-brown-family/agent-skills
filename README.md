@@ -23,6 +23,15 @@ A skill is a SKILL.md file: YAML frontmatter (name, triggers, tools) followed by
 | [decision-brief](./decision-brief/SKILL.md) | decision-brief, audit, review, intake assessment, findings report | Produce a single self-contained HTML brief the reader annotates in the browser; notes anchor to elements and export as a token-cheap map the agent reads back |
 | [storytelling](./storytelling/SKILL.md) | storytelling, tell this as a story, make this land, write the narration, caption this clip | Run HOOK/SHAPE/FLESH/JUDGE/LAND as a coaching loop over anything that has to land on an audience; includes narration mode for word-by-word video captions |
 | [udev-rule-deploy](./udev-rule-deploy/SKILL.md) | udev, udev-rule, deploy rules, udevadm, cloud udev | Deploy a udev rules file to a Linux host and reload the device subsystem without rebooting |
+| [ai-slop](./ai-slop/SKILL.md) | ai-slop, this is slop, adds nothing, nobody talks like that, a quoted line plus a complaint | Record a sentence the operator flagged as AI-sounding into a personal slop ledger, in their words, with a regex where an honest one exists |
+| [viral-circular-lymric](./viral-circular-lymric/SKILL.md) | make it lymric, circular lyric, make it loop like a poem | Write a looping short's narration as rhymed verse whose last card feeds its first, closing on grammar, rhyme and meaning at once |
+
+## The writing craft is published from a private repository
+
+`ai-slop`, `article`, `storytelling` and `viral-circular-lymric` are edited in
+the private `writers-block` repository and mirrored here by its
+`tools/publish-skills.sh`, one pull request per publish. Edit them there: a
+change made in this repository is overwritten by the next publish.
 
 ## Property profiles stay out of this repo
 
