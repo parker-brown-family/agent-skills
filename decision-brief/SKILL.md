@@ -12,7 +12,7 @@ Everything below serves that.
 **The loop this skill exists for:**
 
 ```
-you write the brief  →  Parker annotates it in the browser  →  💾 save into file
+you write the brief  →  Parker submits a comment in Terminal Delight  →  original HTML saved
                      →  "read my notes in <file>"           →  you act on the notes
 ```
 
@@ -42,7 +42,7 @@ emailed as one file, so no external `src`.
 | Output | What it does | Why |
 |---|---|---|
 | **copy map** | `[anchor] Title` + notes, in document order | ~1% of the tokens of the full document, and still tethered to the passage |
-| **save into file** | downloads the HTML with notes in JSON islands **and** a plain-text comment | localStorage is invisible to an agent; this is what makes the loop work |
+| **submit comment in Terminal Delight** | overwrites the original HTML with notes in JSON islands **and** a plain-text comment | closing and reopening keeps the submitted comments |
 | localStorage | live persistence between reloads | |
 
 Every decision in the grill also gets a **concur** space on its right, added by `notes.js`
@@ -50,14 +50,25 @@ with no markup from you. Concur is the answer most decisions get and the quickes
 Parker to say the work was good, so it costs one click: the space shows a grey `?`, throbs
 light grey on hover, and takes a green rubber stamp that peels off on a second click. A
 concur rides in the map as `[<anchor>] <question>  ✓ concur` and is baked into
-`#report-concurs` by save-into-file, so "read my notes" carries agreement as well as
+`#report-concurs` automatically in Terminal Delight, so "read my notes" carries agreement as well as
 objection. Read a decision with a concur and no note as *approved as recommended*.
 
 Never ship a brief without it.
 
+#### Persistence
+
+Submitting a comment (button or Ctrl+Enter), deleting a comment, and stamping or peeling
+CONCUR save the original HTML immediately in Terminal Delight. Never add a Save button
+or download a renamed copy. **Send to Agent only sends the map**; it does not save.
+A failed write must remain visible and must not claim that the comment is on disk.
+
+The standalone browser script keeps edits in localStorage. A browser cannot silently
+overwrite its source HTML; open the file in Terminal Delight for the in-place guarantee.
+Its toolbar says that rather than claiming the file was saved.
+
 #### The notes format
 
-Terminal Delight edits a brief's notes in place, so what 💾 save into file writes is a
+Terminal Delight saves each submitted annotation into the original HTML. The writer follows a
 format another program follows byte for byte. Format 1:
 
 - **Two islands.** `#report-notes` holds `{ anchor: [{text, title, ts}] }`,
@@ -227,7 +238,8 @@ nothing about *which* 52, and two briefs shipped with grills nobody could commen
 check passed. The grill row is the one to read first: a section asking for a decision that cannot
 carry a note has failed at the only job the document has.
 
-Then add a note **on a grill item**, export the map, and confirm the anchors are readable. A map
+Then submit a comment **on a grill item** in Terminal Delight, close and reopen the original
+file, and confirm the comment survives without sending. Export the map and confirm its anchors are readable. A map
 full of `finding-one-standing-rule-is-wrong-but-the-stack-aro` is a broken map.
 
 Serve it over `http://127.0.0.1:<port>` rather than `file://` — browser automation refuses
