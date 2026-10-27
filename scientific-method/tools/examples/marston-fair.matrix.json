@@ -1,0 +1,29 @@
+{
+ "_about": "A fictional case, the Marston County Fair shooting of 2023, used so that no answer can come from what anyone knows of a real event. Levels: 0 predicted, 1 comfortable, 2 strained, 3 contradicted.",
+ "hypotheses": {
+  "h1": "One man fired from the grain loft, acting alone (the charged account)",
+  "h2": "One man fired from the loft, and the sheriff's office is hiding how it missed him",
+  "h3": "A second shooter fired from the beer tent",
+  "h4": "The shooting was staged by a state agency and the man in the loft was a patsy"
+ },
+ "rows": [
+  {"id": "E01", "statement": "The cartridge case found in the loft was fired in the rifle found beside it.",
+   "standing": "established", "levels": {"h1": 0, "h2": 0, "h3": 1, "h4": 2}},
+  {"id": "E02", "statement": "The accused's DNA is on the rifle's trigger and on the fired case.",
+   "standing": "established", "levels": {"h1": 0, "h2": 0, "h3": 1, "h4": 2}},
+  {"id": "E03", "statement": "Fairground video shows the accused climbing to the loft eleven minutes before the shot.",
+   "standing": "established", "levels": {"h1": 0, "h2": 0, "h3": 1, "h4": 2}},
+  {"id": "E04", "statement": "Audio analysis by two independent labs finds one firing position.",
+   "standing": "reported", "levels": {"h1": 0, "h2": 0, "h3": 3, "h4": 1}},
+  {"id": "E05", "statement": "A drone was photographed over the fairground forty minutes before the shot.",
+   "standing": "reported", "levels": {"h1": 1, "h2": 1, "h3": 1, "h4": 1}},
+  {"id": "E06", "statement": "The sheriff's office has not released the gate camera footage.",
+   "standing": "established", "levels": {"h1": 1, "h2": 0, "h3": 1, "h4": 1}},
+  {"id": "E07", "statement": "An investigator has said the fired case was planted after the shooting.",
+   "standing": "claimed", "relays_claim": true, "levels": {"h1": 3, "h2": 2, "h3": 1, "h4": 0}},
+  {"id": "E08", "statement": "A deputy's report says the loft door was found padlocked from outside.",
+   "standing": "disputed", "levels": {"h1": 2, "h2": 2, "h3": 1, "h4": 1}},
+  {"id": "E09", "statement": "The medical examiner's report has not been made public.",
+   "standing": "established", "levels": {"h1": 1, "h2": 1, "h3": 1, "h4": null}}
+ ]
+}
