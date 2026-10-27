@@ -41,6 +41,21 @@ const trunc = (s) => JSON.stringify(s).slice(0, 300);
 const TESTS = [];
 const test = (name, wrong, fn) => TESTS.push({ name, wrong, fn });
 
+test('current markup has no Save button and submitting never downloads a copy',
+  'manual Save allowed comments to disappear when the original document closed',
+  async (b, expect) => {
+    const f = file(buildBrief(REL));
+    const p = await openPage(b, f.url);
+    let downloads = 0;
+    p.page.on('download', () => downloads++);
+    expect(await p.page.locator('#btn-embed, [data-note-action="embed"]').count() === 0, 'no Save button');
+    await applyEdits(p.page, [add(A.finding, 'Keep after reopening.', '2026-10-27 10:00')]);
+    await p.page.reload({ waitUntil: 'load' });
+    expect((await copyMap(p.page)).includes('Keep after reopening.'), 'browser reload retains the submitted comment');
+    expect(downloads === 0, 'no duplicate file download');
+    await p.ctx.close();
+  });
+
 // ---------------------------------------------------------------------------------------
 test('the ordinary path: add and delete notes, concur and peel, reload, copy map, save into file, reopen',
   '250188f saves no revision, so its islands differ from the reference writer\'s',
