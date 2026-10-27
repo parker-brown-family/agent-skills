@@ -1,6 +1,6 @@
 ---
 name: decision-brief
-description: Produce a single self-contained HTML brief that Parker annotates in the browser and then prompts back from — an audit, a review, a technology-intake assessment, a findings write-up, any analysis whose point is that a decision gets made. The brief is drawn: hand-built mockups and SVG diagrams carry it and the prose captions them. Reader notes are anchored to elements and export as a token-cheap map, so "read my notes in <file>" replaces pasting the document. Use when asked for an audit, an intake assessment, a review, an analysis, a findings report, a comparison of options, a visual or illustrated write-up, or when Parker says "/decision-brief". NOT for planning docs that end in tickets — that is /tps-report.
+description: "Produce a single self-contained HTML brief that Parker annotates in the browser and then prompts back from — an audit, a review, a technology-intake assessment, a findings write-up, any analysis whose point is that a decision gets made. The brief is drawn: hand-built mockups and SVG diagrams carry it and the prose captions them. Reader notes are anchored to elements and export as a token-cheap map, so \"read my notes in the file\" replaces pasting the document. Use when asked for an audit, an intake assessment, a review, an analysis, a findings report, a comparison of options, a visual or illustrated write-up, or when Parker says \"/decision-brief\". NOT for planning docs that end in tickets — that is /tps-report."
 license: MIT
 ---
 
