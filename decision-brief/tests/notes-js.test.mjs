@@ -56,6 +56,33 @@ test('current markup has no Save button and submitting never downloads a copy',
     await p.ctx.close();
   });
 
+test('a question inside an ask card gets one note button and one concur space',
+  'the default selector matched both .ask and its child .q, drawing two concurrence controls for one question',
+  async (b, expect) => {
+    const html = buildBrief(REL)
+      .replace('<div class="ask"><h3>Stamp a revision on the island?</h3>',
+        '<div class="ask"><p class="q">Stamp a revision on the island?</p>')
+      .replace('</section>\n</main>',
+        '<p class="q">A question without an ask card?</p>\n</section>\n</main>');
+    const f = file(html);
+    const p = await openPage(b, f.url);
+    const counts = await p.page.evaluate(() => ({
+      cards: document.querySelectorAll('.grill .ask').length,
+      nestedNotes: document.querySelectorAll('.grill .ask .q.notable').length,
+      cardNotes: document.querySelectorAll('.grill .ask > .note-btn').length,
+      cardConcurs: document.querySelectorAll('.grill .ask > .concur-zone').length,
+      nestedConcurs: document.querySelectorAll('.grill .ask .q > .concur-zone').length,
+      standaloneNotes: document.querySelectorAll('.grill > .q > .note-btn').length,
+      standaloneConcurs: document.querySelectorAll('.grill > .q > .concur-zone').length,
+    }));
+    expect(JSON.stringify(counts) === JSON.stringify({
+      cards: 2, nestedNotes: 0, cardNotes: 2, cardConcurs: 2,
+      nestedConcurs: 0, standaloneNotes: 1, standaloneConcurs: 1,
+    }), 'each decision is tagged once, while a standalone .q still works', trunc(counts));
+    expect(!p.errors.length, 'no page errors', p.errors.join(' | '));
+    await p.ctx.close();
+  });
+
 // ---------------------------------------------------------------------------------------
 test('the ordinary path: add and delete notes, concur and peel, reload, copy map, save into file, reopen',
   '250188f saves no revision, so its islands differ from the reference writer\'s',
