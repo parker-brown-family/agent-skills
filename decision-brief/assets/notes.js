@@ -75,6 +75,16 @@
     ['dialog .dlg-body > h4', 'sub']
   ];
 
+  /* SECTION HEADINGS ARE ALWAYS ON, whether or not the brief overrides the list.
+     A note on an h2 is a note on that whole part of the page. Parker, 2026-10-29:
+     "i like being able to comment SECTION headings". He was seeing a heading
+     that looked commentable in Terminal Delight's document square, but the
+     button there belonged to a hidden row in a closed drawer, and his note
+     landed on that row. Appended after a wholesale NOTES_TARGETS as well,
+     because every brief that overrides the list (the retell storyboard did)
+     would otherwise lose them. */
+  if (!TARGETS.some(function (p) { return p[0] === 'h2'; })) TARGETS = TARGETS.concat([['h2', 'sec']]);
+
   var FORMAT = '1';
   /* Concurs: { anchor: 'YYYY-MM-DD HH:MM' }, under their own key and island. */
   var CKEY = 'concurs:' + FILE;
