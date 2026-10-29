@@ -20,8 +20,12 @@
   nav.setAttribute('aria-label', 'Sections');
   var used = {};
   heads.forEach(function (h) {
+    var n = h.querySelector('.n');
     if (!h.id) {
-      var base = (h.textContent || 'part').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 48) || 'part';
+      /* "part-07-decide", never "07decide": the number and the words are kept
+         apart, and an id that starts with a digit cannot be named as #07decide. */
+      var text = (n ? n.textContent + ' ' : '') + (h.textContent || '').replace(n ? n.textContent : '', '');
+      var base = 'part-' + (text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 44) || 'x');
       var id = base, i = 2;
       while (used[id] || document.getElementById(id)) id = base + '-' + i++;
       h.id = id;
@@ -29,7 +33,6 @@
     used[h.id] = true;
     var a = document.createElement('a');
     a.href = '#' + h.id;
-    var n = h.querySelector('.n');
     if (n) { var s = document.createElement('span'); s.className = 'n'; s.textContent = n.textContent.trim(); a.appendChild(s); }
     var words = (h.textContent || '').replace(n ? n.textContent : '', '').trim();
     a.appendChild(document.createTextNode(words.length > 40 ? words.slice(0, 38) + '…' : words));

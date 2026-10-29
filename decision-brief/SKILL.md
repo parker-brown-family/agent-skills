@@ -227,7 +227,7 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
   [!!s.getAttribute('viewBox'), !s.getAttribute('width'), !!s.getAttribute('aria-label')])
 // notes COVERAGE — never a bare count. [selector, present, tagged]; present > tagged is a defect
 // (tbody, not tr: notes.js skips header rows on purpose, and a check that cries wolf gets ignored)
-['.grill .ask, .grill .q, .grill-q', 'figure', '.card', '.finding', '.tile',
+['.grill .ask, .grill .q, .grill-q', 'h2', 'figure', '.card', '.finding', '.tile',
  '.esc-list li', 'table.wide tbody tr', '.callout'].map(s => [s,
   document.querySelectorAll(s).length,
   [...document.querySelectorAll(s)].filter(e => e.classList.contains('notable')).length])
@@ -235,6 +235,11 @@ document.documentElement.scrollWidth > document.documentElement.clientWidth
 // quietly wearing the fallback glow
 getComputedStyle(document.documentElement).getPropertyValue('--wall-label')
 ```
+
+Section headings (`h2`) are always commentable: `notes.js` adds them even when a brief
+overrides `NOTES_TARGETS`. Rows inside a closed `<details>` are tagged too, but Terminal
+Delight's document square draws no button for them until the drawer is open, so never put
+the only copy of something the reader must comment on inside a closed drawer.
 
 **A count is not coverage.** `document.querySelectorAll('.notable').length` returning 52 says
 nothing about *which* 52, and two briefs shipped with grills nobody could comment on while that
