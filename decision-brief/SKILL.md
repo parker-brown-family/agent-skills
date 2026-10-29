@@ -193,10 +193,13 @@ Four blocks go in `<head>`, in this order:
 **Use what `base.css` styles instead of restyling it.** The masthead (`header.top`,
 `.eyebrow`, `h1`, `.lede`, `.stamps`), `h2` with a `.n` number, `h2.sec`, `.esc-list`,
 `.tiles`, `.cards` with one `.card.rec`, `.finding`, `.grill .ask` with `.rec`, `figure`,
-`.pair` with `.facts`, `pre`, `table`, `.callout`, `.tag`, `.linkbtn` and `dialog` are all
-done. `base.css` sits in `@layer brief`, so the brief's own CSS always wins, and a component
+`.pair` with `.facts`, `pre`, `table`, `.callout`, `.tag`, `.linkbtn`, `dialog`, the gel buttons
+(`.gel`, `.gels`, and the `nav.sections` rail), `section.pane` and `video` are all done. `base.css` sits in `@layer brief`, so the brief's own CSS always wins, and a component
 restyled from an older brief (`background: var(--surface-1)`) replaces its glass with a flat
 box. Build what the material needs beyond that list.
+
+The same look dresses every other HTML page an agent makes, through `fancy-pants-brief`,
+whose `fancy-pants check` is the gate a brief should pass too.
 
 **`.glass` is the milky, lit card**: bright glass with dark ink, the element the reader must
 not miss. Put the headline verdict in it, and use one or two per page at most.
