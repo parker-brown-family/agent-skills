@@ -18,6 +18,7 @@ A skill is a SKILL.md file: YAML frontmatter (name, triggers, tools) followed by
 
 | Skill | Triggers | Description |
 |---|---|---|
+| [briefing](./briefing/SKILL.md) | /briefing, new briefing pattern, engineering brief, Markdown brief | Opt-in briefs with independent medium and purpose, linked evidence depth, and feedback on stable passages. HTML and Markdown work now; MP4 is earmarked for later. Existing briefing skills retain their current behavior |
 | [article](./article/SKILL.md) | article, write an article, guide, build log, investigation, explainer, convert to registers | Write one finding in several registers — tl;dr / ELI5 / technical, or beginner / intermediate / advanced — in the house page structure, sequencing `storytelling` for narrative and `avoid-ai-writing` for delivery |
 | [code-taste](./code-taste/SKILL.md) | code-taste, audit, anti-patterns | Scan a codebase for five structural anti-patterns, rank by risk, open one ticket per finding |
 | [decision-brief](./decision-brief/SKILL.md) | decision-brief, audit, review, intake assessment, findings report | Produce a single self-contained HTML brief the reader annotates in the browser; notes anchor to elements and export as a token-cheap map the agent reads back. In [Terminal Delight](https://docs.terminal-delight.brownfamilysports.com/briefs), use its own [Workbench edition](https://github.com/parker-brown-family/terminal-delight/blob/main/app/skills/decision-brief/SKILL.md) instead: the brief opens inside the terminal and ↪ sends the notes back |
