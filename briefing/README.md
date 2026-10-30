@@ -28,9 +28,18 @@ python3 scripts/brief.py check /tmp/demo.html
 
 ## Install
 
-Put the skill where your agent discovers skills. For Claude Code that is `~/.claude/skills/briefing` (personal) or `.claude/skills/briefing` (one project). Other agents that read `SKILL.md` folders have their own directory, and an agent with no skill system can be pointed at `SKILL.md` directly.
+Briefing is open source under the MIT licence. HTML briefs also need two companion skills from the same repository, `decision-brief` and `fancy-pants-brief`, so install the three together. For Claude Code:
 
-For HTML, install `decision-brief` and `fancy-pants-brief` from this repository as well. `brief.py` finds them beside its own real location, so symlinks to a full clone work, and so does copying all three directories together. Copying `briefing` alone gives you everything except `html`, and `brief.py doctor` will say so.
+```bash
+git clone --depth 1 --filter=blob:none --sparse https://github.com/parker-brown-family/agent-skills.git ~/src/agent-skills
+git -C ~/src/agent-skills sparse-checkout set briefing decision-brief fancy-pants-brief
+mkdir -p ~/.claude/skills && ln -s ~/src/agent-skills/{briefing,decision-brief,fancy-pants-brief} ~/.claude/skills/
+python3 ~/.claude/skills/briefing/scripts/brief.py doctor
+```
+
+`git -C ~/src/agent-skills pull` updates it later. For another agent, link the same three folders into the directory where it discovers `SKILL.md` folders; an agent with no skill system can be pointed at `briefing/SKILL.md` directly. Without git, download `briefing-skills.tar.gz` from the [latest briefing release](https://github.com/parker-brown-family/agent-skills/releases?q=briefing) and unpack it into the skills directory.
+
+`brief.py` finds its companions beside its own real location, so symlinks to the clone work, and so does copying all three folders together. Copying `briefing` alone gives you everything except `html`, and `doctor` will say so.
 
 | Part | Needs |
 |---|---|
@@ -76,6 +85,10 @@ A comment whose passage was removed stays in the results, marked unresolved. A c
 The intended loop follows the same principle as the working media: pause on screen, remark on a moment or interval, resume playback, then return the map with the particular cut and an agent summary. A future target needs the cut identity, revision and an explicit time unit. Time zero is a valid position; an absent timestamp is unknown. A range cannot quietly become a point. A re-edit must keep old comments unresolved until their targets are reviewed. Spatial feedback on a frame may be added when a concrete use requires it.
 
 The current helper refuses MP4. The README earmark is the entire video scope of this version.
+
+## Licence
+
+MIT, in [LICENSE](LICENSE); `decision-brief` and `fancy-pants-brief` carry the same licence. Wallpapers are not part of it: a built page embeds one from an Omarchy theme on the builder's machine, under that theme's terms.
 
 ## Alongside the Other Brief Skills
 
