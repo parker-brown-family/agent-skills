@@ -1,6 +1,6 @@
 ---
 name: briefing
-description: "Create or revise a short, evidence-linked brief in HTML or Markdown, with feedback tied to specific sections, figures or passages. Choose the medium separately from the purpose: summary, engineering, decision, or a stated alternative. Use when the user asks for the new briefing pattern, /briefing, an engineering brief, a Markdown brief, or a brief with linked supporting evidence and an anchored comment map. HTML is the visual default; MP4 is a documented future medium only. This opt-in sibling leaves decision-brief and narrative-brief available under their existing names."
+description: "Create or revise a short, evidence-linked brief in HTML or Markdown, with feedback tied to specific sections, figures or passages. Select it from the task and recorded human preferences when a brief is useful; no explicit invocation or format interview is required. Choose the medium separately from the purpose: summary, engineering, decision, or a stated alternative. Also use for /briefing, engineering briefs, Markdown briefs, and briefs with linked evidence and anchored feedback. HTML is the visual default; MP4 is future only. Existing named briefing skills remain available."
 license: MIT
 ---
 
@@ -8,9 +8,15 @@ license: MIT
 
 A reader opens a brief to understand the work, question a passage, and continue with the agent. Keep the explanation short enough to read. Let supporting documents carry the depth.
 
-## Choose the Brief
+## Use the Context
 
-Before composing, establish these choices from the request and the material. Record them in a source comment or adjacent authoring note; show only the choices the reader needs. Ask when a missing answer would change the work.
+Select the brief as an internal agent judgment. Use the current request, then the most specific applicable project preferences in AGENTS.md or CLAUDE.md, then personal defaults, then the accepted status quo in that context. Use this skill's defaults where none of those settle the choice. Respect each host's instruction precedence and keep one canonical preference source where those files are aliases.
+
+Do not run the human through a format menu, intake checklist or approval step to use this skill. Infer the purpose, medium, reader, budget and evidence depth from the task and context, then produce the brief. Ask only when a material ambiguity cannot be settled from that context and would change the useful outcome. A simple answer or small correction may need only chat.
+
+Persistent human preferences and an established project's briefing conventions belong in the applicable canonical agent-instructions file. Update that file when the human establishes a lasting default; keep a one-off exception scoped to its task. Record status quo as what is currently used or supported, distinct from a desired future capability. Missing preferences are a reason to use judgment, not to start onboarding or create a new config file.
+
+The choices below guide the agent's reasoning. Note them unobtrusively in the source when useful; show only what helps the reader. Brief selection adds no workflow or permission gate. Any approval genuinely required by the underlying task remains separate.
 
 | Choice | Default or rule |
 |---|---|

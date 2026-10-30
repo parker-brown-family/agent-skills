@@ -1,8 +1,8 @@
 # Briefing
 
-An opt-in skill for short briefs with linked evidence and feedback on specific passages. It sits beside `decision-brief`; existing skill names and assets keep their current behavior.
+A skill for short briefs with linked evidence and feedback on specific passages. Agents select it from the task and recorded human preferences; you can also invoke `briefing` by name. It sits beside `decision-brief`; existing skill names and assets remain available.
 
-Choose a medium and a purpose independently:
+The agent chooses the medium and purpose independently, without requiring you to choose from this table:
 
 | Medium | Summary | Engineering | Decision |
 |---|---|---|---|
@@ -11,6 +11,14 @@ Choose a medium and a purpose independently:
 | MP4 | Future | Future | Future |
 
 Start with [SKILL.md](SKILL.md). Open the [HTML engineering example](examples/engineering.html) or its [Markdown counterpart](examples/engineering.md). They explain the same feedback mechanism; neither is a finding about an unrelated project.
+
+## Defaults
+
+Brief selection is the agent's judgment, using the current request, the most specific applicable project preferences in AGENTS.md or CLAUDE.md, personal defaults, and the accepted status quo in that context. HTML is the visual fallback; Markdown fits requested text briefs and established documentation contexts. The agent infers whether the task calls for a summary, an engineering explanation or a decision. A simple answer can stay in chat.
+
+There is no routine intake, format menu or approval step. The agent asks only when the available context cannot settle a material ambiguity. You can override a choice at any time.
+
+Lasting preferences belong in the applicable canonical agent-instructions file, along with the current conventions or reader capabilities they depend on. Keep a one-off preference local to that task. Where AGENTS.md and CLAUDE.md are aliases, edit the canonical source once. Missing preferences use the task and these defaults; they do not trigger onboarding or require a separate configuration file.
 
 ## Evidence
 
@@ -58,6 +66,6 @@ The current helper refuses MP4. The README earmark is the entire video scope of 
 
 ## Adoption
 
-Invoke `briefing` by name to use this pattern. `decision-brief`, `narrative-brief` and `fancy-pants-brief` remain available. This version adds no changes to Terminal Delight or Markdown Delight and does not change their defaults.
+When the skill is available and the task benefits from a brief, the agent can select it directly. Explicit requests for `decision-brief`, `narrative-brief` or another established format still work. This skill changes no reader implementation. Machine or project agent instructions hold the human's defaults and current conventions.
 
 Install by linking this directory into the host's skill-discovery location. On Parker's machine, link it once into a discovery root, run `agent-parity --sync-skills`, then `agent-parity`. Keep the repository directory as the canonical source. Existing assets remain canonical in the sibling skills.
