@@ -2,7 +2,7 @@
 
 Write the same short explanation you would put on the HTML page. Use headings and plain paragraphs, with evidence behind links. A diagram is useful when the chosen reader can render it reliably; an HTML illustration is often the better medium when the picture is essential to understanding.
 
-Add one source identity comment:
+`scripts/brief.py new name.md --id STABLE-ID --purpose PURPOSE` writes the identity comment, two anchored sections and `TODO(brief)` where the writing goes; `check` refuses until every one is replaced. By hand, add one source identity comment:
 
 ```markdown
 <!-- briefing: {"id":"request-cache-summary","medium":"markdown","purpose":"summary"} -->

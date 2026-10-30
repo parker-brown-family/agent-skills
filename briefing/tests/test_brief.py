@@ -1,5 +1,8 @@
 import importlib.util
+from html.parser import HTMLParser
+import io
 import json
+import os
 from pathlib import Path
 import re
 import tempfile
@@ -14,12 +17,25 @@ SOURCE = '''<!doctype html><html><head><title>Fixture</title><!--BRIEF:head--></
 <main><h2 id="sec-result" data-brief-anchor="sec-result">Result</h2>
 <p>A comment stays attached to its passage.</p></main><!--/brief-content-->
 <!--BRIEF:notes--></body></html>'''
+# A wall shaped like brief-wall's: a labelled comment and an embedded image.
+WALL = ('<style id="brief-wall">\n/* brief-wall — theme kanagawa (dark), wallpaper test.png */\n'
+        ':root { --wall: url("data:image/webp;base64,' + 'QUJD' * 40 + '"); }\n</style>')
 MD = '''<!-- briefing: {"id":"example-md","medium":"markdown","purpose":"engineering"} -->
 # Example
 <a id="sec-result"></a>
 ## Result
 A comment stays attached to its passage.
 '''
+
+
+def wall_elements(text):
+    found = []
+    class Styles(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            if tag == 'style' and dict(attrs).get('id') == 'brief-wall':
+                found.append(tag)
+    Styles().feed(text)
+    return len(found)
 
 
 class BriefTests(unittest.TestCase):
@@ -33,7 +49,7 @@ class BriefTests(unittest.TestCase):
         self.markdown.write_text(MD)
         self.fake_wall = patch.object(brief.subprocess, 'run')
         process = self.fake_wall.start()
-        process.return_value.stdout = '<style id="brief-wall">/* test wall */</style>'
+        process.return_value.stdout = WALL
         self.addCleanup(self.fake_wall.stop)
 
     def build(self):
@@ -234,6 +250,209 @@ class BriefTests(unittest.TestCase):
                 with self.assertRaises(brief.Refusal):
                     self.build()
                 self.assertEqual(brief.read(self.out), damaged)
+
+    # ---- links the checker used to skip
+    def test_titled_image_reference_and_file_links_are_checked(self):
+        for link in ('[t](gone.md "a title")', '![chart](gone.png)', '[ref][r]\n\n[r]: gone.md', '[f](file:///nonexistent/gone.md)', '[a](<gone file.md>)'):
+            with self.subTest(link=link):
+                self.markdown.write_text(MD + '\n' + link + '\n')
+                with self.assertRaisesRegex(brief.Refusal, 'broken local link'):
+                    brief.check(self.markdown)
+        (self.root / 'proof.md').write_text('# Proof\n\nA paragraph. ^held\n')
+        url = (self.root / 'proof.md').as_uri()
+        self.markdown.write_text(MD + f'\n[t](proof.md "title") ![i](proof.md) [f]({url}#held) [s](#sec-result)\n')
+        self.assertEqual(brief.check(self.markdown)['links'], 4)
+
+    def test_code_examples_are_not_links_and_external_links_are_counted(self):
+        self.markdown.write_text(MD + '\n`[x](gone.md)`\n\n~~~\n[y](gone.md)\n~~~\n\n[web](https://example.com/a)\n')
+        result = brief.check(self.markdown)
+        self.assertEqual(result['links'], 1)
+        self.assertEqual(result['external_links_unchecked'], 1)
+        self.assertNotIn('edited_since_build', result)  # A Markdown brief has no build to compare.
+
+    # ---- build guards
+    def test_placeholder_inside_fingerprinted_region_refuses(self):
+        self.src.write_text(SOURCE.replace('<!--BRIEF:notes--></body>', '</body>').replace('<!--/brief-content-->', '<!--BRIEF:notes--><!--/brief-content-->'))
+        with self.assertRaisesRegex(brief.Refusal, 'outside the <!--brief-content--> region'):
+            self.build()
+        self.assertFalse(self.out.exists())
+
+    def test_hand_edit_to_the_page_refuses_until_discarded_explicitly(self):
+        self.annotate()
+        edited = brief.read(self.out).replace('>Result<', '>Result, fixed by hand<')
+        self.out.write_text(edited)
+        self.assertTrue(brief.check(self.out)['edited_since_build'])
+        with self.assertRaisesRegex(brief.Refusal, 'edited after its last build'):
+            self.build()
+        self.assertEqual(brief.read(self.out), edited)
+        result = brief.build(self.src, self.out, 'example-html', 'engineering', discard_edits=True)
+        self.assertEqual(Path(result['discarded_output_edits']).read_text(), edited)
+        # The reader commented on wording this rebuild discarded; their revision is now unknown.
+        self.assertIsNone(result['feedback_revision'])
+        self.assertEqual(brief.feedback(self.out)['comments'][0]['text'], 'Keep </script> and <!-- this exact text.')
+        self.assertFalse(brief.check(self.out)['edited_since_build'])
+
+    def test_an_unrelated_page_at_the_output_path_is_not_overwritten(self):
+        self.out.write_text('<html><body>Someone else\'s page</body></html>')
+        with self.assertRaisesRegex(brief.Refusal, 'was not built by this helper'):
+            self.build()
+        self.assertEqual(self.out.read_text(), '<html><body>Someone else\'s page</body></html>')
+
+    def test_missing_sibling_skills_refuse_and_name_the_markdown_route(self):
+        with patch.object(brief, 'KIT_FILES', [self.root / 'absent/base.css']):
+            with self.assertRaisesRegex(brief.Refusal, 'write the brief in Markdown'):
+                self.build()
+            report = brief.doctor()
+        self.assertFalse(report['html_build']['ready'])
+        self.assertIsNone(report['wallpaper']['ready'])  # Unknown, not false: nothing was looked at.
+        self.assertTrue(report['markdown']['ready'])
+
+    def test_wallpaper_failure_names_its_reason_and_no_wall_still_builds(self):
+        reason = 'brief-wall: no Omarchy themes with backgrounds found under /usr/share/omarchy/themes'
+        brief.subprocess.run.side_effect = brief.subprocess.CalledProcessError(1, 'brief-wall', stderr=reason + '\n')
+        with self.assertRaisesRegex(brief.Refusal, 'no Omarchy themes.*--no-wall'):
+            self.build()
+        result = brief.build(self.src, self.out, 'example-html', 'engineering', no_wall=True)
+        self.assertIsNone(result['wallpaper'])
+        self.assertEqual(wall_elements(brief.read(self.out)), 0)  # base.css only names the block in a comment
+        self.assertFalse(brief.check(self.out)['edited_since_build'])
+        brief.subprocess.run.side_effect = None
+        walled = self.root / 'walled.html'
+        brief.build(self.src, walled, 'example-html', 'engineering')
+        self.assertEqual(wall_elements(brief.read(walled)), 1)
+
+    # ---- scaffold
+    def test_html_scaffold_builds_and_check_refuses_until_written(self):
+        source = self.root / 'fresh.src.html'
+        created = brief.scaffold(source, 'fresh-brief', 'decision', 'A <fresh> brief')
+        self.assertIn('fresh.html', created['next'][0])
+        self.assertIn('what choice is mine', source.read_text())
+        output = self.root / 'fresh.html'
+        brief.build(source, output, 'fresh-brief', 'decision')
+        with self.assertRaisesRegex(brief.Refusal, 'unwritten scaffold passage'):
+            brief.check(output)
+        written = source.read_text().replace('TODO(brief)', 'Written')
+        source.write_text(written)
+        brief.build(source, output, 'fresh-brief', 'decision', discard_edits=False)
+        self.assertEqual(brief.check(output)['id'], 'fresh-brief')
+        self.assertIn('A &lt;fresh&gt; brief', brief.read(output))
+
+    def test_markdown_scaffold_checks_once_written_and_never_overwrites(self):
+        source = self.root / 'fresh.md'
+        brief.scaffold(source, 'fresh-md', 'summary')
+        with self.assertRaisesRegex(brief.Refusal, 'unwritten scaffold passage'):
+            brief.check(source)
+        source.write_text(source.read_text().replace('TODO(brief)', 'Written'))
+        self.assertEqual(brief.check(source)['anchors'], 2 + 3)  # two explicit anchors, three heading slugs
+        with self.assertRaisesRegex(brief.Refusal, 'never overwrites'):
+            brief.scaffold(source, 'fresh-md', 'summary')
+        with self.assertRaises(brief.Refusal):
+            brief.scaffold(self.root / 'fresh.txt', 'fresh-md', 'summary')
+
+    # ---- the HTML reader's Copy map, pasted back
+    def copy_text(self, revision, *, unknown=False, orphan=False):
+        lines = ['NOTES — example-html-' + revision[7:19], '1 notes on 1 elements · 1 concur.',
+                 'Each [anchor] is an element id in that file — search it to find the passage.', '',
+                 '[sec-result] Result  ✓ concur', '  · Explain the boundary. [Not an anchor]', '']
+        if unknown:
+            lines.append('REVISION UNKNOWN — review the prior brief before acting.')
+        if orphan:
+            lines += ['', '[sec-gone] UNRESOLVED — target missing', '  · Said about a removed passage', '  · Explicit agreement on the earlier target']
+        return '\n'.join(lines) + '\n'
+
+    def test_copy_map_text_resolves_against_the_page_it_came_from(self):
+        self.build()
+        revision = brief.inspect(self.out)[2]
+        pasted = self.root / 'pasted.txt'
+        pasted.write_text('Here are my notes:\n\n' + self.copy_text(revision))
+        data = brief.resolve(self.out, pasted)
+        self.assertEqual(data['source'], 'copy-map')
+        self.assertFalse(data['text_exact'])
+        self.assertIsNone(data['document']['revision'])  # only a prefix travels, and it is labelled as one
+        self.assertEqual(data['document']['revision_prefix'], revision[:19])
+        self.assertEqual([(c['stance'], c['text'], c['status']) for c in data['comments']],
+                         [('agree', '', 'resolved'), (None, 'Explain the boundary. [Not an anchor]', 'resolved')])
+
+    def test_copy_map_from_another_revision_or_with_orphans_needs_review(self):
+        self.build()
+        pasted = self.root / 'pasted.txt'
+        pasted.write_text(self.copy_text('sha256:' + '0' * 64))
+        self.assertTrue(all(c['reasons'] == ['revision_changed'] for c in brief.resolve(self.out, pasted)['comments']))
+        pasted.write_text(self.copy_text(brief.inspect(self.out)[2], unknown=True, orphan=True))
+        comments = brief.resolve(self.out, pasted)['comments']
+        self.assertEqual([c['target'] for c in comments], ['sec-result', 'sec-result', 'sec-gone', 'sec-gone'])
+        self.assertEqual(comments[2]['reasons'], ['revision_unknown', 'target_missing'])
+        self.assertEqual(comments[3]['stance'], 'agree')
+
+    def test_copy_map_arrives_on_stdin_and_nonsense_refuses(self):
+        self.build()
+        with patch.object(brief.sys, 'stdin', io.StringIO(self.copy_text(brief.inspect(self.out)[2]))):
+            self.assertEqual(brief.resolve(self.out, Path('-'))['comments'][1]['status'], 'resolved')
+        with patch.object(brief.sys, 'stdin', io.StringIO('looks good to me')):
+            with self.assertRaisesRegex(brief.Refusal, 'neither a format-1 JSON envelope nor Copy map text.*paste all of it'):
+                brief.resolve(self.out, Path('-'))
+
+
+    # ---- found by a clean-context agent following only the docs
+    def test_rebuild_keeps_the_real_wallpaper_not_base_css_naming_it(self):
+        self.build()
+        first = brief.wall_of(brief.read(self.out))
+        self.assertIn('base64,QUJD', first)
+        brief.subprocess.run.reset_mock()
+        result = self.build()
+        self.assertEqual(brief.wall_of(brief.read(self.out)), first)
+        self.assertEqual(result['wallpaper'], 'kanagawa · test.png')
+        self.assertEqual(brief.check(self.out)['wallpaper'], 'kanagawa · test.png')
+        brief.subprocess.run.assert_not_called()  # kept, not re-picked
+
+    def test_an_imageless_wall_left_by_the_old_bug_is_replaced(self):
+        self.build()
+        damaged = brief.read(self.out).replace(brief.wall_of(brief.read(self.out)), '<style id="brief-wall"> block that goes straight after this */ :root{}</style>')
+        self.out.write_text(damaged)
+        self.assertIsNone(brief.check(self.out)['wallpaper'])
+        self.build()
+        self.assertIn('base64,QUJD', brief.wall_of(brief.read(self.out)))
+
+    def test_a_built_page_is_readable_like_any_file(self):
+        self.build()
+        umask = os.umask(0)
+        os.umask(umask)
+        self.assertEqual(self.out.stat().st_mode & 0o777, 0o666 & ~umask)
+        os.chmod(self.out, 0o640)
+        self.build()
+        self.assertEqual(self.out.stat().st_mode & 0o777, 0o640)
+
+    def test_copy_map_survives_crlf_a_bom_and_a_chat_quote(self):
+        self.build()
+        text = self.copy_text(brief.inspect(self.out)[2])
+        pasted = self.root / 'pasted.txt'
+        for variant in ('\ufeff' + text.replace('\n', '\r\n'), ''.join('> ' + line + '\n' for line in text.splitlines())):
+            with self.subTest(variant=variant[:12]):
+                pasted.write_text(variant, newline='')
+                self.assertEqual([c['status'] for c in brief.resolve(self.out, pasted)['comments']], ['resolved', 'resolved'])
+
+    def test_check_lists_every_broken_link_at_once(self):
+        self.markdown.write_text(MD + '\n[a](one.md) [b](two.md) [c](#sec-gone)\n')
+        with self.assertRaises(brief.Refusal) as caught:
+            brief.check(self.markdown)
+        for part in ('one.md', 'two.md', '#sec-gone'):
+            self.assertIn(part, str(caught.exception))
+
+    def test_a_scaffolded_source_names_itself_so_rebuilds_need_no_flags(self):
+        source = self.root / 'named.src.html'
+        created = brief.scaffold(source, 'named-brief', 'summary')
+        self.assertNotIn('--id', created['next'][0])
+        output = self.root / 'named.html'
+        self.assertEqual(brief.build(source, output)['id'], 'named-brief')
+        with self.assertRaisesRegex(brief.Refusal, 'disagrees with the source'):
+            brief.build(source, output, 'other-brief')
+        with self.assertRaisesRegex(brief.Refusal, 'pass --id and --purpose'):
+            brief.build(self.src, self.root / 'unnamed.html')
+
+    def test_a_page_of_another_brief_names_its_id(self):
+        self.build()
+        with self.assertRaisesRegex(brief.Refusal, "belongs to the brief 'example-html'.*--id example-html"):
+            brief.build(self.src, self.out, 'another-brief', 'engineering')
 
 
 if __name__ == '__main__':

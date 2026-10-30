@@ -1,60 +1,73 @@
 # Briefing
 
-A skill for short briefs with linked evidence and feedback on specific passages. Agents select it from the task and recorded human preferences; you can also invoke `briefing` by name. It sits beside `decision-brief`; existing skill names and assets remain available.
+A skill that has an AI agent write up its work as a brief you can read in a few minutes and comment on passage by passage. Each claim links to its evidence. Your comments go back to the agent pinned to the section and the version you read, so it can tell "answer this" apart from "you were reading an older draft" and "that passage is gone".
 
-The agent chooses the medium and purpose independently, without requiring you to choose from this table:
+It writes HTML, drawn and commentable in any browser, or Markdown with a plain JSON file for comments. The agent picks the medium and the purpose (summary, engineering explanation, decision, or one you name) from what you asked and any preferences you've recorded. It doesn't interview you about formats.
 
-| Medium | Summary | Engineering | Decision |
-|---|---|---|---|
-| HTML | Visual account | Mechanism and validation | Options and recommendation |
-| Markdown | Short account | Explanation and evidence links | Choice and consequences |
-| MP4 | Future | Future | Future |
+## Try It
 
-Start with [SKILL.md](SKILL.md). Open the [HTML engineering example](examples/engineering.html) or its [Markdown counterpart](examples/engineering.md). They explain the same feedback mechanism; neither is a finding about an unrelated project.
-
-## Defaults
-
-Brief selection is the agent's judgment, using the current request, the most specific applicable project preferences in AGENTS.md or CLAUDE.md, personal defaults, and the accepted status quo in that context. HTML is the visual fallback; Markdown fits requested text briefs and established documentation contexts. The agent infers whether the task calls for a summary, an engineering explanation or a decision. A simple answer can stay in chat.
-
-There is no routine intake, format menu or approval step. The agent asks only when the available context cannot settle a material ambiguity. You can override a choice at any time.
-
-Lasting preferences belong in the applicable canonical agent-instructions file, along with the current conventions or reader capabilities they depend on. Keep a one-off preference local to that task. Where AGENTS.md and CLAUDE.md are aliases, edit the canonical source once. Missing preferences use the task and these defaults; they do not trigger onboarding or require a separate configuration file.
-
-## Evidence
-
-The main artifact stays brief. Choose the depth of its linked evidence: sources, reasoning, or code trace. The default reaches primary evidence, with tests and source for code claims. Supporting notes use portable Markdown links and can be navigated as an Obsidian-style collection. No Obsidian installation is required.
-
-Only the requested brief is declared as the primary review artifact. A linked test log, evidence note or source file does not get its own declaration or steal focus. See [evidence policy](reference/evidence.md).
-
-## Feedback
-
-Markdown and HTML share the [handoff contract](reference/feedback.md), not a renderer or a storage migration. The map identifies the exact document revision, target and reader comment. A missing target or changed revision remains visible and unresolved.
-
-HTML uses the existing format-1 islands and browser interaction. In Terminal Delight, submitted annotations can be saved into the original file by its native reader. In a standalone browser, edits stay in browser storage; copy the map or use a tested host snapshot/write capability. Do not claim those edits reached disk.
-
-Markdown's portable fallback is an adjacent editable JSON map. It preserves comments on named sections or blocks and can be copied into a prompt or supplied as a file. Inline commenting and direct send depend on the chosen reader and must be checked separately.
-
-## Tools
-
-Run from this directory:
+From this directory. The Markdown route needs only Python 3.9+:
 
 ```bash
-python3 scripts/brief.py html examples/engineering.src.html examples/engineering.html --id reader-feedback-html --purpose engineering
-python3 scripts/brief.py check examples/engineering.html
-python3 scripts/brief.py feedback examples/engineering.html
-python3 scripts/brief.py feedback examples/engineering.md
+python3 scripts/brief.py doctor
+python3 scripts/brief.py check examples/engineering.md
 python3 scripts/brief.py resolve examples/engineering.md examples/engineering.feedback.json
-python3 -m unittest discover -s tests -v
-node tests/browser.mjs
 ```
 
-`feedback` prints JSON to copy or save beside the document. For a new Markdown brief, save it as `name.feedback.json` and add reader comments there. It never writes or declares another artifact automatically. `resolve` prints every comment with its resolution status; exit 2 means review is required, and exit 1 means malformed or unsupported input. Neither means that comments were discarded.
+The last command places a reader's comment against the brief and reports it `resolved`: its section exists in the version the comment was written on. Change one word in a copy of the example and resolve again: the comment is still there, now `needs_review` with `revision_changed`, and the command exits 2.
 
-The HTML assembler reads canonical assets from sibling directories. It adapts one checked anchor-selection line at assembly time to honor `data-brief-anchor`. It keeps no forked notes asset and changes no canonical file or island format. An upstream hook change causes a visible refusal. The assembler preserves both notes islands and the last reader-notes mirror byte for byte, keeps the wallpaper, backs up the existing output, and refuses malformed notes or a detected concurrent change. It expects UTF-8 files. New HTML sources must have the markers shown in the example.
+The HTML route, with the `decision-brief` and `fancy-pants-brief` skills installed beside this one:
 
-Its small handoff bridge shows a review notice for carried feedback with an unknown revision or missing target. Copy Map retains comments on removed targets and labels them unresolved. This bridge is local to the new skill's output; the older skill is unchanged.
+```bash
+python3 scripts/brief.py new /tmp/demo.src.html --id demo-brief --purpose summary --title "Demo"
+python3 scripts/brief.py html /tmp/demo.src.html /tmp/demo.html
+python3 scripts/brief.py check /tmp/demo.html
+```
 
-When a changed brief carries old annotations, format 1 cannot establish the content revision of every individual comment. The exported revision becomes `null`, and resolution reports `revision_unknown`. Preserve the backup and review it with the current brief; never relabel the comments as current by default. Browser-held deletion conflicts in the existing notes engine remain a known limitation.
+`check` refuses the page until every `TODO(brief)` that `new` left has been written. Open the [HTML example](examples/engineering.html) to see a finished brief: every heading and figure takes a note, and **Copy map** produces the text a reader pastes back to the agent.
+
+## Install
+
+Put the skill where your agent discovers skills. For Claude Code that is `~/.claude/skills/briefing` (personal) or `.claude/skills/briefing` (one project). Other agents that read `SKILL.md` folders have their own directory, and an agent with no skill system can be pointed at `SKILL.md` directly.
+
+For HTML, install `decision-brief` and `fancy-pants-brief` from this repository as well. `brief.py` finds them beside its own real location, so symlinks to a full clone work, and so does copying all three directories together. Copying `briefing` alone gives you everything except `html`, and `brief.py doctor` will say so.
+
+| Part | Needs |
+|---|---|
+| `new`, `check`, `feedback`, `resolve` | Python 3.9+ |
+| `html` | the two sibling skills above |
+| The wallpaper behind an HTML brief | [Omarchy](https://omarchy.org) themes and `vips`. Elsewhere, `html --no-wall` builds on the stylesheet's own dark ground |
+| `tests/browser.mjs` | Node 22+ and Chromium or Chrome (`CHROMIUM=/path` to choose one) |
+
+## Commands
+
+| Command | Does |
+|---|---|
+| `new SOURCE --id ID --purpose P [--title T]` | Writes a starting `.md` or `.src.html` with every marker in place. Never overwrites |
+| `html SOURCE OUTPUT [--id ID --purpose P]` | Assembles a self-contained, commentable page; a source from `new` names itself, so the flags are optional. On a rebuild it keeps the reader's notes, agreements and wallpaper byte for byte and backs up the old page |
+| `check DOCUMENT` | Checks anchors, leftover `TODO(brief)` passages and every local link, image, `file://` URL and fragment, listing every problem at once. Reports `wallpaper` and `edited_since_build` for a built page |
+| `feedback DOCUMENT` | Prints a page's saved notes, or a blank Markdown comment file, as JSON |
+| `resolve DOCUMENT MAP` | Places returned comments against the current document. `MAP` is the JSON file, Copy map text, or `-` for stdin. Exit 2 means some need review |
+| `doctor` | Says which commands work on this machine and why the rest don't |
+
+Every refusal names its fix; [refusals](reference/refusals.md) lists them. Run the tests with `python3 -m unittest discover -s tests -v` and `node tests/browser.mjs`; add a path to the second to check your own HTML brief in the same headless browser. The browser test exits 77 when it cannot run, and that means not checked.
+
+## How Comments Come Back
+
+Markdown and HTML share one handoff format, not one renderer. A map names the brief, the revision the reader saw, the passage, and the reader's words; see the [feedback contract](reference/feedback.md).
+
+In an HTML brief opened in an ordinary browser, notes are kept in that browser's storage, and **Copy map** is how they leave. Paste the text to the agent; `resolve` reads it as it is. An HTML brief opened in Terminal Delight can have its notes saved into the file itself, and `feedback` exports them. A Markdown brief takes comments in an adjacent `name.feedback.json`, which `feedback` creates blank.
+
+A comment whose passage was removed stays in the results, marked unresolved. A comment written on an older version is marked for review, never quietly applied to the new wording. An empty comment is never read as agreement.
+
+## Limits
+
+- The notes format does not record which version each individual comment was written on. Once a brief's wording changes under saved comments, their revision is reported as unknown and the old page is kept as a `.bak` for comparison.
+- Copy map text joins each comment's lines with spaces; `resolve` says so with `"text_exact": false`.
+- Notes held only in one browser's storage must be copied out before the agent rebuilds the page.
+- Two people editing the same page at once can still make the shared notes engine restore a comment the other deleted.
+- Markdown has no comment controls of its own; inline commenting depends on the reader app.
+- Saving notes into the file inside Terminal Delight has not been exercised by these tests.
 
 ## MP4
 
@@ -64,8 +77,8 @@ The intended loop follows the same principle as the working media: pause on scre
 
 The current helper refuses MP4. The README earmark is the entire video scope of this version.
 
-## Adoption
+## Alongside the Other Brief Skills
 
-When the skill is available and the task benefits from a brief, the agent can select it directly. Explicit requests for `decision-brief`, `narrative-brief` or another established format still work. This skill changes no reader implementation. Machine or project agent instructions hold the human's defaults and current conventions.
+`briefing` sits beside `decision-brief` and `narrative-brief`, and an explicit request for either still gets that skill. It reuses `decision-brief`'s notes engine and stylesheet as they are, with one checked adaptation at build time and no copy of either, and changes no reader.
 
-Install by linking this directory into the host's skill-discovery location. On Parker's machine, link it once into a discovery root, run `agent-parity --sync-skills`, then `agent-parity`. Keep the repository directory as the canonical source. Existing assets remain canonical in the sibling skills.
+On Parker's machine, link the directory once into a discovery root, run `agent-parity --sync-skills`, then `agent-parity`. The repository directory stays the canonical source.
