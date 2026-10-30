@@ -1,0 +1,169 @@
+// Isolated headless Chromium; no live desktop, extension, browser profile or dependency.
+import assert from 'node:assert/strict';
+import { spawn, execFileSync } from 'node:child_process';
+import { once } from 'node:events';
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync, copyFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const work = mkdtempSync(join(tmpdir(), 'briefing-browser-'));
+const report = process.env.BRIEF_QA_DIR || join(tmpdir(), 'briefing-qa');
+mkdirSync(report, { recursive: true });
+const helper = join(root, 'scripts/brief.py');
+const file = join(work, 'example.html');
+copyFileSync(join(root, 'examples/engineering.html'), file);
+const chromium = spawn(process.env.CHROMIUM || '/usr/bin/chromium', [
+  '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
+  '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0',
+  '--user-data-dir=' + join(work, 'profile'), 'about:blank',
+], { stdio: ['ignore', 'ignore', 'pipe'] });
+let ws;
+try {
+  const endpoint = await new Promise((done, fail) => {
+    let log = '';
+    const timer = setTimeout(() => fail(new Error('Chromium endpoint timeout: ' + log.slice(-600))), 15000);
+    chromium.once('error', fail);
+    chromium.stderr.on('data', data => {
+      log += data;
+      const m = log.match(/DevTools listening on (ws:\/\/\S+)/);
+      if (m) { clearTimeout(timer); done(m[1]); }
+    });
+  });
+  ws = new WebSocket(endpoint);
+  await once(ws, 'open');
+  const pending = new Map();
+  let serial = 0;
+  ws.onmessage = ({ data }) => {
+    const msg = JSON.parse(String(data));
+    if (pending.has(msg.id)) {
+      const { done, fail, timer } = pending.get(msg.id);
+      pending.delete(msg.id); clearTimeout(timer);
+      if (msg.error) fail(new Error(JSON.stringify(msg.error)));
+      else done(msg.result);
+    }
+  };
+  function send(method, params = {}, sessionId) {
+    const id = ++serial;
+    return new Promise((done, fail) => {
+      const timer = setTimeout(() => { pending.delete(id); fail(new Error('CDP timeout: ' + method)); }, 10000);
+      pending.set(id, { done, fail, timer });
+      ws.send(JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) }));
+    });
+  }
+  const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
+  const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+  const call = (method, params) => send(method, params, sessionId);
+  await call('Page.enable');
+  async function evaluate(expression) {
+    const out = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+    if (out.exceptionDetails) throw new Error(JSON.stringify(out.exceptionDetails));
+    return out.result.value;
+  }
+  async function navigate(path) {
+    await call('Page.navigate', { url: pathToFileURL(path).href });
+    const until = Date.now() + 10000;
+    while (Date.now() < until) {
+      if (await evaluate("document.readyState==='complete' && !!document.querySelector('h2.notable')")) return;
+      await new Promise(done => setTimeout(done, 50));
+    }
+    throw new Error('page did not initialize');
+  }
+  await navigate(file);
+  const coverage = await evaluate(`({
+    headings:[...document.querySelectorAll('h2')].map(e=>[e.id,e.dataset.nid,!!e.querySelector(':scope > .note-btn')]),
+    figures:[...document.querySelectorAll('figure')].map(e=>[e.id,e.dataset.nid,!!e.querySelector(':scope > .note-btn')]),
+    duplicates:[...document.querySelectorAll('[id]')].map(e=>e.id).filter((id,i,a)=>a.indexOf(id)!==i)
+  })`);
+  assert.equal(coverage.headings.length, 4);
+  assert.equal(coverage.figures.length, 3);
+  for (const [id, target, button] of [...coverage.headings, ...coverage.figures]) {
+    assert.equal(target, id); assert.equal(button, true);
+  }
+  assert.deepEqual(coverage.duplicates, []);
+  await evaluate(`document.querySelector('#sec-return > .note-btn').click();
+    document.getElementById('note-text').value='Keep this comment on the return section.';
+    document.querySelector('#d-note [data-note-action="add"]').click();
+    document.getElementById('d-note').close();`);
+  await navigate(file);
+  assert.equal(await evaluate("document.getElementById('note-count').textContent"), '1');
+  const map = await evaluate(`document.getElementById('btn-export').click();
+    document.getElementById('export-out').value;`);
+  assert.match(map, /\[sec-return\]/);
+  assert.match(map, /Keep this comment on the return section\./);
+  await evaluate("document.getElementById('d-export').close()");
+  const snapshot = await evaluate(`(()=>{const detail={};document.dispatchEvent(new CustomEvent('decision-brief:snapshot',{detail}));return detail.html;})()`);
+  writeFileSync(file, snapshot);
+  writeFileSync(join(report, 'snapshot.html'), snapshot);
+  const exported = JSON.parse(execFileSync('python3', [helper, 'feedback', file], { encoding: 'utf8' }));
+  const savedMap = join(work, 'example.feedback.json');
+  writeFileSync(savedMap, JSON.stringify(exported));
+  let resolved = JSON.parse(execFileSync('python3', [helper, 'resolve', file, savedMap], { encoding: 'utf8' }));
+  assert.equal(resolved.comments[0].status, 'resolved');
+  await navigate(file);
+  assert.equal(await evaluate("document.querySelectorAll('#sec-return > .note-btn').length"), 1);
+  const layout = [];
+  for (const width of [968, 390]) {
+    await call('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+    const metrics = await evaluate(`({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
+      clipped:[...document.querySelectorAll('svg[viewBox]')].flatMap(svg=>{const v=svg.viewBox.baseVal;return [...svg.querySelectorAll('text')].filter(t=>{const b=t.getBBox();return b.x<v.x-1||b.x+b.width>v.x+v.width+1||b.y<v.y-1||b.y+b.height>v.y+v.height+1;}).map(t=>t.textContent);})})`);
+    assert.equal(metrics.width, width); assert.equal(metrics.overflow, false); assert.deepEqual(metrics.clipped, []);
+    const image = await call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+    writeFileSync(join(report, 'brief-' + width + '.png'), Buffer.from(image.data, 'base64'));
+    await evaluate("document.getElementById('fig-resolution').scrollIntoView({behavior:'instant',block:'start'})");
+    const mechanism = await call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+    writeFileSync(join(report, 'brief-mechanism-' + width + '.png'), Buffer.from(mechanism.data, 'base64'));
+    await evaluate("scrollTo({top:0,behavior:'instant'})");
+    layout.push(metrics);
+  }
+  await evaluate(`document.getElementById('evidence-depth').value='1';document.getElementById('evidence-depth').dispatchEvent(new Event('change'));`);
+  assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-depth]')].map(e=>!e.hidden)"), [true, false, false]);
+  // Rebuild the saved file after a rename. The old comment key and text must remain.
+  const source = join(work, 'renamed.src.html');
+  writeFileSync(source, readFileSync(join(root, 'examples/engineering.src.html'), 'utf8').replace('02</span> The Return', '02</span> Returning Feedback'));
+  execFileSync('python3', [helper, 'html', source, file, '--id', 'reader-feedback-html', '--purpose', 'engineering']);
+  await navigate(file);
+  assert.equal(await evaluate("document.getElementById('sec-return').dataset.nid"), 'sec-return');
+  assert.equal(await evaluate("document.getElementById('note-count').textContent"), '1');
+  const retained = JSON.parse(execFileSync('python3', [helper, 'feedback', file], { encoding: 'utf8' }));
+  assert.equal(retained.document.revision, null);
+  assert.equal(retained.comments[0].target, 'sec-return');
+  assert.equal(retained.comments[0].text, 'Keep this comment on the return section.');
+  assert.match(await evaluate("document.getElementById('brief-feedback-status').textContent"), /Earlier feedback needs review/);
+  writeFileSync(source, readFileSync(source, 'utf8').replaceAll('sec-return', 'sec-replacement'));
+  execFileSync('python3', [helper, 'html', source, file, '--id', 'reader-feedback-html', '--purpose', 'engineering']);
+  await navigate(file);
+  assert.match(await evaluate("document.getElementById('brief-feedback-status').textContent"), /sec-return/);
+  const orphanMap = await evaluate("document.getElementById('btn-export').click();document.getElementById('export-out').value");
+  assert.match(orphanMap, /\[sec-return\] UNRESOLVED/);
+  assert.match(orphanMap, /Keep this comment on the return section\./);
+  await evaluate("document.getElementById('d-export').close()");
+  const result = { passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
+  if (process.argv[2]) {
+    await navigate(resolve(process.argv[2]));
+    const targets = await evaluate("[...document.querySelectorAll('h2,figure')].map(e=>({id:e.id,target:e.dataset.nid,button:!!e.querySelector(':scope > .note-btn')}))");
+    assert.ok(targets.length > 0);
+    for (const t of targets) { assert.equal(t.id, t.target); assert.equal(t.button, true); }
+    const extraLayout = [];
+    for (const width of [968, 390]) {
+      await call('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
+      const m = await evaluate('({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth})');
+      assert.equal(m.width, width); assert.equal(m.overflow, false);
+      await evaluate("scrollTo({top:0,behavior:'instant'})");
+      const shot = await call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
+      writeFileSync(join(report, 'review-' + width + '.png'), Buffer.from(shot.data, 'base64'));
+      extraLayout.push(m);
+    }
+    result.additionalPage = { targets, layout: extraLayout };
+  }
+  writeFileSync(join(report, 'browser.json'), JSON.stringify(result, null, 2) + '\n');
+  console.log(JSON.stringify(result, null, 2));
+  console.log('QA images and result: ' + report);
+} finally {
+  if (ws) ws.close();
+  chromium.kill('SIGTERM');
+  await Promise.race([once(chromium, 'exit'), new Promise(done => setTimeout(done, 1500))]);
+  if (chromium.exitCode === null) chromium.kill('SIGKILL');
+  rmSync(work, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+}
