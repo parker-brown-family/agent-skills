@@ -18,6 +18,8 @@ The skill-audit scanner reports no instruction override, shell-execution request
 
 ## Source Trace
 
+The code and tests are pinned in the [implementation commit](https://github.com/parker-brown-family/agent-skills/commit/c7e31e8). The [implementation pull request](https://github.com/parker-brown-family/agent-skills/pull/49) carries the complete change.
+
 The [skill](../../../briefing/SKILL.md) routes medium and purpose. The [helper](../../../briefing/scripts/brief.py) implements `build`, `inspect`, `content_revision`, `feedback` and `resolve`. [Python tests](../../../briefing/tests/test_brief.py) establish the refusal and preservation cases. The [browser check](../../../briefing/tests/browser.mjs) establishes the UI cases above. Each path opens the source; symbols are named here without appending line locators to the links.
 
 The HTML adapter changes one anchor-selection expression in the assembled output. It reads and checks the shared canonical script at build time; it does not edit or store a fork of that script. The common handoff envelope is distinct from the unchanged format-1 HTML storage.
