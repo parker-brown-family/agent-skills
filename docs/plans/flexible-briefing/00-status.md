@@ -14,7 +14,7 @@
 
 ## Result
 
-Open review.html. The skill lives in briefing/; its README and references describe the media, purposes, evidence controls and shared handoff. Eighteen Python tests and the isolated headless browser check pass. Native Markdown inline commenting and native Terminal Delight in-place saving were not exercised; those limits are explicit. MP4 remains documentation only. The old skill directories and the pre-existing dirty handoff are untouched.
+Open review.html. The skill lives in briefing/; its README and references describe the media, purposes, evidence controls and shared handoff. Twenty-three Python tests and the isolated headless browser check pass, including script markup in reader comments and changed evidence/disclosure state during a save. Native Markdown inline commenting and native Terminal Delight in-place saving were not exercised; those limits are explicit. MP4 remains documentation only. The old skill directories and the pre-existing dirty handoff are untouched.
 
 ## Resume
 

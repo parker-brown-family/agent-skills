@@ -82,8 +82,9 @@ try {
     assert.equal(target, id); assert.equal(button, true);
   }
   assert.deepEqual(coverage.duplicates, []);
+  const words = "Keep this comment on the return section. <script id='report-notes'> is a literal example.";
   await evaluate(`document.querySelector('#sec-return > .note-btn').click();
-    document.getElementById('note-text').value='Keep this comment on the return section.';
+    document.getElementById('note-text').value=${JSON.stringify(words)};
     document.querySelector('#d-note [data-note-action="add"]').click();
     document.getElementById('d-note').close();`);
   await navigate(file);
@@ -93,6 +94,7 @@ try {
   assert.match(map, /\[sec-return\]/);
   assert.match(map, /Keep this comment on the return section\./);
   await evaluate("document.getElementById('d-export').close()");
+  await evaluate(`document.getElementById('evidence-depth').value='1';document.getElementById('evidence-depth').dispatchEvent(new Event('change'));`);
   const snapshot = await evaluate(`(()=>{const detail={};document.dispatchEvent(new CustomEvent('decision-brief:snapshot',{detail}));return detail.html;})()`);
   writeFileSync(file, snapshot);
   writeFileSync(join(report, 'snapshot.html'), snapshot);
@@ -129,7 +131,7 @@ try {
   const retained = JSON.parse(execFileSync('python3', [helper, 'feedback', file], { encoding: 'utf8' }));
   assert.equal(retained.document.revision, null);
   assert.equal(retained.comments[0].target, 'sec-return');
-  assert.equal(retained.comments[0].text, 'Keep this comment on the return section.');
+  assert.equal(retained.comments[0].text, words);
   assert.match(await evaluate("document.getElementById('brief-feedback-status').textContent"), /Earlier feedback needs review/);
   writeFileSync(source, readFileSync(source, 'utf8').replaceAll('sec-return', 'sec-replacement'));
   execFileSync('python3', [helper, 'html', source, file, '--id', 'reader-feedback-html', '--purpose', 'engineering']);
@@ -139,7 +141,7 @@ try {
   assert.match(orphanMap, /\[sec-return\] UNRESOLVED/);
   assert.match(orphanMap, /Keep this comment on the return section\./);
   await evaluate("document.getElementById('d-export').close()");
-  const result = { passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
+  const result = { passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, evidenceDepthSnapshot: true, literalScriptComment: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
   if (process.argv[2]) {
     await navigate(resolve(process.argv[2]));
     const targets = await evaluate("[...document.querySelectorAll('h2,figure')].map(e=>({id:e.id,target:e.dataset.nid,button:!!e.querySelector(':scope > .note-btn')}))");

@@ -197,6 +197,44 @@ class BriefTests(unittest.TestCase):
         with self.assertRaises(brief.Refusal):
             brief.inspect(self.markdown)
 
+    def test_script_markup_in_reader_words_is_not_an_island(self):
+        self.build()
+        original = brief.read(self.out)
+        empty, _ = brief.island(original, 'report-notes')
+        words = "π 🦉\u2028 Explain <script id='report-notes'> and <script id='report-concurs'>."
+        payload = {'sec-result': [{'text': words}]}
+        block = '<script id="report-notes" data-format="1">' + brief.encode(payload) + '</script>'
+        self.out.write_text(original.replace(empty, block))
+        self.build()
+        self.assertEqual(brief.feedback(self.out)['comments'][0]['text'], words)
+
+    def test_reader_evidence_depth_does_not_change_content_revision(self):
+        original = SOURCE.replace('</main>', '<div data-depth="2">Supporting proof</div></main>')
+        collapsed = original.replace('data-depth="2"', 'data-depth="2" hidden=""')
+        self.assertEqual(brief.content_revision(original, 'example-html', 'engineering'), brief.content_revision(collapsed, 'example-html', 'engineering'))
+
+    def test_valid_void_and_implicit_table_serialization_keeps_revision(self):
+        original = SOURCE.replace('</main>', '<p>First<br/>second</p><table><tr><td>Evidence</td></tr></table></main>')
+        saved = original.replace('<br/>', '<br>').replace('<table><tr>', '<table><tbody><tr>').replace('</tr></table>', '</tr></tbody></table>')
+        self.assertEqual(brief.content_revision(original, 'example-html', 'engineering'), brief.content_revision(saved, 'example-html', 'engineering'))
+
+    def test_reader_disclosure_state_does_not_change_content_revision(self):
+        original = SOURCE.replace('</main>', '<details><summary>Evidence</summary>Proof</details></main>')
+        expanded = original.replace('<details>', '<details open="">')
+        self.assertEqual(brief.content_revision(original, 'example-html', 'engineering'), brief.content_revision(expanded, 'example-html', 'engineering'))
+
+    def test_real_duplicate_and_unclosed_islands_still_refuse(self):
+        self.build()
+        original = brief.read(self.out)
+        block, _ = brief.island(original, 'report-notes')
+        variants = [original.replace('</body>', block + '</body>'), original.replace(block, block.removesuffix('</script>'))]
+        for damaged in variants:
+            with self.subTest(damaged=damaged[-80:]):
+                self.out.write_text(damaged)
+                with self.assertRaises(brief.Refusal):
+                    self.build()
+                self.assertEqual(brief.read(self.out), damaged)
+
 
 if __name__ == '__main__':
     unittest.main()

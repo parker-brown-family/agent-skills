@@ -20,6 +20,7 @@ SAFE_ID = re.compile(r'^[a-z][a-z0-9-]*$')
 META = re.compile(r'<!-- briefing:\s*(\{.*?\})\s*-->', re.S)
 MIRROR = re.compile(r'<!--\nREADER NOTES —.*?-->', re.S)
 CONTENT = re.compile(r'<!--brief-content-->(.*?)<!--/brief-content-->', re.S)
+VOID_TAGS = set('area base br col embed hr img input link meta param source track wbr'.split())
 
 
 class Refusal(ValueError):
@@ -76,20 +77,31 @@ class Content(HTMLParser):
             return
         for name in ('data-nid', 'data-ntitle'):
             attrs.pop(name, None)
+        if 'data-depth' in attrs:
+            attrs.pop('hidden', None)  # Evidence depth is a reader control.
+        if tag == 'details':
+            attrs.pop('open', None)
         if 'class' in attrs:
             classes = set(attrs['class'].split()) - {'notable', 'has-note', 'concurrable', 'has-concur', 'concur-jolt'}
             if classes:
                 attrs['class'] = ' '.join(sorted(classes))
             else:
                 del attrs['class']
-        self.parts.append(('start', tag, sorted(attrs.items())))
+        if tag != 'tbody' or attrs:
+            self.parts.append(('start', tag, sorted(attrs.items())))
+
+    def handle_startendtag(self, tag, attrs):
+        self.handle_starttag(tag, attrs)
+        if tag not in VOID_TAGS:
+            self.handle_endtag(tag)
 
     def handle_endtag(self, tag):
         if self.skip:
             if tag == 'nav':
                 self.skip -= 1
             return
-        self.parts.append(('end', tag))
+        if tag != 'tbody':
+            self.parts.append(('end', tag))
 
     def handle_data(self, data):
         if not self.skip and data.strip():
@@ -103,21 +115,40 @@ def content_revision(text, identity, purpose):
     return digest(json.dumps([identity, purpose, Content(regions[0][1]).parts], ensure_ascii=False))
 
 
+class Scripts(HTMLParser):
+    """Locate actual script elements, ignoring tag-shaped words inside their data."""
+    def __init__(self, text):
+        super().__init__()
+        self.text, self.blocks, self.active = text, [], None
+        self.offsets = [0] + [match.end() for match in re.finditer('\n', text)]
+        self.feed(text)
+
+    def position(self):
+        line, column = self.getpos()
+        return self.offsets[line - 1] + column
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'script':
+            start = self.position()
+            self.active = (dict(attrs), start, start + len(self.get_starttag_text()))
+
+    def handle_endtag(self, tag):
+        if tag == 'script' and self.active is not None:
+            start = self.position()
+            end = self.text.find('>', start) + 1
+            self.blocks.append((*self.active, start, end))
+            self.active = None
+
+
 def island(text, name):
-    opens = list(re.finditer(r'<script\b[^>]*\bid\s*=\s*[\"\']' + re.escape(name) + r'[\"\'][^>]*>', text, re.I))
-    if len(opens) != 1:
+    scripts = Scripts(text)
+    matches = [block for block in scripts.blocks if block[0].get('id') == name]
+    if len(matches) != 1 or (scripts.active and scripts.active[0].get('id') == name):
         raise Refusal(f'{name}: expected exactly one island')
-    opening = opens[0]
-    closing = re.search(r'</script\s*>', text[opening.end():], re.I)
-    if not closing:
-        raise Refusal(f'{name}: unclosed island')
-    end = opening.end() + closing.end()
-    payload = text[opening.end():opening.end() + closing.start()]
-    if '<script' in payload.lower():
-        raise Refusal(f'{name}: nested script in island')
+    attrs, start, content_start, content_end, end = matches[0]
+    payload = text[content_start:content_end]
     if name.startswith('report-'):
-        version = re.search(r'\bdata-format=[\"\']([^\"\']+)', opening[0])
-        if not version or version[1] != '1':
+        if attrs.get('data-format') != '1':
             raise Refusal(f'{name}: unsupported annotation format')
     try:
         value = json.loads(payload)
@@ -125,7 +156,7 @@ def island(text, name):
         raise Refusal(f'{name}: malformed JSON') from exc
     if not isinstance(value, dict):
         raise Refusal(f'{name}: expected object')
-    return text[opening.start():end], value
+    return text[start:end], value
 
 
 def notes(text):

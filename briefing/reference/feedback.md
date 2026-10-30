@@ -17,7 +17,7 @@ The shared contract is about a reader's reaction to a slice of a particular brie
 
 See the [editable Markdown example](../examples/engineering.feedback.json). Keep the map beside its document. Supply both to the agent, or copy the map while naming the original document. Map export is not document publication or approval by itself.
 
-Markdown hashes the exact UTF-8 document bytes, so even a rewording flags the old map for review. HTML hashes the authored content region using canonical parser events; transient annotation attributes and the generated section rail are excluded. Renaming an HTML heading changes the revision while its explicit target remains stable. A manual content edit is detected when the helper recomputes that fingerprint.
+Markdown hashes the exact UTF-8 document bytes, so even a rewording flags the old map for review. HTML hashes the authored content region using canonical parser events; transient annotation attributes, the generated section rail and reader-controlled evidence/disclosure state are excluded. Equivalent browser serialization of void elements and implicit table bodies keeps the fingerprint. Renaming an HTML heading changes the revision while its explicit target remains stable. A manual content edit is detected when the helper recomputes that fingerprint.
 
 HTML continues to store native notes in `report-notes`, explicit concurs in `report-concurs`, and the reader-notes mirror. Existing copy maps remain accepted in their original form; the agent may read them with the matching document rather than requiring a new envelope. Never invent a content revision for a legacy map. If it is unknown, verify the targets and context with the reader's document before acting.
 
