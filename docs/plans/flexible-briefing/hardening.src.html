@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en"><head><title>Briefing, hardened for strangers</title><!-- briefing: {"id": "briefing-hardening", "purpose": "engineering"} --><!--BRIEF:head-->
+<style>
+.small{font-size:13px;color:var(--dim)}.scroller svg{min-width:660px}
+.matrix td,.matrix th{font-size:14px}.matrix th:first-child{min-width:170px}
+.st{display:inline-block;padding:2px 9px;border:1px solid currentColor;border-radius:999px;font:700 11px/1.5 var(--mono);letter-spacing:.04em;white-space:nowrap}
+.st.ok{color:var(--good)}.st.alt{color:var(--warning)}.st.no{color:var(--dim);border-style:dashed}
+.list li{margin:6px 0}
+.probes{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:8px 12px;align-items:center}.ph{font:700 11px/1.3 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}.pr{font-size:14.5px}
+.cell{padding:7px 11px;border:1px solid currentColor;border-radius:8px;font-size:13.5px;line-height:1.35}.cell code{font-size:12px}.cell.silent{color:var(--serious);background:color-mix(in srgb,var(--serious) 12%,transparent)}.cell.hidden{color:var(--dim);border-style:dashed}.cell.fixed{color:var(--good);background:color-mix(in srgb,var(--good) 10%,transparent)}
+.legend{margin:14px 0 0;font-size:12.5px;color:var(--dim)}
+@media(max-width:650px){.probes{grid-template-columns:1fr 1fr}.probes .ph{display:none}.pr{grid-column:1/-1;margin-top:10px;font-weight:600}}
+</style></head><body>
+<!--brief-content-->
+<header class="top"><div class="wrap"><div class="eyebrow">Briefing · engineering · hardening pass</div><h1>Briefing, hardened for strangers</h1><p class="lede">The briefing skill shipped this morning with every test passing. This pass asked whether an agent on someone else's machine, reading only the skill, could build a brief and get the reader's comments back, then fixed what stopped it.</p><nav class="sections"></nav></div></header>
+<main class="wrap">
+<div class="glass"><span class="h">Ready to review</span><p>One branch, <code>harden/briefing-portable</code>, built on the round-trip fixes already merged. 42 Python tests and the browser check pass. A rebuild bug that stripped every page's wallpaper is fixed; the matching bug in the sibling glass gate is filed.</p></div>
+
+<section class="pane"><h2 id="sec-probes" data-brief-anchor="sec-probes"><span class="n">01</span> Six Probes</h2>
+<p>The tests passed because they asked what their authors expected. Each probe here is one scratch file and one command a newcomer could plausibly run. Three passed, or lost work, without a word. Three failed with a Python error in place of the problem.</p>
+<figure id="fig-probes" data-brief-anchor="fig-probes"><span class="lbl">01 · Before and after, per probe</span><div class="probes" role="table" aria-label="Six probes, before and after"><div class="ph" role="columnheader">Probe</div><div class="ph" role="columnheader">Before · main</div><div class="ph" role="columnheader">After · this branch</div>
+<div class="pr" role="rowheader">Link with a title, image, ref or <code>file://</code></div><div class="cell silent">passes; never checked</div><div class="cell fixed">broken local link: …</div>
+<div class="pr" role="rowheader">Slot inside the content region</div><div class="cell silent">builds; every map stale</div><div class="cell fixed">refuses: keep slots outside</div>
+<div class="pr" role="rowheader">Page edited by hand, then rebuilt</div><div class="cell silent">the edit silently lost</div><div class="cell fixed">refuses; the edit stays</div>
+<div class="pr" role="rowheader">Output path holds another page</div><div class="cell hidden">expected exactly one island</div><div class="cell fixed">not built by this helper</div>
+<div class="pr" role="rowheader">No Omarchy themes</div><div class="cell hidden">non-zero exit status 1</div><div class="cell fixed">the reason, and <code>--no-wall</code></div>
+<div class="pr" role="rowheader"><code>briefing</code> copied alone</div><div class="cell hidden">[Errno 2] …/base.css</div><div class="cell fixed">names what is missing; <code>doctor</code></div>
+</div><p class="legend">orange = passed or lost work silently · grey dashed = failed, cause hidden · green = refuses and names the fix</p>
+<figcaption><b>Every probe now stops before anything is written and says what to do next.</b> The three silent rows were the dangerous ones: a newcomer would have shipped them.</figcaption><p class="small">Drawn from the probe outputs, run against <code>main</code> and this branch. <a href="hardening-evidence.md#probes">Commands and exact messages</a>.</p></figure>
+<p>Probing also turned up a bug outside this skill. The glass gate passes a page with no wallpaper, because the shared stylesheet's own comment matches the pattern it searches for. That gate belongs to <code>fancy-pants-brief</code>, so it is <a href="https://github.com/parker-brown-family/agent-skills/issues/52">filed as an issue</a> with a reproduction rather than patched here. <a href="hardening-evidence.md#the-gate-finding">The finding</a>.</p></section>
+
+<section class="pane"><h2 id="sec-return" data-brief-anchor="sec-return"><span class="n">02</span> The Way Back</h2>
+<p>The biggest gap was on the return trip. A reader in an ordinary browser keeps their notes in that browser, and the only way out is the <b>copy map</b> button, whose text lands in a chat. <code>resolve</code> read only JSON, so the commonest return could not be placed against the page at all.</p>
+<p>It now reads that text as pasted, from a file or from stdin. The text names the page and the first twelve hex digits of its revision, so a comment made on an older version is still flagged. The text also joins each note's lines with spaces, and the result says so.</p>
+<figure id="fig-return" data-brief-anchor="fig-return"><span class="lbl">02 · Three routes in, one command</span><div class="scroller">
+<svg viewBox="0 0 760 250" role="img" aria-label="A Markdown comment file, pasted copy map text, and notes saved inside an HTML page all go into resolve, which marks each comment resolved or needs review.">
+<defs><marker id="tip" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" class="ink2" fill="currentColor"/></marker></defs>
+<rect class="struct" x="10" y="12" width="236" height="58" rx="10"/><text class="ink" x="24" y="37" font-size="15">name.feedback.json</text><text class="ink2" x="24" y="58" font-size="12">Markdown, saved beside the brief</text>
+<rect class="ready" x="10" y="96" width="236" height="58" rx="10"/><text class="ready" x="24" y="121" font-size="15">Copy map text · new</text><text class="ink2" x="24" y="142" font-size="12">HTML in a browser, pasted into chat</text>
+<rect class="struct" x="10" y="180" width="236" height="58" rx="10"/><text class="ink" x="24" y="205" font-size="15">Notes saved in the page</text><text class="ink2" x="24" y="226" font-size="12">exported by feedback first</text>
+<path class="wire" d="M248 41 H290 V116 H322" marker-end="url(#tip)"/><path class="wire" d="M248 125 H322" marker-end="url(#tip)"/><path class="wire" d="M248 209 H290 V134 H322" marker-end="url(#tip)"/>
+<rect class="box" x="330" y="96" width="150" height="58" rx="10"/><text class="ink" x="405" y="122" text-anchor="middle" font-size="16">resolve</text><text class="ink2" x="405" y="142" text-anchor="middle" font-size="12">against this version</text>
+<path class="wire" d="M482 125 H520 V64 H546" marker-end="url(#tip)"/><path class="wire" d="M520 125 V186 H546" marker-end="url(#tip)"/>
+<rect class="ready" x="554" y="34" width="198" height="60" rx="10"/><text class="ready" x="568" y="59" font-size="15">resolved</text><text class="ink2" x="568" y="80" font-size="12">passage found in this version</text>
+<rect class="unk" x="554" y="156" width="198" height="60" rx="10"/><text class="ink" x="568" y="181" font-size="15">needs_review · exit 2</text><text class="ink2" x="568" y="202" font-size="12">changed · unknown · gone</text>
+</svg></div>
+<figcaption><b>Every comment comes out the far side, placed or flagged, and none is dropped.</b> A placed comment has been located, not answered; the agent still owes the reader a reply.</figcaption><p class="small">Drawn from <code>resolve</code>, <code>copy_map</code> and <code>load_map</code>. The browser test pipes the real page's copy map text through this path in both directions. <a href="hardening-evidence.md#tests">Tests</a>.</p></figure></section>
+
+<section class="pane"><h2 id="sec-cold" data-brief-anchor="sec-cold"><span class="n">03</span> Starting Cold</h2>
+<p>A newcomer also has to know what will work before trying it. One command now reports, for each part of the skill, whether this machine can run it and why not, and says <i>unknown</i> rather than <i>no</i> when it could not look. Another writes a starting page with every required marker in place and a visible placeholder wherever writing is still owed, and the checker refuses the brief until every placeholder is gone. This page began that way.</p>
+<figure id="fig-machines" data-brief-anchor="fig-machines"><span class="lbl">03 · What runs on which machine</span><div class="scroller"><table class="matrix">
+<thead><tr><th>Machine has</th><th>Markdown brief</th><th>HTML brief</th><th>Wallpaper</th><th>Browser test</th></tr></thead>
+<tbody>
+<tr><td>Python 3.9+ only</td><td><span class="st ok">works</span></td><td><span class="st no">refuses, says why</span></td><td><span class="st no">unknown</span></td><td><span class="st no">skipped · 77</span></td></tr>
+<tr><td>+ the two sibling skills</td><td><span class="st ok">works</span></td><td><span class="st ok">works</span></td><td><span class="st alt">--no-wall</span></td><td><span class="st no">skipped · 77</span></td></tr>
+<tr><td>+ Omarchy themes and vips</td><td><span class="st ok">works</span></td><td><span class="st ok">works</span></td><td><span class="st ok">works</span></td><td><span class="st no">skipped · 77</span></td></tr>
+<tr><td>+ Node 22 and Chromium</td><td><span class="st ok">works</span></td><td><span class="st ok">works</span></td><td><span class="st ok">works</span></td><td><span class="st ok">works</span></td></tr>
+</tbody></table></div>
+<figcaption><b>Markdown works anywhere Python does; each further piece unlocks one column, and a missing piece is named, never a crash.</b> Amber is the one compromise to judge: a dark page with no wallpaper.</figcaption><p class="small">The first two rows were measured with a copied-alone install and a wallpaper script pointed at empty directories; the last row is this machine. The Node-version skip is read from the code, not run. <a href="hardening-evidence.md#probes">Probes</a>.</p></figure>
+<p>Those are <code>doctor</code>, <code>new</code> and <code>check</code>. The new <a href="../../../briefing/SKILL.md">SKILL.md</a> opens on that loop, and <a href="../../../briefing/reference/refusals.md">refusals</a> maps every refusal to what it means and what to do.</p></section>
+
+<section class="pane"><h2 id="sec-reader" data-brief-anchor="sec-reader"><span class="n">04</span> A Cold Reader's Run</h2>
+<p>The last test was a reader with no context. A fresh agent got only the skill's path and four tasks: a Markdown brief, the same brief in HTML with a drawing, a pasted copy map resolved fresh and then stale, and <code>doctor</code>. It finished all four. Its worst finding was one this page had just shown: rebuild a page and its wallpaper is gone.</p>
+<figure id="fig-masked" data-brief-anchor="fig-masked"><span class="lbl">04 · Two bugs that hid each other</span><div class="scroller">
+<svg viewBox="0 0 760 196" role="img" aria-label="A rebuild searched the page text for the wallpaper block, matched the stylesheet's comment naming it, and kept stylesheet text instead of the image. The gate searched the same way and passed the page.">
+<defs><marker id="tip2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" class="ink2" fill="currentColor"/></marker></defs>
+<rect class="struct" x="8" y="20" width="164" height="78" rx="10"/><text class="ink" x="20" y="46" font-size="14">Rebuild keeps the</text><text class="ink" x="20" y="66" font-size="14">old wallpaper</text><text class="ink2" x="20" y="86" font-size="11.5">by searching the text</text>
+<path class="wire" d="M174 59 H196" marker-end="url(#tip2)"/>
+<rect class="fail" x="204" y="20" width="172" height="78" rx="10"/><text class="fail" x="216" y="46" font-size="14">First match: the</text><text class="fail" x="216" y="66" font-size="14">stylesheet's comment</text><text class="ink2" x="216" y="86" font-size="11.5">naming the block</text>
+<path class="wire" d="M378 59 H400" marker-end="url(#tip2)"/>
+<rect class="fail" x="408" y="20" width="164" height="78" rx="10"/><text class="fail" x="420" y="46" font-size="14">Image gone,</text><text class="fail" x="420" y="66" font-size="14">28,920 bytes of CSS</text><text class="ink2" x="420" y="86" font-size="11.5">labelled as the wall</text>
+<path class="wire" d="M574 59 H596" marker-end="url(#tip2)"/>
+<rect class="fail" x="604" y="20" width="148" height="78" rx="10"/><text class="fail" x="616" y="46" font-size="14">Gate searches</text><text class="fail" x="616" y="66" font-size="14">the same way</text><text class="ink2" x="616" y="86" font-size="11.5">and prints PASS</text>
+<rect class="ready" x="8" y="122" width="744" height="56" rx="10"/><text class="ready" x="22" y="146" font-size="14">Now: a parser finds the real element; a wall with no image is damage and is re-picked.</text><text class="ink2" x="22" y="166" font-size="11.5">The two pages already stripped, the HTML example and the first review page, are repaired. The gate's fix is filed.</text>
+</svg></div>
+<figcaption><b>Neither bug could be seen while the other existed: the page looked built, and the gate said so.</b> Only the picture changing between two builds gave it away.</figcaption><p class="small">Drawn from the old <code>pick_wall</code> and the gate's wallpaper check, and from the two builds of this page. <a href="hardening-evidence.md#the-wallpaper">The wallpaper</a>.</p></figure>
+<p>The rest of its report changed the helper and the docs. Pasted text with Windows line endings, a byte-order mark or a chat quote is now read. Built pages are readable by others again, where they had been saved owner-only. <code>check</code> lists every broken link at once. A scaffolded source names itself, so a rebuild needs no flags, and two refusals now name their next step. The docs gained the copy map's grammar and a way to put your own page through the browser check. One finding stays as it is: an id ending in twelve hex digits can be misread, but only in hand-typed text, and then it lands in review. <a href="hardening-evidence.md#the-cold-reader">The full report</a>.</p></section>
+
+<section class="pane"><h2 id="sec-open" data-brief-anchor="sec-open"><span class="n">05</span> Proven and Open</h2>
+<ul class="list">
+<li><span class="tag v">measured</span>42 Python tests pass, up from 23; the browser check passes with both copy map paths; the paired examples keep their content revisions and pass their checks, and the HTML example wears a wallpaper again. <a href="hardening-evidence.md#tests">Tests</a></li>
+<li><span class="tag u">unknown</span>Saving notes into the file inside Terminal Delight, and inline commenting in a Markdown reader, were not exercised.</li>
+<li><span class="tag w">inferred</span>The copy map parser follows the text <code>notes.js</code> writes today; a change there needs a matching change here. <a href="hardening-evidence.md#limits">Limits</a></li>
+</ul>
+<div class="callout"><span class="lbl">Yours to decide</span><p>The skill says MIT in its frontmatter, and the repository is public, but there is no LICENSE file at its root. For "anyone in agentic" to reuse it without asking, a root licence would settle it. That is a choice for the repository's owner, so it is left for you.</p></div></section>
+<footer><p>Primary artifact: this brief. The <a href="hardening-evidence.md">evidence note</a>, source and tests are supporting links.</p></footer></main>
+<!--/brief-content-->
+<!--BRIEF:notes--></body></html>

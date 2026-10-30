@@ -1,12 +1,30 @@
 // Isolated headless Chromium; no live desktop, extension, browser profile or dependency.
+// Exit 0 passed, 1 failed, 77 skipped because this machine lacks Chromium or Node 22+.
+// A skip is reported as a skip: it is never a pass.
+// `node tests/browser.mjs path/to/brief.html` also checks that page: a note control on every h2 and
+// figure, no page overflow and no clipped SVG text at 968 and 390 px, with screenshots in BRIEF_QA_DIR.
 import assert from 'node:assert/strict';
-import { spawn, execFileSync } from 'node:child_process';
+import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync, copyFileSync } from 'node:fs';
+import { accessSync, constants, mkdtempSync, readFileSync, writeFileSync, rmSync, mkdirSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
+import { delimiter, dirname, join, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+function executable(path) { try { accessSync(path, constants.X_OK); return true; } catch { return false; } }
+function findChromium() {
+  if (process.env.CHROMIUM) return executable(process.env.CHROMIUM) ? process.env.CHROMIUM : null;
+  for (const name of ['chromium', 'chromium-browser', 'google-chrome', 'google-chrome-stable', 'chrome'])
+    for (const dir of (process.env.PATH || '').split(delimiter)) if (dir && executable(join(dir, name))) return join(dir, name);
+  const mac = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  return executable(mac) ? mac : null;
+}
+const browserPath = findChromium();
+if (typeof WebSocket === 'undefined' || !browserPath) {
+  console.error('SKIPPED: ' + (typeof WebSocket === 'undefined' ? 'Node ' + process.versions.node + ' has no built-in WebSocket; use Node 22+'
+    : 'no Chromium or Chrome found; set CHROMIUM=/path/to/browser') + '. Nothing was verified.');
+  process.exit(77);
+}
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const work = mkdtempSync(join(tmpdir(), 'briefing-browser-'));
 const report = process.env.BRIEF_QA_DIR || join(tmpdir(), 'briefing-qa');
@@ -14,7 +32,7 @@ mkdirSync(report, { recursive: true });
 const helper = join(root, 'scripts/brief.py');
 const file = join(work, 'example.html');
 copyFileSync(join(root, 'examples/engineering.html'), file);
-const chromium = spawn(process.env.CHROMIUM || '/usr/bin/chromium', [
+const chromium = spawn(browserPath, [
   '--headless=new', '--no-sandbox', '--disable-gpu', '--disable-dev-shm-usage',
   '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0',
   '--user-data-dir=' + join(work, 'profile'), 'about:blank',
@@ -94,6 +112,12 @@ try {
   assert.match(map, /\[sec-return\]/);
   assert.match(map, /Keep this comment on the return section\./);
   await evaluate("document.getElementById('d-export').close()");
+  // The text a reader pastes back into a chat resolves against the page it came from.
+  const pasted = spawnSync('python3', [helper, 'resolve', file, '-'], { input: 'My notes:\n' + map, encoding: 'utf8' });
+  assert.equal(pasted.status, 0, pasted.stderr);
+  const pastedMap = JSON.parse(pasted.stdout);
+  assert.equal(pastedMap.source, 'copy-map');
+  assert.deepEqual(pastedMap.comments.map(c => [c.target, c.status]), [['sec-return', 'resolved']]);
   await evaluate(`document.getElementById('evidence-depth').value='1';document.getElementById('evidence-depth').dispatchEvent(new Event('change'));`);
   const snapshot = await evaluate(`(()=>{const detail={};document.dispatchEvent(new CustomEvent('decision-brief:snapshot',{detail}));return detail.html;})()`);
   writeFileSync(file, snapshot);
@@ -141,7 +165,12 @@ try {
   assert.match(orphanMap, /\[sec-return\] UNRESOLVED/);
   assert.match(orphanMap, /Keep this comment on the return section\./);
   await evaluate("document.getElementById('d-export').close()");
-  const result = { passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, evidenceDepthSnapshot: true, literalScriptComment: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
+  const orphaned = spawnSync('python3', [helper, 'resolve', file, '-'], { input: orphanMap, encoding: 'utf8' });
+  assert.equal(orphaned.status, 2, orphaned.stderr);
+  const kept = JSON.parse(orphaned.stdout).comments.find(c => c.target === 'sec-return');
+  assert.deepEqual(kept.reasons, ['revision_unknown', 'target_missing']);
+  assert.match(kept.text, /Keep this comment on the return section\./);
+  const result = { copyMapResolves: true, copyMapOrphanNeedsReview: true, passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, evidenceDepthSnapshot: true, literalScriptComment: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
   if (process.argv[2]) {
     await navigate(resolve(process.argv[2]));
     const targets = await evaluate("[...document.querySelectorAll('h2,figure')].map(e=>({id:e.id,target:e.dataset.nid,button:!!e.querySelector(':scope > .note-btn')}))");
@@ -150,8 +179,9 @@ try {
     const extraLayout = [];
     for (const width of [968, 390]) {
       await call('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
-      const m = await evaluate('({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth})');
-      assert.equal(m.width, width); assert.equal(m.overflow, false);
+      const m = await evaluate(`({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
+        clipped:[...document.querySelectorAll('svg[viewBox]')].flatMap(svg=>{const v=svg.viewBox.baseVal;return [...svg.querySelectorAll('text')].filter(t=>{const b=t.getBBox();return b.x<v.x-1||b.x+b.width>v.x+v.width+1||b.y<v.y-1||b.y+b.height>v.y+v.height+1;}).map(t=>t.textContent);})})`);
+      assert.equal(m.width, width); assert.equal(m.overflow, false); assert.deepEqual(m.clipped, [], 'SVG text outside its viewBox');
       await evaluate("scrollTo({top:0,behavior:'instant'})");
       const shot = await call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       writeFileSync(join(report, 'review-' + width + '.png'), Buffer.from(shot.data, 'base64'));
