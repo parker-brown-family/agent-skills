@@ -4,9 +4,13 @@ The new `briefing` skill is implemented alongside the current briefing skills. T
 
 ## Validation
 
-From the skill directory, `python3 -m unittest discover -s tests -v` passes 18 tests. The tests cover preserved notes islands, concurs, mirror and backup; malformed/unknown formats; duplicate anchors; detected concurrent writes; stale, unknown and missing feedback targets; explicit agreement; manual HTML edits; browser serialization; a changed upstream adapter hook; and broken evidence paths/fragments.
+From the skill directory, `python3 -m unittest discover -s tests -v` passes 23 tests. The tests cover preserved notes islands, concurs, mirror and backup; malformed/unknown formats; duplicate anchors; detected concurrent writes; stale, unknown and missing feedback targets; explicit agreement; manual HTML edits; browser serialization; a changed upstream adapter hook; and broken evidence paths/fragments.
+
+The final check reproduced and fixed two additional failure modes. Literal script markup in a reader's comment no longer gets mistaken for another notes island. Changing evidence depth or opening a disclosure no longer changes the content fingerprint; equivalent serialization of void elements and implicit table bodies also retains it. Five regressions cover these cases and confirm that real duplicate and unclosed islands still refuse without replacing the original.
 
 `node tests/browser.mjs` passes using a separate headless Chromium and temporary profile. It checks each of four section headings and three figures for the correct stable target and a working note control. A real comment survives reload, appears in the exported map, survives the snapshot path and a rebuild after a heading rename. The changed brief exports an unknown feedback revision rather than claiming that the old comment was made on the new wording.
+
+That browser run now includes literal script markup in the comment and a reader-selected evidence depth before the snapshot. The saved comment still resolves to its original document revision and survives the subsequent rebuild.
 
 Removing that target then produces a visible review notice. Copy Map retains the orphaned comment and labels it unresolved. A local handoff bridge supplies this behavior in new outputs without changing the canonical notes engine.
 
@@ -18,7 +22,7 @@ The skill-audit scanner reports no instruction override, shell-execution request
 
 ## Source Trace
 
-The code and tests are pinned in the [implementation commit](https://github.com/parker-brown-family/agent-skills/commit/c7e31e8). The [implementation pull request](https://github.com/parker-brown-family/agent-skills/pull/49) carries the complete change.
+The original implementation is recorded in the [implementation commit](https://github.com/parker-brown-family/agent-skills/commit/c7e31e8) and [implementation pull request](https://github.com/parker-brown-family/agent-skills/pull/49). [Context-based defaults](https://github.com/parker-brown-family/agent-skills/pull/50) followed. The local source links below refer to the current checkout, including the final snapshot and reader-text corrections.
 
 The [skill](../../../briefing/SKILL.md) routes medium and purpose. The [helper](../../../briefing/scripts/brief.py) implements `build`, `inspect`, `content_revision`, `feedback` and `resolve`. [Python tests](../../../briefing/tests/test_brief.py) establish the refusal and preservation cases. The [browser check](../../../briefing/tests/browser.mjs) establishes the UI cases above. Each path opens the source; symbols are named here without appending line locators to the links.
 
