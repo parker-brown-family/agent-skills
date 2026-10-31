@@ -36,11 +36,12 @@ Render and inspect the film first. The local terminal player turns an MP4 into t
 python3 /home/parker/BROWN-FAMILY-SPORTS/Software/agent-skills/ascii-art/scripts/play.py /absolute/path/to/film.mp4
 ```
 
-The installed demo launcher accepts `lamp` or `watchman`:
+The installed demo launcher accepts `lamp`, `watcher` (also `watchman`), or `cain-abel`:
 
 ```bash
 ascii-glass lamp
-ascii-glass watchman
+ascii-glass watcher
+ascii-glass cain-abel
 ```
 
 Ctrl+C restores the cursor and the original terminal screen. The player requires ffmpeg and Python's standard library. Restart it after resizing.

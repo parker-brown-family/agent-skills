@@ -7,6 +7,8 @@ import subprocess
 import sys
 
 ROOT = Path.home() / "Work/reports/ascii-glass"
+DEMOS = {"lamp": "lamp.mp4", "watchman": "watchman-v2.mp4",
+         "watcher": "watchman-v2.mp4", "cain-abel": "cain-abel.mp4"}
 BITS = ((0, 0, 1), (0, 1, 2), (0, 2, 4), (1, 0, 8),
         (1, 1, 16), (1, 2, 32), (0, 3, 64), (1, 3, 128))
 COLORS = {
@@ -16,7 +18,9 @@ COLORS = {
     4: "\033[38;2;220;40;62m",
 }
 
-def frame(data, width, height):
+BAYER = ((0, 8, 2, 10), (12, 4, 14, 6), (3, 11, 1, 9), (15, 7, 13, 5))
+
+def frame(data, width, height, detail=False):
     lines = []
     for y in range(0, height, 4):
         row, last = [], None
@@ -26,7 +30,8 @@ def frame(data, width, height):
                 i = ((y + dy) * width + x + dx) * 3
                 r, g, b = data[i:i+3]
                 value = max(r, g, b)
-                if value > 38:
+                threshold = 38 + BAYER[(y + dy) % 4][(x + dx) % 4] * 6 if detail else 38
+                if value > threshold:
                     bits |= bit
                     if value > peak:
                         peak = value
@@ -44,13 +49,13 @@ def frame(data, width, height):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("piece", nargs="?", default="lamp", help="lamp, watchman, or an MP4 path")
+    parser.add_argument("piece", nargs="?", default="lamp", help="lamp, watcher, watchman, cain-abel, or an MP4 path")
     parser.add_argument("--snapshot", action="store_true", help="Print one frame without cursor control")
     parser.add_argument("--size", help="Character columns x rows; default fits the terminal")
     args = parser.parse_args()
     if not shutil.which("ffmpeg"):
         parser.error("ffmpeg is required")
-    source = ROOT / (args.piece + ".mp4") if args.piece in {"lamp", "watchman"} else Path(args.piece).expanduser().resolve()
+    source = ROOT / DEMOS[args.piece] if args.piece in DEMOS else Path(args.piece).expanduser().resolve()
     if not source.is_file():
         parser.error(f"Film is missing: {source}")
     if args.size:
@@ -68,9 +73,11 @@ def main():
     width -= width % 2
     height = min(rows * 4, int(width / 1.6))
     height -= height % 4
+    detail = source.stem in {"watchman-v2", "cain-abel"}
+    dilation = "dilation," if detail else "dilation,dilation,"
     loops = [] if args.snapshot else ["-stream_loop", "-1", "-re"]
     command = ["ffmpeg", "-v", "error", "-nostdin", *loops, "-i", str(source),
-               "-vf", f"fps=15,dilation,dilation,scale={width}:{height}:flags=area",
+               "-vf", f"fps=15,{dilation}scale={width}:{height}:flags=area",
                "-threads", "1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"]
     proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     chunk_size = width * height * 3
@@ -89,7 +96,7 @@ def main():
                 if proc.poll() not in (None, 0):
                     raise RuntimeError(proc.stderr.read().decode(errors="replace"))
                 break
-            art = frame(data, width, height)
+            art = frame(data, width, height, detail=detail)
             if args.snapshot:
                 print(art)
                 break
