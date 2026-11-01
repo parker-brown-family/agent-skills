@@ -1,5 +1,6 @@
 ---
 name: udev-rule-deploy
+description: "Deploy a udev rules file to a Linux host and reload the device subsystem without rebooting, on bare metal, a cloud VM or a headless CI runner. Use when installing or updating udev rules or running udevadm reload and trigger."
 status: stable
 source: parker-brown-family
 projects: []

@@ -1,6 +1,6 @@
 ---
 name: article
-description: Write a publishable article for a Brown Family Sports property or a client — one finding told in several registers (tl;dr / ELI5 / technical, or beginner / intermediate / advanced), in the house page structure, with the narrative pass and the anti-slop pass already run. Use when asked to write, restructure, or review an article, guide, build log, investigation or explainer for a site; when converting an existing post to the multi-register format; or when onboarding a new property or client to the article system. Runs in the writers-block repo, from a learning brief: an agent that just did the work does NOT draft the piece, it hands off with `learning-brief` instead. NOT for a decision that ends in a ticket — that is decision-brief.
+description: "Write a publishable article for a Brown Family Sports property or a client — one finding told in several registers (tl;dr / ELI5 / technical, or beginner / intermediate / advanced), in the house page structure, with the narrative pass and the anti-slop pass already run. Use when asked to write, restructure, or review an article, guide, build log, investigation or explainer for a site; when converting an existing post to the multi-register format; or when onboarding a new property or client to the article system. Runs in the writers-block repo, from a learning brief: an agent that just did the work does NOT draft the piece, it hands off with `learning-brief` instead. NOT for a decision that ends in a ticket — that is decision-brief."
 license: MIT
 ---
 

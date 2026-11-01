@@ -4,7 +4,9 @@ A collection of agent skills — each one a markdown file you paste into any LLM
 
 ## What is a skill?
 
-A skill is a SKILL.md file: YAML frontmatter (name, triggers, tools) followed by a plain-text prompt body. No code. No build step. You give the file to an agent and it knows what to do.
+A skill is a SKILL.md file: YAML frontmatter (at least a `name` and a `description`) followed by a plain-text prompt body. You give the file to an agent and it knows what to do.
+
+Most skills here are that file and nothing else. A few also ship small Python scripts the agent runs: `briefing` has `brief.py`, `decision-brief` has `brief-wall`, and `fancy-pants-brief` has `fancy-pants`. Those three are installed together; [briefing/README.md](./briefing/README.md#install) says how.
 
 ## How to use a skill
 
@@ -74,5 +76,7 @@ python3 tools/skill-audit.py path/to/candidate-skill
 ## Contributing
 
 One skill per directory. Each directory must contain a SKILL.md with valid YAML frontmatter and a prompt body. New skills use portable `name` and `description` fields, with optional catalogue information under `metadata`; existing skills also carry legacy status, source, projects, triggers and tools fields.
+
+Before opening a PR, run `python3 tools/check-frontmatter.py`. It reads every frontmatter as strict YAML, as the `skills` CLI does, and fails on a missing `name` or `description`.
 
 Open a PR. Skills must be **agent-agnostic** — no hard-coded paths, no tool-specific API calls in the core body.
