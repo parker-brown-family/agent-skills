@@ -34,6 +34,8 @@
 | `backup collision` | A `.bak` with the same name holds different bytes | Move the stray `.bak` aside and rebuild |
 | `canonical notes anchor hook changed …` / `… contains a closing script tag` | The shared notes engine changed upstream | Review the adapter in `build` and its test together; do not edit `decision-brief` to make this pass |
 | `the assembled page fingerprints differently from its source …` | An internal guarantee failed | Report it with the source attached |
+| `every decision a reader can stamp (.ask, .grill-q, or .q inside a .grill) needs id="x" data-brief-anchor="x" …` | A decision without an anchor takes no note and no CONCUR; the message lists them by title | Give each one `id="q-short-name" data-brief-anchor="q-short-name"` |
+| `derives_from must be a list …` / `calls must name a .calls.json ledger …` | The identity comment's new fields are malformed | Use `new --derives-from` and `new --calls` to see their shape |
 
 ## Checking: `check`
 
@@ -47,6 +49,29 @@
 | `duplicate anchors: …` | Two targets share a name | Rename one before anyone comments on it |
 | `Markdown needs one <!-- briefing: {...} --> identity comment` / `brief identity …` / `brief metadata needs an explicit purpose` | The document does not say which brief it is | Add the identity comment; `new` shows its shape |
 | `supported now: .md and .html; MP4 is reserved` | Another file type | Video is not built yet |
+| `every decision a reader can stamp …` | A built page has a decision without an anchor; see the same row under `html` | Fix the source and rebuild |
+| `derives_from names …, which is not there` | A parent brief moved or was deleted | Fix the path, or drop it from the identity comment |
+| `open calls missing from the brief: …` | The brief names a calls ledger and leaves an open or asked call out | Paste the section `calls LEDGER --html` prints into the source and rebuild |
+
+## While the work runs: `orient`, `call`, `calls`, `verdict`
+
+`call` exiting 3 is not a refusal: the call is recorded as `asked`, and the agent stops to ask. `calls` exiting 2 means the work has not settled; every call is still listed.
+
+| Message begins | Meaning | Do this |
+|---|---|---|
+| `… a calls ledger is named NAME.calls.json …` | The ledger path has another name | Name it `something.calls.json`; no other JSON is ever written over |
+| `… no calls ledger here …` | `calls`, `verdict` or `orient --calls` named a ledger that does not exist | `call` starts one; check the path |
+| `… malformed JSON …` / `… not a format-1 briefing calls ledger` / `every call needs an id and a known status` | The ledger is damaged | Repair it by hand; nothing was written |
+| `a call needs --title …` / `--chose` / `--because` | A call must say what was decided, what was chosen and why | Write them in plain words |
+| `--uncertainty is one of …` / `--posture is one of …` / `--door is …` | An unknown value | Use one listed; a reading you cannot make is `unknown` |
+| `… is already in the ledger …` | The id is taken | Pass `--id call-new-name`, or supersede the old call |
+| `evidence … is not a file …` | The screenshot or file is missing | Save it first; a call records what it was decided on |
+| `… changed since … was recorded …` | The evidence changed before the brief was rendered | Record the call again, or supersede it |
+| `… is over 3 MB …` | A screenshot too large to embed | Save a smaller one and record the call again |
+| `an overturn carries the person's reason in --note …` | An overturn without its reason | Quote the person's reason |
+| `… is not in … ledger …` | The call id is unknown | `calls LEDGER` lists the ids |
+| `sync reads the CONCUR stamps saved in a built HTML brief` | `--sync` was given Markdown | Record Markdown answers with `verdict` |
+| `--derives-from names briefs that are not there` / `--calls names a NAME.calls.json ledger` | `new` was given a bad parent or ledger path | Fix the path |
 
 `check` also reports facts that are not failures: `edited_since_build` on a built page, and `external_links_unchecked`, the number of web links it did not fetch.
 

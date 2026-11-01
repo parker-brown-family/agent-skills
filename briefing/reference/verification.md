@@ -13,6 +13,9 @@ Check what a reader will rely on. A large passing count is not evidence that eve
 | Artifact boundary | Only the brief is declared primary. Supporting evidence and maps do not become competing deliverables. |
 | HTML | Glass gate passes; headings and figures have controls; dialogs work; text fits figures; no page overflow at pane and phone widths. |
 | Markdown | Inline features are tested in the actual reader or clearly identified as unavailable; the fallback map is usable without that reader. |
+| Decisions | Every `.ask`, `.grill-q` and `.q` in a grill carries an anchor, so each takes a note and a CONCUR; `check` refuses one that does not. |
+| Calls | Every open or asked call in the named ledger appears as a row; each row's evidence is the bytes the call recorded; `calls` exits 0 only when every call is answered and its evidence unchanged. |
+| Orient | Approved, unstamped and overturned decisions match the stamps and the ledger; a missing parent prints as unavailable; a looping derivation is read once. |
 | MP4 | Visible future earmark; no implemented annotation or playback claim. |
 
 Run both suites from the skill directory. They work in temporary directories and change nothing in the skill. Add a path to put your own HTML brief through the browser checks too:

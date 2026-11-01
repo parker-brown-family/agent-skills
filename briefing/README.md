@@ -2,6 +2,8 @@
 
 A skill that has an AI agent write up its work as a brief you can read in a few minutes and comment on passage by passage. Each claim links to its evidence. Your comments go back to the agent pinned to the section and the version you read, so it can tell "answer this" apart from "you were reading an older draft" and "that passage is gone".
 
+It also keeps the agent on course while the work runs. It re-reads what you approved before acting, and it writes down each decision it makes that nobody made, with the screenshot it decided on, so you can concur or overturn later instead of being asked at every step.
+
 It writes HTML, drawn and commentable in any browser, or Markdown with a plain JSON file for comments. The agent picks the medium and the purpose (summary, engineering explanation, decision, or one you name) from what you asked and any preferences you've recorded. It doesn't interview you about formats.
 
 ## Try It
@@ -58,8 +60,23 @@ python3 ~/.claude/skills/briefing/scripts/brief.py doctor
 | `feedback DOCUMENT` | Prints a page's saved notes, or a blank Markdown comment file, as JSON |
 | `resolve DOCUMENT MAP` | Places returned comments against the current document. `MAP` is the JSON file, Copy map text, or `-` for stdin. Exit 2 means some need review |
 | `doctor` | Says which commands work on this machine and why the rest don't |
+| `orient BRIEF [--calls LEDGER] [--json]` | Prints the standing orders: what is approved, what is only recommended, the reader's notes and the open calls, following the briefs it derives from |
+| `call LEDGER --title … --chose … --because … --uncertainty L --taste L [--posture P]` | Records a decision nobody made, with its evidence, and applies the policy. Exit 3 means stop and ask |
+| `calls LEDGER [--html] [--sync BRIEF]` | Lists the calls and whether the work has settled (exit 2 until it has), prints them as a stampable brief section, or takes a brief's CONCUR stamps back |
+| `verdict LEDGER CALL concurred\|overturned\|superseded [--note …]` | Records the person's answer given anywhere else |
 
 Every refusal names its fix; [refusals](reference/refusals.md) lists them. Run the tests with `python3 -m unittest discover -s tests -v` and `node tests/browser.mjs`; add a path to the second to check your own HTML brief in the same headless browser. The browser test exits 77 when it cannot run, and that means not checked.
+
+## While the Work Runs
+
+A plan cannot foresee every decision. When the work meets one nobody made, the agent decides it and keeps going, unless it contradicts something you approved, cannot be undone without you, or reads as uncertain or as your own taste under the project's posture (relaxed, standard or strict). Either way it records the call:
+
+```bash
+python3 scripts/brief.py call work.calls.json --title "Drag footer at 28 px" --chose "a 28 px footer" --because "the map needs the room" --evidence shot.png --uncertainty low --taste medium --posture relaxed
+python3 scripts/brief.py calls work.calls.json --html
+```
+
+The second command prints the closing brief's section of calls, one row each with its screenshot, for you to stamp CONCUR or leave a note on. The work has settled when `calls` exits 0. The policy, the record's fields and their debt to T3 Code, MADR and Amazon's one-way doors are in [judgement calls](reference/judgement.md); `orient` is in [standing orders](reference/standing-orders.md). Where the two readings come from is a named slot, `{System 1 JUDGEMENT Surface Placeholder}`: the agent fills it today, and a typed judgement service can fill it later.
 
 ## How Comments Come Back
 
@@ -77,6 +94,8 @@ A comment whose passage was removed stays in the results, marked unresolved. A c
 - Two people editing the same page at once can still make the shared notes engine restore a comment the other deleted.
 - Markdown has no comment controls of its own; inline commenting depends on the reader app.
 - Saving notes into the file inside Terminal Delight has not been exercised by these tests.
+- The two readings behind a judgement call are the agent's own today, and so is noticing that a planned step contradicts a standing decision. The tool applies the policy to the readings; it cannot check them.
+- A call's evidence is embedded in the brief up to 3 MB per image; larger screenshots are refused rather than linked.
 
 ## MP4
 

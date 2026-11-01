@@ -457,3 +457,196 @@ class BriefTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+GRILL_SOURCE = SOURCE.replace('<p>A comment stays attached to its passage.</p>', '<p>A comment stays attached to its passage.</p>{grill}')
+
+
+class WorkLoopTests(unittest.TestCase):
+    """The loop while work runs: orient, call, calls, verdict, and the decision anchors they rely on."""
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.ledger = self.root / 'work.calls.json'
+        self.shot = self.root / 'shot.png'
+        self.shot.write_bytes(b'\x89PNG\r\n\x1a\n' + b'pixels' * 10)
+        fake = patch.object(brief.subprocess, 'run')
+        fake.start().return_value.stdout = WALL
+        self.addCleanup(fake.stop)
+
+    def call(self, title, uncertainty='low', taste='low', **extra):
+        return brief.record_call(self.ledger, title, 'the chosen option', 'the reason', uncertainty, taste, **extra)
+
+    def run_main(self, *argv):
+        out = io.StringIO()
+        with patch.object(brief.sys, 'argv', ['brief.py', *map(str, argv)]), patch.object(brief.sys, 'stdout', out):
+            code = brief.main()
+        return code, out.getvalue()
+
+    def page(self, name, grill, meta=None):
+        source = self.root / (name + '.src.html')
+        text = GRILL_SOURCE.replace('{grill}', grill)
+        if meta:
+            text = text.replace('<!--BRIEF:head-->', '<!-- briefing: ' + json.dumps(meta) + ' --><!--BRIEF:head-->')
+        source.write_text(text)
+        output = self.root / (name + '.html')
+        brief.build(source, output, name, 'decision')
+        return output
+
+    def stamp(self, page, concurs=None, notes=None):
+        text = brief.read(page)
+        for name, value in (('report-concurs', concurs), ('report-notes', notes)):
+            if value is not None:
+                empty, _ = brief.island(text, name)
+                text = text.replace(empty, f'<script type="application/json" id="{name}" data-format="1">{brief.encode(value)}</script>')
+        page.write_text(text)
+
+    def test_the_policy_stops_on_high_unknown_one_way_and_conflicts_and_tightens_with_posture(self):
+        cases = [  # (uncertainty, taste, posture) -> outcome
+            ('low', 'low', 'strict', 'carry-on'), ('medium', 'medium', 'relaxed', 'carry-on'),
+            ('medium', 'medium', 'standard', 'stop'), ('medium', 'low', 'standard', 'carry-on'),
+            ('medium', 'low', 'strict', 'stop'), ('high', 'low', 'relaxed', 'stop'), ('low', 'high', 'relaxed', 'stop'),
+            ('unknown', 'low', 'relaxed', 'stop')]
+        for uncertainty, taste, posture, expected in cases:
+            with self.subTest(uncertainty=uncertainty, taste=taste, posture=posture):
+                self.assertEqual(brief.decide(uncertainty, taste, posture)[0], expected)
+        self.assertEqual(brief.decide('low', 'low', 'relaxed', door='one-way')[0], 'stop')
+        outcome, reasons = brief.decide('low', 'low', 'relaxed', conflicts=['q-reserve'])
+        self.assertEqual(outcome, 'stop')
+        self.assertIn('q-reserve', reasons[0])
+
+    def test_a_call_records_its_evidence_and_judgement_and_refuses_ambiguity(self):
+        made = self.call('Footer at 28 px', taste='medium', posture='relaxed', evidence=[self.shot], passed_over=['40 px'])
+        self.assertEqual((made['outcome'], made['status']), ('carry-on', 'open'))
+        entry = brief.load_ledger(self.ledger)['calls'][0]
+        self.assertEqual(entry['id'], 'call-footer-at-28-px')
+        self.assertEqual(entry['evidence'][0]['href'], 'shot.png')
+        self.assertTrue(entry['evidence'][0]['sha256'].startswith('sha256:'))
+        self.assertEqual(entry['judgement']['slot'], brief.SLOT)
+        self.assertEqual(entry['judgement']['filled_by'], 'agent')
+        undeclared = self.call('Undeclared posture', 'medium', 'medium')
+        self.assertEqual(undeclared['outcome'], 'stop')  # undeclared reads as standard, and says so
+        self.assertFalse(brief.load_ledger(self.ledger)['calls'][1]['judgement']['posture_declared'])
+        with self.assertRaisesRegex(brief.Refusal, 'already in the ledger'):
+            self.call('Footer at 28 px')
+        with self.assertRaisesRegex(brief.Refusal, 'is not a file'):
+            self.call('Missing proof', evidence=[self.root / 'gone.png'])
+        with self.assertRaisesRegex(brief.Refusal, 'NAME.calls.json'):
+            brief.record_call(self.root / 'notes.json', 'x', 'y', 'z', 'low', 'low')
+        with self.assertRaisesRegex(brief.Refusal, 'needs --because'):
+            brief.record_call(self.ledger, 'x', 'y', ' ', 'low', 'low')
+
+    def test_exit_codes_let_a_workflow_branch_without_parsing(self):
+        code, out = self.run_main('call', self.ledger, '--title', 'Accent colour', '--chose', 'rose', '--because', 'cover',
+                                  '--uncertainty', 'low', '--taste', 'high', '--posture', 'relaxed')
+        self.assertEqual(code, 3)
+        self.assertEqual(json.loads(out)['status'], 'asked')
+        code, out = self.run_main('calls', self.ledger)
+        self.assertEqual(code, 2)
+        self.assertFalse(json.loads(out)['settled'])
+        code, _ = self.run_main('verdict', self.ledger, 'call-accent-colour', 'concurred')
+        self.assertEqual(code, 0)
+        self.assertEqual(self.run_main('calls', self.ledger)[0], 0)
+
+    def test_work_settles_only_when_every_call_is_answered_and_its_evidence_unchanged(self):
+        self.call('Footer at 28 px', evidence=[self.shot])
+        self.call('Accent colour', taste='high')
+        self.assertFalse(brief.calls_report(self.ledger)['settled'])
+        with self.assertRaisesRegex(brief.Refusal, 'reason in --note'):
+            brief.record_verdict(self.ledger, 'call-accent-colour', 'overturned')
+        brief.record_verdict(self.ledger, 'call-accent-colour', 'overturned', note='use teal', follow_up='https://example.org/1')
+        brief.record_verdict(self.ledger, 'call-footer-at-28-px', 'concurred')
+        self.assertTrue(brief.calls_report(self.ledger)['settled'])
+        self.shot.write_bytes(self.shot.read_bytes() + b'!')  # a concur covers the screenshot seen, not a later one
+        report = brief.calls_report(self.ledger)
+        self.assertFalse(report['settled'])
+        self.assertIn('evidence changed since it was recorded', report['calls'][0]['needs'])
+        with self.assertRaisesRegex(brief.Refusal, 'is not in'):
+            brief.record_verdict(self.ledger, 'call-nope', 'concurred')
+
+    def test_rendered_calls_build_into_a_stampable_brief_and_a_stamp_syncs_back(self):
+        self.call('Footer at 28 px', evidence=[self.shot], context='The plan left it open', undo='one constant')
+        self.call('Accent colour', taste='high')
+        section = brief.render_calls(self.ledger)
+        self.assertIn('data:image/png;base64,', section)
+        self.assertIn(brief.SLOT, section)
+        self.assertIn('Stopped:', section)
+        page = self.page('closing', section, {'calls': 'work.calls.json'})
+        found = {d['anchor']: d['title'] for d in brief.Decisions(brief.read(page)).decisions()}
+        self.assertEqual(found, {'call-footer-at-28-px': 'Footer at 28 px', 'call-accent-colour': 'Accent colour'})
+        self.assertEqual(brief.check(page)['calls'], {'ledger': 'work.calls.json', 'open': 1, 'asked': 1})
+        self.stamp(page, concurs={'call-footer-at-28-px': '2026-11-01T07:00Z'},
+                   notes={'call-accent-colour': [{'text': 'teal, not rose', 'title': 'Accent', 'ts': '2026-11-01T07:01Z'}]})
+        synced = brief.sync_calls(self.ledger, page)
+        self.assertEqual(synced['concurred'], ['call-footer-at-28-px'])
+        self.assertEqual(synced['notes_to_answer'], {'call-accent-colour': ['teal, not rose']})
+        verdict = brief.load_ledger(self.ledger)['calls'][0]['verdict']
+        self.assertEqual((verdict['via'], verdict['brief']), ('concur stamp', 'closing'))
+        self.assertEqual(verdict['revision'], brief.check(page)['revision'])
+        self.assertFalse(synced['settled'])
+
+    def test_check_refuses_a_brief_that_hides_an_open_call(self):
+        self.call('Footer at 28 px')
+        page = self.page('closing', '', {'calls': 'work.calls.json'})
+        with self.assertRaisesRegex(brief.Refusal, 'open calls missing from the brief: call-footer-at-28-px'):
+            brief.check(page)
+        brief.record_verdict(self.ledger, 'call-footer-at-28-px', 'concurred')
+        self.assertEqual(brief.check(page)['calls']['open'], 0)
+
+    def test_a_decision_without_an_anchor_cannot_be_built_or_pass_check(self):
+        loose = '<div class="grill"><div class="ask"><h3>Ship it?</h3></div></div>'
+        with self.assertRaisesRegex(brief.Refusal, 'Unanchored: Ship it\\?'):
+            self.page('loose', loose)
+        anchored = '<div class="grill"><div class="ask" id="q-ship" data-brief-anchor="q-ship"><h3>Ship it?</h3><p class="q">sub</p></div></div>'
+        page = self.page('anchored', anchored)  # a .q inside an .ask is part of that decision, not another one
+        self.assertEqual([d['anchor'] for d in brief.Decisions(brief.read(page)).decisions()], ['q-ship'])
+        page.write_text(brief.read(page).replace(' id="q-ship" data-brief-anchor="q-ship"', ''))
+        with self.assertRaisesRegex(brief.Refusal, 'needs id="x" data-brief-anchor="x"'):
+            brief.check(page)
+        grill_q = '<div class="grill"><p class="q"><b>Which root?</b></p></div>'
+        with self.assertRaisesRegex(brief.Refusal, 'Which root'):
+            self.page('grillq', grill_q)
+
+    def test_orient_reads_up_the_derivation_and_reconciles_the_ledger(self):
+        plan = self.page('plan', '<div class="grill"><div class="ask" id="q-reserve" data-brief-anchor="q-reserve"><h3>Never move the page</h3></div>'
+                                 '<div class="ask" id="q-fold" data-brief-anchor="q-fold"><h3>Fold the builder</h3></div></div>')
+        self.stamp(plan, concurs={'q-reserve': '2026-10-28T14:02Z'},
+                   notes={'q-fold': [{'text': 'not without asking me', 'title': 'Fold', 'ts': '2026-10-28T14:03Z'}]})
+        self.call('Footer at 28 px')
+        self.call('Accent colour', taste='high')
+        closing = self.page('closing', brief.render_calls(self.ledger),
+                            {'derives_from': ['plan.html', 'gone.html'], 'calls': 'work.calls.json'})
+        brief.record_verdict(self.ledger, 'call-accent-colour', 'overturned', note='use teal')
+        tree = brief.orient(closing)
+        self.assertEqual([d['anchor'] for d in tree['approved']], [])
+        self.assertEqual([d['anchor'] for d in tree['overturned']], ['call-accent-colour'])
+        self.assertEqual([d['anchor'] for d in tree['unstamped']], ['call-footer-at-28-px'])
+        self.assertEqual(tree['parents'][1]['state'], 'unavailable: file missing')
+        text = brief.orient_text(tree)
+        self.assertIn('[q-reserve]  Never move the page   · from plan', text)
+        self.assertIn('[q-fold]  Fold the builder   · from plan', text.split('NOT STAMPED')[1].split('OVERTURNED')[0])
+        self.assertIn('"not without asking me"   · on plan', text)
+        self.assertIn('gone.html · unavailable: file missing', text)
+        self.assertIn('"use teal"', text)
+        self.assertIn('SETTLED  no', text)
+        brief.record_verdict(self.ledger, 'call-footer-at-28-px', 'concurred')  # a verdict in chat counts as a stamp
+        self.assertEqual([d['anchor'] for d in brief.orient(closing)['approved']], ['call-footer-at-28-px'])
+        bare = self.page('bare', '')
+        self.assertIn('CALLS  no ledger named', brief.orient_text(brief.orient(bare)))
+
+    def test_orient_survives_a_cycle_of_derivations(self):
+        one = self.page('one', '', {'derives_from': ['two.html']})
+        self.page('two', '', {'derives_from': ['one.html']})
+        tree = brief.orient(one)
+        self.assertEqual(tree['parents'][0]['parents'][0]['state'], 'already read')
+
+    def test_scaffold_names_its_parents_and_ledger_relative_to_itself(self):
+        parent = self.page('plan', '')
+        source = self.root / 'sub' / 'closing.src.html'
+        brief.scaffold(source, 'closing', 'summary', derives_from=[parent], calls=self.ledger)
+        meta = json.loads(brief.META.search(source.read_text())[1])
+        self.assertEqual(meta['derives_from'], ['../plan.html'])
+        self.assertEqual(meta['calls'], '../work.calls.json')
+        with self.assertRaisesRegex(brief.Refusal, 'not there'):
+            brief.scaffold(self.root / 'x.src.html', 'x', 'summary', derives_from=[self.root / 'nope.html'])

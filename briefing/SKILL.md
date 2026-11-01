@@ -1,6 +1,6 @@
 ---
 name: briefing
-description: "Write up finished work as a short brief a person can read in minutes and comment on passage by passage: HTML with drawings, or Markdown. Each claim links to its evidence, and the reader's comments come back pinned to the exact section and version they read. Use when work ends in something a person should understand, check or decide: \"write this up\", \"brief me\", \"explain what you changed\", \"summarize for review\", \"engineering write-up\", \"decision write-up\", \"a page I can comment on\", \"where are we\", \"/briefing\"; and when a reader returns comments, a copied notes map, or an annotated brief. Pick the purpose (summary, engineering, decision, or one you name) and the medium from the task and the user's recorded preferences; never run a format interview."
+description: "Write up finished work as a short brief a person can read in minutes and comment on passage by passage: HTML with drawings, or Markdown. Each claim links to its evidence, and the reader's comments come back pinned to the exact section and version they read. While the work runs, keep the agent on what was approved and record the decisions it makes that nobody made, for the person to concur with or overturn later. Use when work ends in something a person should understand, check or decide: \"write this up\", \"brief me\", \"explain what you changed\", \"summarize for review\", \"engineering write-up\", \"decision write-up\", \"a page I can comment on\", \"where are we\", \"/briefing\"; when a reader returns comments, a copied notes map, or an annotated brief; and mid-work, when a decision nobody made comes up, when the agent resumes after compaction, or when the person asks \"what did you decide\", \"do you concur\", \"judgement call\", \"standing orders\". Pick the purpose (summary, engineering, decision, or one you name) and the medium from the task and the user's recorded preferences; never run a format interview."
 license: MIT
 ---
 
@@ -14,6 +14,13 @@ A reader opens a brief to understand some work, push back on a passage, and carr
 new ─► write ─► html ─► check ─► deliver ─► reader comments ─► resolve ─► revise ─┐
         ▲      (HTML only)                                                       │
         └────────────────────────────────────────────────────────────────────────┘
+```
+
+A decision brief also steers the work it plans, and the closing brief reports what was decided on the way:
+
+```text
+plan brief ─► stamped ─► work ──────────────────────────────► closing brief ─► stamped ─► settled
+                         orient · call · call · … · orient     with its calls     or overturned
 ```
 
 From this skill's directory, with paths of your own:
@@ -54,6 +61,14 @@ If the host keeps a house style or a list of flagged phrases, read it before dra
 
 Give a material claim a link to an evidence note, and let that note go on to the measurement, the test and the source. The brief stays short however deep the chain runs. Missing evidence gets one plain sentence in the brief. Use ordinary relative Markdown links; `check` follows every local link, image, `file://` URL and `#fragment`, and counts the external ones it did not fetch. Keep source paths openable and put symbols, revisions and line numbers in the surrounding text.
 
+## While the Work Runs
+
+Three habits keep an agent on the plan the person approved without asking them about every step.
+
+- **Orient.** `brief.py orient BRIEF` prints what is approved, what is only recommended, the reader's notes, and the open calls, following the briefs this one `derives_from`. Run it when a slice starts, after your context is compacted, and before you say done. Act on what it prints, not on your memory of the chat. [Standing orders](reference/standing-orders.md).
+- **Call.** When the work needs a decision nobody made, make it and keep going, unless it contradicts something approved, is a one-way door, or the judgement slot reads high uncertainty or the person's own taste under the project's posture. Then stop and ask. Record the call either way with `brief.py call`; exit 3 means stop. [Judgement calls](reference/judgement.md).
+- **Settle.** Name each open call in your reply as you make it. Put them in the closing brief with `brief.py calls LEDGER --html`, and take the reader's stamps back with `calls --sync`. The work has settled when `calls` exits 0; until then it is finished but still open.
+
 ## Comments Come Back
 
 A reader's comment arrives by one of three routes, and one command places all of them:
@@ -76,7 +91,7 @@ Hand over one primary artifact: the brief. Evidence notes, maps, backups and sou
 
 | Command | Needs |
 |---|---|
-| `new`, `check`, `feedback`, `resolve` | Python 3.9+, for either medium |
+| `new`, `check`, `feedback`, `resolve`, `orient`, `call`, `calls`, `verdict` | Python 3.9+, for either medium |
 | `html` | the `decision-brief` and `fancy-pants-brief` skills installed beside this one |
 | The Omarchy wallpaper | Omarchy themes and `vips`; otherwise build with `--no-wall` for the stylesheet's own dark ground |
 | `tests/browser.mjs` | Node 22+ and Chromium or Chrome (`CHROMIUM=/path`); exit 77 means skipped, never passed |
