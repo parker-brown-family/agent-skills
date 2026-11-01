@@ -173,9 +173,10 @@ try {
   const result = { copyMapResolves: true, copyMapOrphanNeedsReview: true, passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, evidenceDepthSnapshot: true, literalScriptComment: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
   if (process.argv[2]) {
     await navigate(resolve(process.argv[2]));
-    const targets = await evaluate("[...document.querySelectorAll('h2,figure')].map(e=>({id:e.id,target:e.dataset.nid,button:!!e.querySelector(':scope > .note-btn')}))");
+    // Decisions as well as headings and figures: a grill that cannot carry a note has failed at its one job.
+    const targets = await evaluate("[...document.querySelectorAll('h2,figure,.grill .ask,.grill-q,.grill .q:not(.ask .q)')].map(e=>({id:e.id,target:e.dataset.nid,button:!!e.querySelector(':scope > .note-btn'),concur:e.matches('.ask,.grill-q,.grill .q')?e.classList.contains('concurrable'):null}))");
     assert.ok(targets.length > 0);
-    for (const t of targets) { assert.equal(t.id, t.target); assert.equal(t.button, true); }
+    for (const t of targets) { assert.equal(t.id, t.target); assert.equal(t.button, true); if (t.concur !== null) assert.equal(t.concur, true, t.id + ' takes no CONCUR'); }
     const extraLayout = [];
     for (const width of [968, 390]) {
       await call('Emulation.setDeviceMetricsOverride', { width, height: 1000, deviceScaleFactor: 1, mobile: false });
