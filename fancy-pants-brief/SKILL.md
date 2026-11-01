@@ -1,17 +1,17 @@
 ---
 name: fancy-pants-brief
-description: "The house look for every HTML page an agent makes for a person to read: glass over a random Omarchy wallpaper in that wallpaper's theme, always dark, with gel buttons, a rail of sections and plenty of pictures, built with one tool and passed through one gate. Use whenever you are about to write ANY .html a person will open: a report, a review page, a storyboard, a results or status page, an index, a gallery, a comparison, a preview, a handoff page, a dashboard, a demo page; when a tool you are writing generates HTML for people; when a page came out white, plain or flat; when Parker says \"fancy pants\", \"/fancy-pants-brief\", \"make it look nice\", \"the glass look\", \"Omarchy theme\". A decision brief is one of these pages and keeps its own skill, decision-brief, which wears the same look. NOT for HTML that belongs to another design: a product's or client's own site, an email body, a résumé or invoice that leaves as a PDF, or a scene page a film renders frames from."
+description: "The house look for every HTML page an agent makes for a person to read: glass over a random Omarchy wallpaper in that wallpaper's theme, always dark, with gel buttons, a rail of sections and plenty of pictures, built with one tool and passed through one gate. Use whenever you are about to write ANY .html a person will open: a report, a review page, a storyboard, a results or status page, an index, a gallery, a comparison, a preview, a handoff page, a dashboard, a demo page; when a tool you are writing generates HTML for people; when a page came out white, plain or flat; when the user says \"fancy pants\", \"/fancy-pants-brief\", \"make it look nice\", \"the glass look\", \"Omarchy theme\". A decision brief is one of these pages and keeps its own skill, decision-brief, which wears the same look. NOT for HTML that belongs to another design: a product's or client's own site, an email body, a résumé or invoice that leaves as a PDF, or a scene page a film renders frames from."
 license: MIT
 ---
 
 # Fancy Pants brief
 
-Every HTML page an agent makes for Parker to read wears one look. A blurred Omarchy
+Every HTML page an agent makes for a person to read wears one look. A blurred Omarchy
 wallpaper sits behind everything, in the colours of the theme it came from. Every surface is
 glass, the one thing the reader must not miss is milky lit glass, and the buttons are gel. It is
-dark every time, and it is built from pictures more than from paragraphs. He reads these pages
+dark every time, and it is built from pictures more than from paragraphs. People read these pages
 for minutes at a time, inside Terminal Delight or a browser, and they should be something good
-to look at while he does.
+to look at while they do.
 
 The look was built for decision briefs, and until this skill it lived only inside
 `decision-brief`. Pages made any other way, such as film review pages, storyboards, previews
@@ -22,8 +22,8 @@ other page the same look, and a gate that fails a page without it.
 
 ## Build the page on the look
 
-The tool is `scripts/fancy-pants`. Run it through `python3`, because the lean-ctx shell gate
-refuses a bare script name.
+The tool is `scripts/fancy-pants`. Run it through `python3` rather than by its bare name, because
+some shell sandboxes refuse a bare script.
 
 **A new page** starts from a page that already has the look, a masthead, an empty rail of
 sections, one milky card and one pane:
@@ -82,7 +82,7 @@ restyled with `background: var(--surface-1)` loses its glass and becomes a flat 
   `dialog`.
 
 **Read `decision-brief/reference/glass.md` before drawing.** It says what the look is for and
-what makes it work, and it carries the two figures Parker singled out: the chopped bars, and a
+what makes it work, and it carries two figures worth copying: the chopped bars, and a
 readout that shows two numbers at once. Read `decision-brief/reference/pictures.md` for how
 figures colour themselves. A page in this look is drawn. Mockups, SVG diagrams and readouts
 carry it, and the prose captions them. A page that is all sentences has missed the point even
@@ -144,7 +144,7 @@ outside it.
   cover letter. Those have their own templates.
 - **A scene page a film renders frames from.** The film's own look rules there.
 
-The page Parker reads in order to judge any of these, such as the review page around the film or
+The page a person reads in order to judge any of these, such as the review page around the film or
 the comparison of two résumé drafts, still wears the look.
 
 ## Where it lives

@@ -1,5 +1,6 @@
 ---
 name: code-taste
+description: "Audit a codebase for five structural anti-patterns (primitive obsession, stringly typed values, boolean blindness, shotgun surgery and underspecified schemas), rank the findings by risk, and create one tracking ticket per finding with a Given/When/Then scenario. Use when asked for a code taste audit or an anti-pattern scan."
 status: starter
 source: starter
 projects: []

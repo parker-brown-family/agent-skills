@@ -24,7 +24,7 @@ python3 scripts/brief.py html /tmp/demo.src.html /tmp/demo.html
 python3 scripts/brief.py check /tmp/demo.html
 ```
 
-`check` refuses the page until every `TODO(brief)` that `new` left has been written. Open the [HTML example](examples/engineering.html) to see a finished brief: every heading and figure takes a note, and **Copy map** produces the text a reader pastes back to the agent.
+`check` refuses the page until every `TODO(brief)` that `new` left has been written. Open the [HTML example](https://parker-brown-family.github.io/agent-skills/briefing/examples/engineering.html) in your browser to see a finished brief ([its source](examples/engineering.html)): every heading and figure takes a note, and **Copy map** produces the text a reader pastes back to the agent.
 
 ## Install
 

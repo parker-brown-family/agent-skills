@@ -1,6 +1,6 @@
 ---
 name: decision-brief
-description: "Produce a single self-contained HTML brief that Parker annotates in the browser and then prompts back from — an audit, a review, a technology-intake assessment, a findings write-up, any analysis whose point is that a decision gets made. The brief is drawn: hand-built mockups and SVG diagrams carry it and the prose captions them. Reader notes are anchored to elements and export as a token-cheap map, so \"read my notes in the file\" replaces pasting the document. Use when asked for an audit, an intake assessment, a review, an analysis, a findings report, a comparison of options, a visual or illustrated write-up, or when Parker says \"/decision-brief\". NOT for planning docs that end in tickets — that is /tps-report."
+description: "Produce a single self-contained HTML brief that the reader annotates in the browser and then prompts back from — an audit, a review, a technology-intake assessment, a findings write-up, any analysis whose point is that a decision gets made. The brief is drawn: hand-built mockups and SVG diagrams carry it and the prose captions them. Reader notes are anchored to elements and export as a token-cheap map, so \"read my notes in the file\" replaces pasting the document. Use when asked for an audit, an intake assessment, a review, an analysis, a findings report, a comparison of options, a visual or illustrated write-up, or when the user says \"/decision-brief\". NOT for planning docs that end in tickets."
 license: MIT
 ---
 
@@ -12,11 +12,11 @@ Everything below serves that.
 **The loop this skill exists for:**
 
 ```
-you write the brief  →  Parker submits a comment in Terminal Delight  →  original HTML saved
+you write the brief  →  the reader submits a comment in Terminal Delight  →  original HTML saved
                      →  "read my notes in <file>"           →  you act on the notes
 ```
 
-That loop is the reason for the notes system. Without it a report is a dead end: he reads it,
+That loop is the reason for the notes system. Without it a report is a dead end: the reader reads it,
 forms opinions, and then has to retype them into a prompt.
 
 ## Four invariants
@@ -47,7 +47,7 @@ emailed as one file, so no external `src`.
 
 Every decision in the grill also gets a **concur** space on its right, added by `notes.js`
 with no markup from you. Concur is the answer most decisions get and the quickest way for
-Parker to say the work was good, so it costs one click: the space shows a grey `?`, throbs
+the reader to say the work was good, so it costs one click: the space shows a grey `?`, throbs
 light grey on hover, and takes a green rubber stamp that peels off on a second click. A
 concur rides in the map as `[<anchor>] <question>  ✓ concur` and is baked into
 `#report-concurs` automatically in Terminal Delight, so "read my notes" carries agreement as well as
@@ -98,7 +98,7 @@ same commit runs `fixtures/notes-format/build.mjs`, `check.mjs` and
 
 ### 2 · The reading budget drives the structure
 
-Ask, or infer: *how long does he have?* One hour to decide means roughly twenty minutes to
+Ask, or infer: *how long does the reader have?* One hour to decide means roughly twenty minutes to
 read. Then build to that number.
 
 The consequence is **progressive disclosure**: the main page is the brief; depth lives in
@@ -121,13 +121,12 @@ would prove it wrong, which the picker-upper runs *first*. See `reference/eviden
 ### 4 · The brief is drawn
 
 Pictures are the medium of this format, and the prose ends up as captions on them. A brief
-that could have been an email was not worth the format, and how much of it Parker can *see*
-decides whether he reads it or reacts to it.
+that could have been an email was not worth the format, and how much of it the reader can *see*
+decides whether they read it or react to it.
 
-The 2026-09-15 attention-spine brief carried eleven figures for a plan two earlier prose
-briefs had already covered, and it is the standard:
-`/home/parker/Work/reports/2026-09-15-attention-spine-groundwork.html`. Mockups of the
-surface at the size he would read it, SVG diagrams of the mechanism, an anatomy picture with
+The standard is a plan brief that carried eleven figures where two earlier prose briefs had
+covered the same plan, and it was the one of the three that its reader responded to. Mockups of the
+surface at the size the reader would read it, SVG diagrams of the mechanism, an anatomy picture with
 numbered pins, a fence, a timeline — all hand-built HTML, CSS and inline SVG, no library, no
 image files. **Read `reference/pictures.md` before writing the body**, because the pictures
 decide the body.
@@ -139,7 +138,7 @@ unsure whether to draw one more, draw it.
 
 **When the change touches more than one system, draw the architecture and build it up** —
 the same diagram three or four times, each adding a piece, the earlier boxes never moving.
-It is the picture Parker asks for by name, and `reference/pictures.md` has the grammar.
+It is the picture this skill's author asks for by name, and `reference/pictures.md` has the grammar.
 
 ## Structure is yours
 
@@ -150,17 +149,17 @@ agent picks a schema instead of designing a document. Do not do that here.
 
 Decide the shape by answering these, and let the answers build the page:
 
-- What is the single sentence he needs if he reads nothing else? → that is the headline, and
+- What is the single sentence the reader needs if they read nothing else? → that is the headline, and
   it goes first.
-- What must he **see** to judge this — a surface, a flow, an order, a boundary? → a figure
+- What must the reader **see** to judge this — a surface, a flow, an order, a boundary? → a figure
   each, and the caption carries the claim. Answer this before you answer the rest; a section
   built around a picture is shaped differently from one built around paragraphs.
-- What are the top five things he must look at closely? → Read-first.
+- What are the top five things they must look at closely? → Read-first.
 - Are there **things being compared**? → some card or tile per thing. Not otherwise.
 - Is there **one number** that carries an argument? → a chart, or a stat row. One good chart
   beats four. If nothing is worth plotting, plot nothing.
-- What would he ask *"why?"* about? → a modal per answer.
-- What decisions are actually his? → a section that asks them, with your recommendation
+- What would they ask *"why?"* about? → a modal per answer.
+- What decisions are actually theirs? → a section that asks them, with your recommendation
   attached to each.
 
 Skip any of these that the material does not support. A brief with three sections that
@@ -171,7 +170,7 @@ earn their place beats one with eight that fill a template.
 Every brief is built over a random Omarchy wallpaper, in the colours of that wallpaper's
 theme, with the glass of the Terminal Delight docs redesign. **Read `reference/glass.md`
 before drawing anything**: it says what the look is for, what makes it work, and carries
-the two examples Parker singled out (chopped bars, and a readout that shows two numbers at
+two examples worth copying (chopped bars, and a readout that shows two numbers at
 once). It describes rather than prescribes; the shape of each brief is still yours.
 
 Four blocks go in `<head>`, in this order:
@@ -182,7 +181,7 @@ Four blocks go in `<head>`, in this order:
    ```bash
    python3 ~/.claude/skills/decision-brief/scripts/brief-wall --out /tmp/brief-wall.html
    ```
-   Run it through `python3`; the lean-ctx shell gate refuses the bare script name. It adds
+   Run it through `python3` rather than by its bare name, because some shell sandboxes refuse a bare script. It adds
    4–335 KB. Take the random pick, and never choose a theme to match the subject; the
    variety is the point. `--theme` and `--image` exist so a rebuild keeps the wallpaper it
    already has: the block's opening comment names the theme, the wallpaper and the
@@ -271,8 +270,8 @@ Named from the tps-report post-mortem, because these are the ways this goes wron
   this repo" tells the reader to stop looking, which is worse than saying nothing.
 - **Long prose sections belong in a modal.** If a section runs past a screen or two on the
   main page, it is competing with the brief. Move it and leave a one-line entry point.
-- The full writing rules live in `~/.claude/writing/house-style.md` and the
-  `avoid-ai-writing` skill. Run that skill as a final pass.
+- If the user keeps writing rules of their own, such as a style guide or a list of phrases
+  they have objected to, follow them; they outrank this list.
 
 ## Deliver
 
@@ -280,8 +279,7 @@ Write to a `reports/` directory in the relevant project, named
 `<YYYY-MM-DD>-<topic-slug>.html` — never date-only, since several agents may tie off the same
 project on the same day.
 
-Send the file with `SendUserFile`, and end with the Links table: the brief first, the served
-URL second.
+Hand the file back as a clickable `file://` link, then the served URL.
 
 ## Reference
 
