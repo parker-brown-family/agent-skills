@@ -625,7 +625,8 @@ class WorkLoopTests(WorkLoopFixture):
         tree = brief.orient(closing)
         self.assertEqual([d['anchor'] for d in tree['approved']], [])
         self.assertEqual([d['anchor'] for d in tree['overturned']], ['call-accent-colour'])
-        self.assertEqual([d['anchor'] for d in tree['unstamped']], ['call-footer-at-28-px'])
+        self.assertEqual([d['anchor'] for d in tree['unstamped']], [])  # an open call is listed once, under open calls
+        self.assertEqual([c['id'] for c in tree['ledger']['open']], ['call-footer-at-28-px'])
         self.assertEqual(tree['parents'][1]['state'], 'unavailable: file missing')
         text = brief.orient_text(tree)
         self.assertIn('[q-reserve]  Never move the page   · from plan', text)
@@ -683,7 +684,7 @@ class ReviewFindingTests(WorkLoopFixture):
         source = self.root / 'plan.src.html'
         keep = '<div class="grill"><div class="ask" id="q-data" data-brief-anchor="q-data"><h3>Keep all data</h3></div></div>'
         page = self.page('plan', keep)
-        self.stamp(page, concurs={'q-data': '2026-11-01T07:00Z'})
+        self.stamp(page, concurs={'q-data': '2020-01-01T00:00Z'})  # long before any build, so never current by time
         self.assertEqual([d['anchor'] for d in brief.orient(page)['approved']], ['q-data'])
         source.write_text(source.read_text().replace('Keep all data', 'Delete all data'))
         brief.build(source, page, 'plan', 'decision')
@@ -782,3 +783,107 @@ class ReviewFindingTests(WorkLoopFixture):
         log.unlink()
         with self.assertRaisesRegex(brief.Refusal, 'is missing'):
             brief.render_calls(self.ledger)
+
+
+class CallOrderTests(WorkLoopFixture):
+    def test_stopped_calls_lead_heavier_calls_follow_and_routine_ones_are_compact(self):
+        self.call('Routine one', undo='one line', passed_over=['other'])
+        self.call('Taste call', taste='medium', undo='a rule')
+        self.call('Stopped one', taste='high')
+        section = brief.render_calls(self.ledger)
+        order = [d['anchor'] for d in brief.Decisions(section).decisions()]
+        self.assertEqual(order, ['call-stopped-one', 'call-taste-call', 'call-routine-one'])
+        routine = section.split('id="call-routine-one"')[1]
+        self.assertNotIn('Passed over', routine)
+        self.assertIn('Undo', section.split('id="call-taste-call"')[1].split('id="call-routine-one"')[0])
+        self.assertIn('The last one was routine, with both readings low, and shows', section)
+
+
+
+class ReviewRoundTwoTests(WorkLoopFixture):
+    """One test per finding of the second Codex round, each written to fail on the round-one fixes."""
+    def rebuild(self, name, grill, meta=None):
+        source = self.root / (name + '.src.html')
+        text = GRILL_SOURCE.replace('{grill}', grill)
+        if meta:
+            text = text.replace('<!--BRIEF:head-->', '<!-- briefing: ' + json.dumps(meta) + ' --><!--BRIEF:head-->')
+        source.write_text(text)
+        brief.build(source, self.root / (name + '.html'), name, 'decision')
+        return self.root / (name + '.html')
+
+    def test_a_stamp_from_before_a_rebuild_is_not_synced(self):
+        self.call('Keep data')
+        page = self.page('closing', brief.render_calls(self.ledger), {'calls': 'work.calls.json'})
+        self.stamp(page, concurs={'call-keep-data': '2020-01-01T00:00Z'})
+        data = brief.load_ledger(self.ledger)
+        data['calls'][0]['chose'] = 'delete data'
+        self.ledger.write_text(json.dumps(data))
+        self.rebuild('closing', brief.render_calls(self.ledger), {'calls': 'work.calls.json'})
+        synced = brief.sync_calls(self.ledger, page)
+        self.assertEqual(synced['concurred'], [])
+        self.assertEqual(synced['stamped_on_another_version'], ['call-keep-data'])
+
+    def test_a_hand_edited_row_is_caught_by_what_it_shows(self):
+        self.call('Keep data')
+        section = brief.render_calls(self.ledger).replace('<dd>the chosen option</dd>', '<dd>delete everything</dd>')
+        page = self.page('closing', section, {'calls': 'work.calls.json'})
+        with self.assertRaisesRegex(brief.Refusal, 'its chose differs'):
+            brief.check(page)
+        self.stamp(page, concurs={'call-keep-data': '2099-01-01T00:00Z'})
+        self.assertEqual(brief.sync_calls(self.ledger, page)['mismatched'], ['call-keep-data'])
+
+    def test_orient_does_not_approve_a_row_that_shows_another_call(self):
+        self.call('Keep data')
+        brief.record_verdict(self.ledger, 'call-keep-data', 'concurred')
+        other = self.root / 'other.calls.json'
+        brief.record_call(other, 'Delete data', 'delete it', 'reason', 'low', 'low', call_id='call-keep-data')
+        page = self.page('closing', brief.render_calls(other), {'calls': 'work.calls.json'})
+        tree = brief.orient(page)
+        self.assertEqual(tree['approved'], [])
+        self.assertEqual([m['anchor'] for m in tree['mismatched']], ['call-keep-data'])
+        self.assertEqual(tree['settled']['state'], 'unknown')
+
+    def test_an_empty_verdict_or_a_thin_judgement_is_refused(self):
+        self.call('Keep data')
+        good = brief.load_ledger(self.ledger)
+        for mutate, message in ((lambda c: c.update(status='concurred', verdict={}), 'no verdict recorded'),
+                                (lambda c: c['judgement'].pop('reasons'), 'no complete judgement'),
+                                (lambda c: c['judgement'].pop('filled_by'), 'no complete judgement'),
+                                (lambda c: c.update(verdict={'at': 'x', 'via': 'y'}), 'carries a verdict')):
+            bad = json.loads(json.dumps(good))
+            mutate(bad['calls'][0])
+            self.ledger.write_text(json.dumps(bad))
+            with self.subTest(message=message), self.assertRaisesRegex(brief.Refusal, message):
+                brief.calls_report(self.ledger)
+
+    def test_a_fresh_stamp_after_a_rebuild_counts(self):
+        keep = '<div class="grill"><div class="ask" id="q-data" data-brief-anchor="q-data"><h3>Keep all data</h3></div></div>'
+        page = self.page('plan', keep)
+        self.stamp(page, concurs={'q-data': '2020-01-01T00:00Z'})
+        page = self.rebuild('plan', keep.replace('Keep all data', 'Keep most data'))
+        self.assertIsNone(brief.island(brief.read(page), 'brief-meta')[1]['feedback_revision'])
+        self.assertEqual([d['anchor'] for d in brief.orient(page)['restamp']], ['q-data'])
+        self.stamp(page, concurs={'q-data': '2099-01-01T00:00Z'})  # stamped again, after this build
+        self.assertEqual([d['anchor'] for d in brief.orient(page)['approved']], ['q-data'])
+
+    def test_a_paragraph_closes_through_inline_elements(self):
+        hidden = '<div class="grill"><p class="ask" id="q-a" data-brief-anchor="q-a"><b>First<div class="q"><b>Second</b></div></div>'
+        with self.assertRaisesRegex(brief.Refusal, 'Second'):
+            self.page('hidden', hidden)
+
+    def test_a_malformed_markdown_sidecar_is_refused(self):
+        md = self.root / 'plan.md'
+        md.write_text(MD.replace('example-md', 'plan-md'))
+        (self.root / 'plan.feedback.json').write_text('{"document": ["bad"], "comments": []}')
+        with self.assertRaisesRegex(brief.Refusal, 'format-1 envelope'):
+            brief.orient(md)
+
+    def test_a_retired_calls_moved_evidence_is_labelled_not_refused(self):
+        log = self.root / 'run.log'
+        log.write_text('before')
+        self.call('Ship the log', evidence=[log])
+        brief.record_verdict(self.ledger, 'call-ship-the-log', 'overturned', note='fix it first')
+        log.write_text('after the fix')
+        section = brief.render_calls(self.ledger, every=True)
+        self.assertIn('is changed since; it is not shown', section)
+        self.assertNotIn('run.log</a>', section)

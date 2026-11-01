@@ -64,6 +64,8 @@
 | `… no calls ledger here …` | `calls`, `verdict` or `orient --calls` named a ledger that does not exist | `call` starts one; check the path |
 | `… malformed JSON …` / `… not a format-1 briefing calls ledger` / `every call needs an id and a known status, and …` | The ledger is damaged; the message names the call and the missing or malformed field. A field that is absent is refused, never read as empty | Repair it by hand; nothing was written |
 | `… appears twice …` | Two calls share an id | Rename or remove one by hand |
+| `… with no verdict recorded: who answered, and when` / `… is overturned with no reason recorded` / `… carries a verdict` | A status and its verdict disagree | Record answers with `verdict` or `calls --sync`, never by editing the status |
+| `…feedback.json: expected a format-1 envelope …` / `…: malformed JSON` | `orient` read a Markdown brief's comment file that is damaged | Regenerate it with `feedback`, then restore the reader's words |
 | `… is missing; … was decided on it …` | A call's evidence file is gone | Restore it, or supersede the call |
 | `a call needs --title …` / `--chose` / `--because` | A call must say what was decided, what was chosen and why | Write them in plain words |
 | `--uncertainty is one of …` / `--posture is one of …` / `--door is …` | An unknown value | Use one listed; a reading you cannot make is `unknown` |
