@@ -977,3 +977,75 @@ class ReviewRoundThreeTests(WorkLoopFixture):
         section = brief.render_calls(self.ledger)
         self.assertEqual([d['anchor'] for d in brief.Decisions(section).decisions()], ['call-with-proof', 'call-routine-first'])
         self.assertIn('The last one was routine', section)
+
+
+class ReviewRoundFourTests(WorkLoopFixture):
+    """One test per finding of the fourth Codex round."""
+    def setUp(self):
+        super().setUp()
+        self.call('Keep data', evidence=[self.shot])
+
+    def closing(self, edit=lambda s: s, meta=None):
+        return self.page('closing', edit(brief.render_calls(self.ledger)), meta or {'calls': 'work.calls.json'})
+
+    def test_a_repeated_attribute_cannot_swap_the_picture(self):
+        page = self.closing(lambda s: s.replace('<img src="', '<img src="data:image/png;base64,QUJD" src="', 1))
+        with self.assertRaisesRegex(brief.Refusal, 'repeats an attribute'):
+            brief.check(page)
+
+    def test_words_hidden_in_a_nav_inside_a_row_are_seen(self):
+        page = self.closing(lambda s: s.replace('</h3>', '</h3><nav class="sections">approved by the owner</nav>', 1))
+        with self.assertRaisesRegex(brief.Refusal, 'differs from what the ledger renders'):
+            brief.check(page)
+
+    def test_a_row_for_a_call_the_ledger_does_not_hold_is_refused_and_not_approved(self):
+        forged = ('<div class="grill"><div class="ask call" id="call-forged" data-brief-anchor="call-forged" data-call="sha256:'
+                  + '0' * 64 + '"><h3>Ship it</h3></div></div>')
+        page = self.closing(lambda s: s.replace('</div></section>', '</div></section>' + forged, 1))
+        with self.assertRaisesRegex(brief.Refusal, 'not one call of the ledger'):
+            brief.check(page)
+        self.stamp(page, concurs={'call-forged': '2099-01-01T00:00Z'})
+        tree = brief.orient(page)
+        self.assertNotIn('call-forged', [d['anchor'] for d in tree['approved']])
+        self.assertIn('call-forged', [d['anchor'] for d in tree['mismatched']])
+
+    def test_a_waiting_call_needs_a_whole_row_not_just_its_id(self):
+        cases = {'no data-call': lambda s: s.replace(' data-call="', ' data-old="', 1),
+                 'nested in another row': None}
+        page = self.closing(cases['no data-call'])
+        with self.assertRaisesRegex(brief.Refusal, 'open calls missing from the brief: call-keep-data'):
+            brief.check(page)
+        self.call('Second call')
+        section = brief.render_calls(self.ledger)
+        rows = re.findall(r'<div class="ask call".*?</div>', section, re.S)
+        nested = section.replace(rows[1], '').replace('<p class="rec"><b>Meanwhile:', rows[1] + '<p class="rec"><b>Meanwhile:', 1)
+        page = self.page('nested', nested, {'calls': 'work.calls.json'})
+        with self.assertRaisesRegex(brief.Refusal, 'sit inside another row'):
+            brief.check(page)
+        bare = self.page('bare', section)  # rows shown, no ledger named
+        with self.assertRaisesRegex(brief.Refusal, 'names no calls ledger'):
+            brief.check(bare)
+
+    def test_a_retired_calls_old_row_still_matches_after_its_screenshot_moves(self):
+        page = self.closing()
+        brief.record_verdict(self.ledger, 'call-keep-data', 'overturned', note='not like this')
+        self.shot.write_bytes(b'the screenshot after the fix')
+        self.assertIsNone(brief.row_problem(brief.load_ledger(self.ledger)['calls'][0],
+                                            brief.RowSpans(brief.CONTENT.search(brief.read(page))[1]).spans['call-keep-data'],
+                                            self.root, self.root))
+        self.assertEqual(brief.orient(page)['mismatched'], [])
+
+    def test_carriage_returns_dropped_by_a_browser_save_still_match(self):
+        self.ledger.unlink()
+        brief.record_call(self.ledger, 'Line endings', 'keep both lines', 'first line\r\nsecond line', 'low', 'low')
+        page = self.page('closing', brief.render_calls(self.ledger), {'calls': 'work.calls.json'})
+        page.write_text(brief.read(page).replace('\r\n', '\n'))
+        self.assertEqual(brief.orient(page)['mismatched'], [])
+
+    def test_stamps_are_compared_in_utc_and_unreadable_ones_never_count(self):
+        meta = {'revision': 'r', 'feedback_revision': None, 'built_at': '2030-01-01T12:00Z'}
+        self.assertFalse(brief.stamp_is_current(meta, 'r', '2030-01-01T13:00+02:00'))  # 11:00 UTC, before the build
+        self.assertTrue(brief.stamp_is_current(meta, 'r', '2030-01-01T11:30-02:00'))   # 13:30 UTC, after it
+        self.assertTrue(brief.stamp_is_current(meta, 'r', '2030-01-01 12:01'))          # notes.js: UTC, no zone
+        self.assertFalse(brief.stamp_is_current(meta, 'r', '2030-99-99T99:99Z'))
+        self.assertFalse(brief.stamp_is_current(meta, 'r', None))

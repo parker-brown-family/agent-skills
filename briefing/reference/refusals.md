@@ -52,7 +52,9 @@
 | `every decision a reader can stamp …` | A built page has a decision without an anchor; see the same row under `html` | Fix the source and rebuild |
 | `derives_from names …, which is not there` | A parent brief moved or was deleted | Fix the path, or drop it from the identity comment |
 | `open calls missing from the brief: …` | The brief names a calls ledger and leaves an open or asked call out | Paste the section `calls LEDGER --html` prints into the source and rebuild |
-| `call rows rendered from other words or evidence than the ledger holds: …` | A row was rendered from another ledger or an earlier version of the call | Paste a fresh `calls LEDGER --html` and rebuild |
+| `call rows rendered from other words or evidence than the ledger holds: …` | A row was rendered from another ledger or an earlier version of the call, or edited after it was printed | Paste a fresh `calls LEDGER --html` and rebuild; rows are generated, never edited |
+| `call rows that are not one call of the ledger, or sit inside another row: …` | A row names a call the ledger does not hold, or rows are nested | Remove it, or paste a fresh section |
+| `the brief shows call rows but names no calls ledger: …` | Rows with no ledger to answer them | Add `"calls": "NAME.calls.json"` to the identity comment, or start with `new --calls` |
 
 ## While the work runs: `orient`, `call`, `calls`, `verdict`
 

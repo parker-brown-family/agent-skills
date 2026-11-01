@@ -197,14 +197,16 @@ def block_ids(prose):
 
 class Content(HTMLParser):
     """Hash authored meaning after browser snapshot serialization, without its note UI."""
-    def __init__(self, text):
+    def __init__(self, text, keep_nav=False):
         super().__init__()
-        self.parts, self.skip = [], 0
+        self.parts, self.skip, self.keep_nav, self.duplicated = [], 0, keep_nav, False
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
+        if len({key for key, _ in attrs}) != len(attrs):
+            self.duplicated = True  # a browser shows the first of two same-named attributes; this parser keeps the last
         attrs = {key: '' if value is None else value for key, value in attrs}
-        if tag == 'nav' and 'sections' in attrs.get('class', '').split():
+        if tag == 'nav' and 'sections' in attrs.get('class', '').split() and not self.keep_nav:
             self.skip += 1
         if self.skip:
             return
@@ -382,17 +384,29 @@ def check(path):
     for parent in meta.get('derives_from') or []:
         if not (path.parent / parent).is_file():
             raise Refusal(f'derives_from names {parent}, which is not there; fix the path or drop it')
+    if path.suffix == '.html' and not meta.get('calls'):
+        rows = RowSpans(CONTENT.search(text)[1]).spans
+        if rows:
+            raise Refusal('the brief shows call rows but names no calls ledger: ' + ', '.join(sorted(rows)) +
+                          '. Name it with "calls" in the identity comment')
     if meta.get('calls'):
         ledger = path.parent / meta['calls']
         data = load_ledger(ledger)
-        shown = RowSpans(CONTENT.search(text)[1]).spans if path.suffix == '.html' else {}
+        spans = RowSpans(CONTENT.search(text)[1]) if path.suffix == '.html' else None
+        shown = spans.spans if spans else {}
+        known = {c['id'] for c in data['calls']}
+        strangers = sorted(set(shown) - known) + (spans.nested if spans else [])
+        if strangers:
+            raise Refusal('call rows that are not one call of the ledger, or sit inside another row: ' + ', '.join(strangers))
         problems = {c['id']: row_problem(c, shown[c['id']], ledger.resolve().parent, path.resolve().parent)
                     for c in data['calls'] if c['id'] in shown}
         stale = [f'{name} ({problem})' for name, problem in problems.items() if problem]
         if stale:
             raise Refusal('call rows rendered from other words or evidence than the ledger holds: ' + ', '.join(stale) +
                           f'. Paste a fresh `brief.py calls {meta["calls"]} --html` and rebuild')
-        waiting = [c['id'] for c in data['calls'] if c['status'] in ('open', 'asked') and c['id'] not in anchors]
+        # A waiting call needs a complete row of its own inside the brief, not merely an element with its id.
+        waiting = [c['id'] for c in data['calls'] if c['status'] in ('open', 'asked')
+                   and c['id'] not in (shown if path.suffix == '.html' else anchors)]
         if waiting:
             raise Refusal('open calls missing from the brief: ' + ', '.join(waiting) +
                           f'. Paste the section `brief.py calls {meta["calls"]} --html` prints into the source and rebuild')
@@ -835,7 +849,7 @@ class RowSpans(HTMLParser):
     """The exact markup of each call row on a page, by id, so it can be compared with a fresh rendering."""
     def __init__(self, text):
         super().__init__()
-        self.text, self.spans, self.current, self.depth, self.start = text, {}, None, 0, 0
+        self.text, self.spans, self.current, self.depth, self.start, self.nested = text, {}, None, 0, 0, []
         self.offsets = [0] + [match.end() for match in re.finditer('\n', text)]
         self.feed(text)
 
@@ -846,10 +860,12 @@ class RowSpans(HTMLParser):
     def handle_starttag(self, tag, attributes):
         if tag in VOID_TAGS:
             return
+        attrs = dict(attributes)
         if self.current:
             self.depth += 1
+            if attrs.get('data-call'):
+                self.nested.append(attrs.get('id') or '(unnamed)')
             return
-        attrs = dict(attributes)
         if attrs.get('data-call') and attrs.get('id'):
             self.current, self.depth, self.start = attrs['id'], 1, self.position()
 
@@ -870,14 +886,22 @@ def row_problem(call, row, base, where):
     or reworded, in words, pictures, links or structure, is a mismatch."""
     if row is None:
         return 'not shown'
-    seen, refused = Content(row).parts, []
+    flat = lambda html: html.replace('\r\n', '\n').replace('\r', '\n')  # a browser save drops carriage returns
+    shown = Content(flat(row), keep_nav=True)
+    if shown.duplicated:
+        return 'a tag in it repeats an attribute, so what a browser shows is not what was checked'
+    held = {}
+    for src in re.findall(r'src="data:[^";,]+;base64,([A-Za-z0-9+/=]+)"', row):
+        raw = base64.b64decode(src)
+        held['sha256:' + hashlib.sha256(raw).hexdigest()] = raw
+    refused = []
     for status in ('open', 'asked', 'concurred', 'overturned', 'superseded'):
         try:
-            candidate = render_row(call, base, where, status)
+            candidate = render_row(call, base, where, status, held)
         except Refusal as exc:
             refused.append(str(exc))
             continue
-        if Content(candidate).parts == seen:
+        if Content(flat(candidate), keep_nav=True).parts == shown.parts:
             return None
     if len(refused) == 3:
         return 'its evidence changed or went missing since it was recorded'
@@ -1019,9 +1043,18 @@ def _record_verdict(ledger, call_id, verdict, note, follow_up, superseded_by, no
     return {'ledger': str(ledger), 'id': call_id, 'status': verdict, 'settled': calls_report(ledger)['settled']}
 
 
-def minute_digits(stamp):
-    digits = re.sub(r'\D', '', stamp or '')
-    return digits[:12] if len(digits) >= 12 else None
+def utc_of(stamp):
+    """A stamp as a UTC minute, or None when it cannot be read. A stamp with no zone is UTC, as notes.js writes it."""
+    if not isinstance(stamp, str):
+        return None
+    text = stamp.strip().replace(' ', 'T', 1)
+    text = text[:-1] + '+00:00' if text.endswith('Z') else text
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    moment = moment.replace(tzinfo=timezone.utc) if moment.tzinfo is None else moment.astimezone(timezone.utc)
+    return moment.replace(second=0, microsecond=0)
 
 
 def stamp_is_current(meta, revision, stamped_at):
@@ -1033,7 +1066,7 @@ def stamp_is_current(meta, revision, stamped_at):
         return True
     if meta.get('revision') != revision:
         return False  # edited by hand since its build: no stamp on it can be placed on a version
-    built, stamped = minute_digits(meta.get('built_at')), minute_digits(stamped_at)
+    built, stamped = utc_of(meta.get('built_at')), utc_of(stamped_at)
     return bool(built and stamped and stamped > built)
 
 
@@ -1086,8 +1119,11 @@ def is_routine(call, status=None):
     return heft(call) == 0 and not call.get('evidence') and (status or call['status']) != 'asked'
 
 
-def render_row(call, base, where, status=None):
-    """One call's stampable row, exactly as `calls --html` prints it; `status` overrides the ledger's."""
+def render_row(call, base, where, status=None, recorded=None):
+    """One call's stampable row, exactly as `calls --html` prints it; `status` overrides the ledger's.
+
+    `recorded` maps an evidence hash to bytes a page already carries, so a row printed before its evidence
+    moved can still be reproduced, and marks a comparison, where a link renders whatever its file holds now."""
     status = status or call['status']
     e = html_escape
     routine = is_routine(call, status)
@@ -1107,7 +1143,11 @@ def render_row(call, base, where, status=None):
         short, kind = e(item['sha256'][7:19]), e(item['kind'])
         fid = f"fig-{call['id']}-{n}"
         state = 'missing' if not source.is_file() else 'same' if file_digest(source) == item['sha256'] else 'changed'
-        if state != 'same' and status in ('overturned', 'superseded'):
+        mime = IMAGE_TYPES.get(source.suffix.lower())
+        held = (recorded or {}).get(item['sha256'])
+        if recorded is not None and state != 'same' and (held is not None or not mime):
+            state = 'held'  # reproducing a row printed earlier: its own bytes, or a link, stand for the file
+        if state not in ('same', 'held') and status in ('overturned', 'superseded'):
             # A retired call's evidence may move on; say so rather than show the new bytes as the old.
             figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
                            f'{kind} {short}</span><p>The recorded {kind}, {short}, is {state} since; it is not shown.</p>'
@@ -1118,11 +1158,11 @@ def render_row(call, base, where, status=None):
             raise Refusal(f"{item['href']} is missing; {call['id']} was decided on it, so restore it or supersede the call")
         if state == 'changed':
             raise Refusal(f"{item['href']} changed since {call['id']} was recorded; record the call again or supersede it")
-        mime = IMAGE_TYPES.get(source.suffix.lower())
-        if mime and source.stat().st_size > EMBED_LIMIT:
+        raw = held if held is not None else (source.read_bytes() if mime and source.is_file() else None)
+        if mime and len(raw) > EMBED_LIMIT:
             raise Refusal(f"{item['href']} is over {EMBED_LIMIT // 1048576} MB; save a smaller screenshot and record the call again")
         if mime:
-            body = (f'<img src="data:{mime};base64,{base64.b64encode(source.read_bytes()).decode()}" '
+            body = (f'<img src="data:{mime};base64,{base64.b64encode(raw).decode()}" '
                     f'alt="{e("What the call was decided on: " + call["title"])}">')
         else:
             body = f'<p><a href="{e(os.path.relpath(source, where))}">{e(item["href"])}</a></p>'
@@ -1216,6 +1256,8 @@ def standing(path, seen=None, depth=0, ledger=None):
         anchor, title, call = d['anchor'], d['title'], verdicts.get(d['anchor'])
         status = call['status'] if call else None
         problem = row_problem(call, rows.get(anchor), ledger.resolve().parent, path.resolve().parent) if call and rows is not None else None
+        if not call and rows is not None and anchor in rows:
+            problem = "the ledger holds no such call"
         if problem:
             # The page shows something else under this call's name; neither its stamp nor the ledger's verdict is about it.
             mismatched.append({'anchor': anchor, 'title': title, 'problem': problem})
