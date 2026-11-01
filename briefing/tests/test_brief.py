@@ -494,6 +494,15 @@ class WorkLoopFixture(unittest.TestCase):
         brief.build(source, output, name, 'decision')
         return output
 
+    def rebuild(self, name, grill, meta=None):
+        source = self.root / (name + '.src.html')
+        text = GRILL_SOURCE.replace('{grill}', grill)
+        if meta:
+            text = text.replace('<!--BRIEF:head-->', '<!-- briefing: ' + json.dumps(meta) + ' --><!--BRIEF:head-->')
+        source.write_text(text)
+        brief.build(source, self.root / (name + '.html'), name, 'decision')
+        return self.root / (name + '.html')
+
     def stamp(self, page, concurs=None, notes=None):
         text = brief.read(page)
         for name, value in (('report-concurs', concurs), ('report-notes', notes)):
@@ -802,15 +811,6 @@ class CallOrderTests(WorkLoopFixture):
 
 class ReviewRoundTwoTests(WorkLoopFixture):
     """One test per finding of the second Codex round, each written to fail on the round-one fixes."""
-    def rebuild(self, name, grill, meta=None):
-        source = self.root / (name + '.src.html')
-        text = GRILL_SOURCE.replace('{grill}', grill)
-        if meta:
-            text = text.replace('<!--BRIEF:head-->', '<!-- briefing: ' + json.dumps(meta) + ' --><!--BRIEF:head-->')
-        source.write_text(text)
-        brief.build(source, self.root / (name + '.html'), name, 'decision')
-        return self.root / (name + '.html')
-
     def test_a_stamp_from_before_a_rebuild_is_not_synced(self):
         self.call('Keep data')
         page = self.page('closing', brief.render_calls(self.ledger), {'calls': 'work.calls.json'})
@@ -827,7 +827,7 @@ class ReviewRoundTwoTests(WorkLoopFixture):
         self.call('Keep data')
         section = brief.render_calls(self.ledger).replace('<dd>the chosen option</dd>', '<dd>delete everything</dd>')
         page = self.page('closing', section, {'calls': 'work.calls.json'})
-        with self.assertRaisesRegex(brief.Refusal, 'its chose differs'):
+        with self.assertRaisesRegex(brief.Refusal, 'differs from what the ledger renders'):
             brief.check(page)
         self.stamp(page, concurs={'call-keep-data': '2099-01-01T00:00Z'})
         self.assertEqual(brief.sync_calls(self.ledger, page)['mismatched'], ['call-keep-data'])
@@ -887,3 +887,93 @@ class ReviewRoundTwoTests(WorkLoopFixture):
         section = brief.render_calls(self.ledger, every=True)
         self.assertIn('is changed since; it is not shown', section)
         self.assertNotIn('run.log</a>', section)
+
+
+
+class ReviewRoundThreeTests(WorkLoopFixture):
+    """One test per finding of the third Codex round. A row is generated, never written: any edit is a mismatch."""
+    def setUp(self):
+        super().setUp()
+        self.call('Keep data', evidence=[self.shot], undo='one line')
+
+    def page_with(self, edit):
+        section = edit(brief.render_calls(self.ledger))
+        return self.page('closing', section, {'calls': 'work.calls.json'})
+
+    def test_any_edit_to_a_rendered_row_is_refused(self):
+        edits = {
+            'a second chose': lambda s: s.replace('<dt>Chose</dt>', '<dt>Chose</dt><dd>delete everything</dd><dt>Chose</dt>', 1),
+            'an invented fact': lambda s: s.replace('<dt>Judged</dt>', '<dt>Approved</dt><dd>by the owner</dd><dt>Judged</dt>', 1),
+            'false prose': lambda s: s.replace('carrying on as if you concur.', 'approved already.', 1),
+            'a swapped picture source': lambda s: s.replace('<img ', '<picture><source srcset="data:image/png;base64,QUJD"><img ', 1).replace('one.</figcaption>', 'one.</figcaption>', 1),
+            'a row on a paragraph': lambda s: s.replace('<div class="ask call"', '<p class="ask call"', 1),
+        }
+        for name, edit in edits.items():
+            with self.subTest(edit=name):
+                if name == 'a row on a paragraph':
+                    with self.assertRaises(brief.Refusal):
+                        brief.check(self.page_with(edit))
+                    continue
+                with self.assertRaisesRegex(brief.Refusal, 'differs from what the ledger renders|not shown|open calls missing'):
+                    brief.check(self.page_with(edit))
+
+    def test_a_stamp_on_a_page_edited_after_its_build_is_not_approval(self):
+        keep = '<div class="grill"><div class="ask" id="q-data" data-brief-anchor="q-data"><h3>Keep all data</h3></div></div>'
+        with patch.object(brief, 'utc_minute', lambda now=None: '2030-01-01T00:00Z'):
+            page = self.page('plan', keep)
+        self.stamp(page, concurs={'q-data': '2030-01-01T00:01Z'})  # after the build
+        page.write_text(brief.read(page).replace('Keep all data', 'Delete all data'))  # then edited by hand
+        meta = brief.island(brief.read(page), 'brief-meta')[1]
+        meta['feedback_revision'] = None  # as a rebuild over retained notes leaves it, so only the time rule is left
+        old, _ = brief.island(brief.read(page), 'brief-meta')
+        page.write_text(brief.read(page).replace(old, '<script type="application/json" id="brief-meta">' + brief.encode(meta) + '</script>'))
+        tree = brief.orient(page)
+        self.assertEqual(tree['approved'], [])
+        self.assertEqual([d['title'] for d in tree['restamp']], ['Delete all data'])
+
+    def test_a_question_hidden_behind_ins_or_label_is_found(self):
+        for wrapper in ('ins', 'label'):
+            hidden = f'<div class="grill"><p class="ask" id="q-a" data-brief-anchor="q-a"><{wrapper}><b>First<div class="q"><b>Second</b></div></div>'
+            with self.subTest(wrapper=wrapper), self.assertRaisesRegex(brief.Refusal, 'Second'):
+                self.page('hidden-' + wrapper, hidden)
+
+    def test_a_parent_showing_call_rows_without_a_ledger_is_unknown(self):
+        parent = self.page('plan', brief.render_calls(self.ledger))  # shows a call, names no ledger
+        empty = self.root / 'empty.calls.json'
+        empty.write_text(json.dumps({'format': 1, 'kind': 'briefing-calls', 'calls': []}))
+        child = self.page('closing', '', {'derives_from': ['plan.html'], 'calls': 'empty.calls.json'})
+        settled = brief.orient(child)['settled']
+        self.assertEqual(settled['state'], 'unknown')
+        self.assertTrue(any('yet shows call rows' in why for why in settled['why']))
+        self.assertTrue(parent.exists())
+
+    def test_an_unchanged_rebuild_keeps_a_fresh_stamp_current(self):
+        keep = '<div class="grill"><div class="ask" id="q-data" data-brief-anchor="q-data"><h3>Keep all data</h3></div></div>'
+        changed = keep.replace('Keep all data', 'Keep most data')
+        with patch.object(brief, 'utc_minute', lambda now=None: '2030-01-01T00:00Z'):
+            page = self.page('plan', keep)
+        self.stamp(page, concurs={'q-data': '2020-01-01T00:00Z'})
+        with patch.object(brief, 'utc_minute', lambda now=None: '2030-01-01T00:10Z'):
+            page = self.rebuild('plan', changed)  # wording changed: old stamps go stale
+        self.stamp(page, concurs={'q-data': '2030-01-01T00:20Z'})  # stamped again, after that build
+        with patch.object(brief, 'utc_minute', lambda now=None: '2030-01-01T00:30Z'):
+            page = self.rebuild('plan', changed)  # nothing changed this time
+        self.assertEqual(brief.island(brief.read(page), 'brief-meta')[1]['built_at'], '2030-01-01T00:10Z')
+        self.assertEqual([d['anchor'] for d in brief.orient(page)['approved']], ['q-data'])
+
+    def test_optional_fields_of_the_wrong_type_are_refused(self):
+        good = brief.load_ledger(self.ledger)
+        for field, value in (('context', {'x': 1}), ('undo', 12), ('door', 'sideways'), ('at', None)):
+            bad = json.loads(json.dumps(good))
+            bad['calls'][0][field] = value
+            self.ledger.write_text(json.dumps(bad))
+            with self.subTest(field=field), self.assertRaisesRegex(brief.Refusal, 'malformed'):
+                brief.render_calls(self.ledger)
+
+    def test_routine_calls_sort_last_even_behind_an_evidence_call_of_equal_weight(self):
+        self.ledger.unlink()
+        self.call('Routine first')
+        self.call('With proof', evidence=[self.shot])
+        section = brief.render_calls(self.ledger)
+        self.assertEqual([d['anchor'] for d in brief.Decisions(section).decisions()], ['call-with-proof', 'call-routine-first'])
+        self.assertIn('The last one was routine', section)

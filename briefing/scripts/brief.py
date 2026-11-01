@@ -53,9 +53,10 @@ EMBED_LIMIT = 3 * 1024 * 1024
 EVIDENCE_KINDS = ('screenshot', 'file')
 SHA256 = re.compile(r'^sha256:[0-9a-f]{64}$')
 # A browser closes an open <p> when one of these starts inside it; the parsers below do the same.
-BLOCKS = set('address article aside blockquote details div dl fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 '
-             'header hr main nav ol p pre section table ul'.split())
-INLINE = set('a abbr b bdi bdo cite code data dfn em font i kbd mark q s samp small span strong sub sup time tt u var'.split())
+BLOCKS = set('address article aside blockquote center dd details dialog dir div dl dt fieldset figcaption figure footer form '
+             'h1 h2 h3 h4 h5 h6 header hgroup hr li listing main menu nav ol p pre search section summary table ul xmp'.split())
+# The elements that bound "button scope": an open <p> above one of these is out of reach.
+SCOPE_BOUNDARY = set('applet button caption html marquee object table td template th'.split())
 
 
 class Refusal(ValueError):
@@ -116,12 +117,12 @@ class Decisions(HTMLParser):
         if tag in VOID_TAGS:
             return
         if tag in BLOCKS:
-            # A browser closes an open <p> here, through any inline elements still open inside it.
+            # A browser closes a <p> in button scope here, with whatever is still open inside it.
             for depth in range(len(self.stack) - 1, -1, -1):
                 if self.stack[depth][0] == 'p':
                     self.handle_endtag('p')
                     break
-                if self.stack[depth][0] not in INLINE:
+                if self.stack[depth][0] in SCOPE_BOUNDARY:
                     break
         attrs = dict(attributes)
         classes = set((attrs.get('class') or '').split())
@@ -384,9 +385,10 @@ def check(path):
     if meta.get('calls'):
         ledger = path.parent / meta['calls']
         data = load_ledger(ledger)
-        shown = CallRows(CONTENT.search(text)[1]).rows if path.suffix == '.html' else {}
-        stale = [f"{c['id']} ({row_problem(c, shown[c['id']])})" for c in data['calls']
-                 if c['id'] in shown and row_problem(c, shown[c['id']])]
+        shown = RowSpans(CONTENT.search(text)[1]).spans if path.suffix == '.html' else {}
+        problems = {c['id']: row_problem(c, shown[c['id']], ledger.resolve().parent, path.resolve().parent)
+                    for c in data['calls'] if c['id'] in shown}
+        stale = [f'{name} ({problem})' for name, problem in problems.items() if problem]
         if stale:
             raise Refusal('call rows rendered from other words or evidence than the ledger holds: ' + ', '.join(stale) +
                           f'. Paste a fresh `brief.py calls {meta["calls"]} --html` and rebuild')
@@ -584,6 +586,8 @@ def build(source, output, identity=None, purpose=None, no_wall=False, discard_ed
     revision = content_revision(text, identity, purpose)
     meta = {'id': identity, 'medium': 'html', 'purpose': purpose, 'revision': revision, 'feedback_revision': revision,
             'built_at': utc_minute(), **extras}
+    if previous and previous.get('revision') == revision and not edited and previous.get('built_at'):
+        meta['built_at'] = previous['built_at']  # same content: stamps made since the last build still count
     if previous and retained and (retained[1] or retained[3]):
         # Format 1 has no per-comment content revision. Mixed-origin notes stay unknown, and so
         # do notes a reader left on hand-edited wording that this rebuild discards.
@@ -786,6 +790,13 @@ def call_problem(call):
     for field in ('passed_over', 'conflicts'):
         if not isinstance(call.get(field), list) or not all(isinstance(x, str) for x in call[field]):
             return f'{name} has malformed {field}'
+    for field in ('context', 'undo'):
+        if call.get(field) is not None and not isinstance(call[field], str):
+            return f'{name} has a malformed {field}'
+    if call.get('door') not in (None, 'two-way', 'one-way') or not isinstance(call.get('at'), str):
+        return f'{name} has a malformed door or time'
+    if call.get('under') is not None and not (isinstance(call['under'], dict) and isinstance(call['under'].get('href'), str)):
+        return f'{name} has a malformed under'
     verdict = call.get('verdict')
     if call['status'] in VERDICTS:
         if (not isinstance(verdict, dict) or not isinstance(verdict.get('at'), str) or not verdict['at']
@@ -820,88 +831,57 @@ def call_fingerprint(call):
     return digest(json.dumps(seen, ensure_ascii=False, sort_keys=True))
 
 
-class CallRows(HTMLParser):
-    """The call rows a page shows: the fingerprint each claims, and what it actually displays."""
+class RowSpans(HTMLParser):
+    """The exact markup of each call row on a page, by id, so it can be compared with a fresh rendering."""
     def __init__(self, text):
         super().__init__()
-        self.rows, self.stack, self.current, self.start, self.field, self.label = {}, [], None, 0, None, None
+        self.text, self.spans, self.current, self.depth, self.start = text, {}, None, 0, 0
+        self.offsets = [0] + [match.end() for match in re.finditer('\n', text)]
         self.feed(text)
 
+    def position(self):
+        line, column = self.getpos()
+        return self.offsets[line - 1] + column
+
     def handle_starttag(self, tag, attributes):
-        attrs = dict(attributes)
-        if self.current and tag == 'img':
-            self.rows[self.current]['images'].append(attrs.get('src') or '')
         if tag in VOID_TAGS:
             return
-        self.stack.append(tag)
-        if attrs.get('data-call') and attrs.get('id') and self.current is None:
-            self.current, self.start = attrs['id'], len(self.stack)
-            self.rows[self.current] = {'fingerprint': attrs['data-call'], 'title': '', 'facts': {}, 'images': []}
-        elif self.current and tag in ('h3', 'dt', 'dd') and self.field is None:
-            self.field = tag
-            if tag == 'dd' and self.label is not None:
-                self.rows[self.current]['facts'][self.label] = ''
-            if tag == 'dt':
-                self.label = ''
-
-    def handle_startendtag(self, tag, attrs):
-        self.handle_starttag(tag, attrs)
-        if tag not in VOID_TAGS:
-            self.handle_endtag(tag)
+        if self.current:
+            self.depth += 1
+            return
+        attrs = dict(attributes)
+        if attrs.get('data-call') and attrs.get('id'):
+            self.current, self.depth, self.start = attrs['id'], 1, self.position()
 
     def handle_endtag(self, tag):
-        for i in range(len(self.stack) - 1, -1, -1):
-            if self.stack[i] == tag:
-                del self.stack[i:]
-                break
-        if tag == self.field:
-            self.field = None
-        if self.current and len(self.stack) < self.start:
-            self.current, self.label = None, None
-
-    def handle_data(self, data):
-        if not self.current or not self.field:
+        if not self.current:
             return
-        row = self.rows[self.current]
-        if self.field == 'h3' and not row['title']:
-            row['title'] += data
-        elif self.field == 'h3':
-            row['title'] += data
-        elif self.field == 'dt':
-            self.label += data
-        elif self.field == 'dd' and self.label is not None:
-            row['facts'][self.label] += data
+        self.depth -= 1
+        if self.depth == 0:
+            self.spans.setdefault(self.current, self.text[self.start:self.text.find('>', self.position()) + 1])
+            self.current = None
 
 
-def row_problem(call, row):
-    """Why a page's row does not show this call, or None. Checks what the reader saw, not only the attribute."""
+def row_problem(call, row, base, where):
+    """Why a page's row does not show this call, or None.
+
+    A row is generated, never written, so it must be one of the renderings the ledger can produce: the
+    call as it is, under any status it could have had when the row was printed. Anything added, removed
+    or reworded, in words, pictures, links or structure, is a mismatch."""
     if row is None:
         return 'not shown'
-    plain = lambda s: ' '.join((s or '').split())
-    if row['fingerprint'] != call_fingerprint(call):
-        return 'its fingerprint belongs to other words or evidence'
-    facts = {plain(k): plain(v) for k, v in row['facts'].items()}
-    expected = {'Chose': call['chose'], 'Because': call['because'], 'Context': call.get('context'),
-                'Passed over': '; '.join(call.get('passed_over') or []) or None}
-    if call.get('undo'):
-        expected['Undo'] = call['undo'] + (' (one-way door)' if call.get('door') == 'one-way' else '')
-    if plain(row['title']) != plain(call['title']):
-        return 'its title differs from the ledger'
-    for label, value in expected.items():
-        if label in ('Chose', 'Because') and facts.get(label) != plain(value):
-            return f'its {label.lower()} differs from the ledger'
-        if label not in ('Chose', 'Because') and label in facts and facts[label] != plain(value):
-            return f'its {label.lower()} differs from the ledger'
-    recorded = {e['sha256'] for e in call.get('evidence') or []}
-    for src in row['images']:
-        head, _, body = src.partition(',')
+    seen, refused = Content(row).parts, []
+    for status in ('open', 'asked', 'concurred', 'overturned', 'superseded'):
         try:
-            shown = 'sha256:' + hashlib.sha256(base64.b64decode(body, validate=True)).hexdigest() if head.endswith(';base64') else None
-        except ValueError:
-            shown = None
-        if shown not in recorded:
-            return 'it shows a picture that is not the recorded evidence'
-    return None
+            candidate = render_row(call, base, where, status)
+        except Refusal as exc:
+            refused.append(str(exc))
+            continue
+        if Content(candidate).parts == seen:
+            return None
+    if len(refused) == 3:
+        return 'its evidence changed or went missing since it was recorded'
+    return 'what it shows differs from what the ledger renders'
 
 
 def save_ledger(path, data, before):
@@ -1051,6 +1031,8 @@ def stamp_is_current(meta, revision, stamped_at):
     stamped after the page was built, to the minute; a stamp in the build's own minute stays unknown."""
     if meta.get('feedback_revision') == revision:
         return True
+    if meta.get('revision') != revision:
+        return False  # edited by hand since its build: no stamp on it can be placed on a version
     built, stamped = minute_digits(meta.get('built_at')), minute_digits(stamped_at)
     return bool(built and stamped and stamped > built)
 
@@ -1061,14 +1043,15 @@ def sync_calls(ledger, page):
     if page.suffix != '.html':
         raise Refusal('sync reads the CONCUR stamps saved in a built HTML brief')
     _, saved_notes, _, concurs = notes(text)
-    shown = CallRows(CONTENT.search(text)[1]).rows
+    shown = RowSpans(CONTENT.search(text)[1]).spans
+    where = page.resolve().parent
     with ledger_lock(ledger):
         before = ledger.read_bytes() if ledger.exists() else None
         data = load_ledger(ledger)
         concurred, to_answer, mismatched, stale_stamps = [], {}, [], []
         for call in data['calls']:
             said = [n['text'] for n in saved_notes.get(call['id'], [])]
-            if call['id'] in concurs and call['status'] in ('open', 'asked') and row_problem(call, shown.get(call['id'])):
+            if call['id'] in concurs and call['status'] in ('open', 'asked') and row_problem(call, shown.get(call['id']), ledger.resolve().parent, where):
                 # The reader stamped a row that does not show this call; it says nothing about this call.
                 mismatched.append(call['id'])
                 continue
@@ -1092,6 +1075,73 @@ def sync_calls(ledger, page):
             'calls': report['calls']}
 
 
+HEFT = {'low': 0, 'medium': 1, 'high': 2, 'unknown': 2}
+
+
+def heft(call):
+    return HEFT[call['judgement']['uncertainty']] + HEFT[call['judgement']['taste']]
+
+
+def is_routine(call, status=None):
+    return heft(call) == 0 and not call.get('evidence') and (status or call['status']) != 'asked'
+
+
+def render_row(call, base, where, status=None):
+    """One call's stampable row, exactly as `calls --html` prints it; `status` overrides the ledger's."""
+    status = status or call['status']
+    e = html_escape
+    routine = is_routine(call, status)
+    facts = [('Chose', call['chose']), ('Because', call['because'])]
+    if call.get('context') and not routine:
+        facts.insert(0, ('Context', call['context']))
+    if call.get('passed_over') and not routine:
+        facts.append(('Passed over', '; '.join(call['passed_over'])))
+    if call.get('undo') and not routine:
+        facts.append(('Undo', call['undo'] + (' (one-way door)' if call.get('door') == 'one-way' else '')))
+    j = call['judgement']
+    facts.append(('Judged', f"uncertainty {j['uncertainty']} · your taste {j['taste']} · {j['posture']} posture"
+                  f"{'' if j.get('posture_declared') else ' (undeclared, so standard)'} · read by {j['filled_by']} in {j['slot']}"))
+    figures = []
+    for n, item in enumerate(call.get('evidence') or [], 1):
+        source = base / item['href']
+        short, kind = e(item['sha256'][7:19]), e(item['kind'])
+        fid = f"fig-{call['id']}-{n}"
+        state = 'missing' if not source.is_file() else 'same' if file_digest(source) == item['sha256'] else 'changed'
+        if state != 'same' and status in ('overturned', 'superseded'):
+            # A retired call's evidence may move on; say so rather than show the new bytes as the old.
+            figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
+                           f'{kind} {short}</span><p>The recorded {kind}, {short}, is {state} since; it is not shown.</p>'
+                           f'<figcaption><b>This call is {e(status)}, so its evidence was free to change.</b>'
+                           f'</figcaption></figure>')
+            continue
+        if state == 'missing':
+            raise Refusal(f"{item['href']} is missing; {call['id']} was decided on it, so restore it or supersede the call")
+        if state == 'changed':
+            raise Refusal(f"{item['href']} changed since {call['id']} was recorded; record the call again or supersede it")
+        mime = IMAGE_TYPES.get(source.suffix.lower())
+        if mime and source.stat().st_size > EMBED_LIMIT:
+            raise Refusal(f"{item['href']} is over {EMBED_LIMIT // 1048576} MB; save a smaller screenshot and record the call again")
+        if mime:
+            body = (f'<img src="data:{mime};base64,{base64.b64encode(source.read_bytes()).decode()}" '
+                    f'alt="{e("What the call was decided on: " + call["title"])}">')
+        else:
+            body = f'<p><a href="{e(os.path.relpath(source, where))}">{e(item["href"])}</a></p>'
+        figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
+                       f'{kind} {short}</span>{body}<figcaption><b>What I was looking at when I chose: '
+                       f'{e(call["chose"])}.</b> A concur covers this {kind}, {short}, and no later one.'
+                       f'</figcaption></figure>')
+    # Green is for carrying on; a stop is a decision waiting, and red says so.
+    if status == 'asked':
+        stance = ('<p class="callout crit"><b>Stopped:</b> waiting on your answer, because ' + e('; '.join(j['reasons'])) + '.</p>')
+    elif status == 'open':
+        stance = '<p class="rec"><b>Meanwhile:</b> carrying on as if you concur.</p>'
+    else:
+        stance = f'<p class="rec"><b>{e(status.capitalize())}.</b></p>'
+    dl = ''.join(f'<dt>{e(k)}</dt><dd>{e(v)}</dd>' for k, v in facts)
+    return (f'<div class="ask call" id="{call["id"]}" data-brief-anchor="{call["id"]}" data-call="{call_fingerprint(call)}">'
+            f'<h3>{e(call["title"])}</h3><dl class="facts">{dl}</dl>{"".join(figures)}{stance}</div>')
+
+
 def render_calls(ledger, relative_to=None, number=None, every=False):
     """The closing brief's section of calls: one stampable row each, its evidence drawn in, nothing invented."""
     data = load_ledger(ledger)
@@ -1099,71 +1149,16 @@ def render_calls(ledger, relative_to=None, number=None, every=False):
     where = (relative_to or ledger).resolve().parent
     shown = [c for c in data['calls'] if every or c['status'] in ('open', 'asked')]
     # Stopped calls first, then the heaviest readings; routine calls, both readings low, last and compact.
-    weight = {'low': 0, 'medium': 1, 'high': 2, 'unknown': 2}
-    heft = lambda c: weight[c['judgement']['uncertainty']] + weight[c['judgement']['taste']]
-    shown.sort(key=lambda c: (c['status'] != 'asked', -heft(c)))
-    rows = []
+    shown.sort(key=lambda c: (c['status'] != 'asked', is_routine(c), -heft(c)))
+    rows = [render_row(call, base, where) for call in shown]
     e = html_escape
-    for call in shown:
-        routine = heft(call) == 0 and not call.get('evidence') and call['status'] != 'asked'
-        facts = [('Chose', call['chose']), ('Because', call['because'])]
-        if call.get('context') and not routine:
-            facts.insert(0, ('Context', call['context']))
-        if call.get('passed_over') and not routine:
-            facts.append(('Passed over', '; '.join(call['passed_over'])))
-        if call.get('undo') and not routine:
-            facts.append(('Undo', call['undo'] + (' (one-way door)' if call.get('door') == 'one-way' else '')))
-        j = call['judgement']
-        facts.append(('Judged', f"uncertainty {j['uncertainty']} · your taste {j['taste']} · {j['posture']} posture"
-                      f"{'' if j.get('posture_declared') else ' (undeclared, so standard)'} · read by {j['filled_by']} in {j['slot']}"))
-        figures = []
-        for n, item in enumerate(call.get('evidence') or [], 1):
-            source = base / item['href']
-            short, kind = e(item['sha256'][7:19]), e(item['kind'])
-            fid = f"fig-{call['id']}-{n}"
-            state = 'missing' if not source.is_file() else 'same' if file_digest(source) == item['sha256'] else 'changed'
-            if state != 'same' and call['status'] in ('overturned', 'superseded'):
-                # A retired call's evidence may move on; say so rather than show the new bytes as the old.
-                figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
-                               f'{kind} {short}</span><p>The recorded {kind}, {short}, is {state} since; it is not shown.</p>'
-                               f'<figcaption><b>This call is {e(call["status"])}, so its evidence was free to change.</b>'
-                               f'</figcaption></figure>')
-                continue
-            if state == 'missing':
-                raise Refusal(f"{item['href']} is missing; {call['id']} was decided on it, so restore it or supersede the call")
-            if state == 'changed':
-                raise Refusal(f"{item['href']} changed since {call['id']} was recorded; record the call again or supersede it")
-            mime = IMAGE_TYPES.get(source.suffix.lower())
-            if mime and source.stat().st_size > EMBED_LIMIT:
-                raise Refusal(f"{item['href']} is over {EMBED_LIMIT // 1048576} MB; save a smaller screenshot and record the call again")
-            if mime:
-                body = (f'<img src="data:{mime};base64,{base64.b64encode(source.read_bytes()).decode()}" '
-                        f'alt="{e("What the call was decided on: " + call["title"])}">')
-            else:
-                href = os.path.relpath(source, where)
-                body = f'<p><a href="{e(href)}">{e(item["href"])}</a></p>'
-            figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
-                           f'{kind} {short}</span>{body}<figcaption><b>What I was looking at when I chose: '
-                           f'{e(call["chose"])}.</b> A concur covers this {kind}, {short}, and no later one.'
-                           f'</figcaption></figure>')
-        # Green is for carrying on; a stop is a decision waiting, and red says so.
-        if call['status'] == 'asked':
-            stance = ('<p class="callout crit"><b>Stopped:</b> waiting on your answer, because ' +
-                      e('; '.join(j['reasons'])) + '.</p>')
-        elif call['status'] == 'open':
-            stance = '<p class="rec"><b>Meanwhile:</b> carrying on as if you concur.</p>'
-        else:
-            stance = f"<p class=\"rec\"><b>{e(call['status'].capitalize())}.</b></p>"
-        dl = ''.join(f'<dt>{e(k)}</dt><dd>{e(v)}</dd>' for k, v in facts)
-        rows.append(f'<div class="ask call" id="{call["id"]}" data-brief-anchor="{call["id"]}" data-call="{call_fingerprint(call)}">'
-                    f'<h3>{e(call["title"])}</h3><dl class="facts">{dl}</dl>{"".join(figures)}{stance}</div>')
     asked = sum(c['status'] == 'asked' for c in shown)
-    routine = sum(heft(c) == 0 and not c.get('evidence') and c['status'] != 'asked' for c in shown)
+    routine = sum(is_routine(c) for c in shown)
     lead = ('Nobody had decided these. I decided them and kept working' +
             (f', except {asked} I stopped to ask you about' if asked else '') +
             '. Stamp CONCUR on each one you agree with; a note on one is answered before the work settles.' +
-            ((' The last one was' if routine == 1 else f' The last {routine} were') +
-             ' routine, with both readings low, and shows only what I chose and why.'.replace('shows', 'shows' if routine == 1 else 'show')
+            ((' The last one was routine, with both readings low, and shows' if routine == 1 else
+              f' The last {routine} were routine, with both readings low, and show') + ' only what I chose and why.'
              if routine else ''))
     number = f'<span class="n">{e(number)}</span> ' if number else ''
     return (f'<section class="pane"><h2 id="sec-calls" data-brief-anchor="sec-calls">{number}Judgement calls</h2>\n'
@@ -1187,7 +1182,7 @@ def standing(path, seen=None, depth=0, ledger=None):
     if path.suffix == '.html':
         found = Decisions(CONTENT.search(text)[1]).decisions()
         _, saved, _, concurs = notes(text)
-        rows = CallRows(CONTENT.search(text)[1]).rows
+        rows = RowSpans(CONTENT.search(text)[1]).spans
         current = lambda at: stamp_is_current(meta, revision, at)
     else:
         prose = markdown_prose(text)
@@ -1220,7 +1215,7 @@ def standing(path, seen=None, depth=0, ledger=None):
     for d in found:
         anchor, title, call = d['anchor'], d['title'], verdicts.get(d['anchor'])
         status = call['status'] if call else None
-        problem = row_problem(call, rows.get(anchor)) if call and rows is not None else None
+        problem = row_problem(call, rows.get(anchor), ledger.resolve().parent, path.resolve().parent) if call and rows is not None else None
         if problem:
             # The page shows something else under this call's name; neither its stamp nor the ledger's verdict is about it.
             mismatched.append({'anchor': anchor, 'title': title, 'problem': problem})
@@ -1244,7 +1239,8 @@ def standing(path, seen=None, depth=0, ledger=None):
     return {'href': str(path), 'id': meta['id'], 'purpose': meta['purpose'], 'revision': revision, 'state': 'read',
             'calls': meta.get('calls'), 'ledger_state': ledger_state, 'ledger_path': str(ledger) if ledger else None,
             'ledger_settled': report['settled'] if report else None, 'approved': approved, 'unstamped': unstamped,
-            'overturned': overturned, 'restamp': restamp, 'mismatched': mismatched, 'notes': said, 'parents': parents}
+            'overturned': overturned, 'restamp': restamp, 'mismatched': mismatched, 'notes': said, 'parents': parents,
+            'shows_calls': any((d['anchor'] or '').startswith('call-') for d in found)}
 
 
 def settlement(tree):
@@ -1259,8 +1255,8 @@ def settlement(tree):
         label = 'this brief' if top else node['id']
         if node['ledger_state'] == 'missing':
             unknown.append(f"{label}: its calls ledger {node['ledger_path']} is missing")
-        elif node['ledger_state'] == 'none named' and top:
-            unknown.append('this brief names no calls ledger')
+        elif node['ledger_state'] == 'none named' and (top or node.get('shows_calls')):
+            unknown.append(f'{label} names no calls ledger' + ('' if top else ', yet shows call rows'))
         elif node['ledger_settled'] is False:
             no.append(f'{label}: calls still open, asked or stale')
         if node.get('mismatched'):
