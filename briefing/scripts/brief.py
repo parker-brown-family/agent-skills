@@ -21,7 +21,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from urllib.parse import unquote, urlsplit
+from urllib.parse import quote, unquote, urlsplit
 try:
     import fcntl  # POSIX; elsewhere the compare-before-replace in `atomic` is the only guard
 except ImportError:
@@ -240,7 +240,8 @@ class Content(HTMLParser):
 
     def handle_data(self, data):
         if not self.skip and data.strip():
-            self.parts.append(('text', data))
+            # A browser save turns CRLF into LF; the fingerprint must not see the difference.
+            self.parts.append(('text', data.replace('\r\n', '\n').replace('\r', '\n')))
 
 
 def content_revision(text, identity, purpose):
@@ -561,6 +562,11 @@ def build(source, output, identity=None, purpose=None, no_wall=False, discard_ed
     if loose:
         raise Refusal(UNANCHORED + '; '.join(d['title'] or '(untitled ' + d['tag'] + ')' for d in loose))
     extras = source_extras(text)
+    # The identity names its parents and ledger relative to the source; the page may be built elsewhere.
+    for key in ('derives_from', 'calls'):
+        if key in extras:
+            rebase = lambda rel: os.path.relpath((source.parent / rel).resolve(), output.resolve().parent)
+            extras[key] = [rebase(rel) for rel in extras[key]] if key == 'derives_from' else rebase(extras[key])
     if not SAFE_ID.fullmatch(identity):
         raise Refusal('use a stable lowercase brief id')
     old_bytes = output.read_bytes() if output.exists() else None
@@ -895,9 +901,11 @@ def row_problem(call, row, base, where):
         raw = base64.b64decode(src)
         held['sha256:' + hashlib.sha256(raw).hexdigest()] = raw
     refused = []
-    for status in ('open', 'asked', 'concurred', 'overturned', 'superseded'):
+    tries = [(status, None) for status in ('open', 'asked', 'concurred', 'overturned', 'superseded')]
+    tries += [(status, moved) for status in ('overturned', 'superseded') for moved in ('changed', 'missing')]
+    for status, moved in tries:
         try:
-            candidate = render_row(call, base, where, status, held)
+            candidate = render_row(call, base, where, status, None if moved else held, moved)
         except Refusal as exc:
             refused.append(str(exc))
             continue
@@ -1119,7 +1127,7 @@ def is_routine(call, status=None):
     return heft(call) == 0 and not call.get('evidence') and (status or call['status']) != 'asked'
 
 
-def render_row(call, base, where, status=None, recorded=None):
+def render_row(call, base, where, status=None, recorded=None, moved=None):
     """One call's stampable row, exactly as `calls --html` prints it; `status` overrides the ledger's.
 
     `recorded` maps an evidence hash to bytes a page already carries, so a row printed before its evidence
@@ -1145,8 +1153,10 @@ def render_row(call, base, where, status=None, recorded=None):
         state = 'missing' if not source.is_file() else 'same' if file_digest(source) == item['sha256'] else 'changed'
         mime = IMAGE_TYPES.get(source.suffix.lower())
         held = (recorded or {}).get(item['sha256'])
-        if recorded is not None and state != 'same' and (held is not None or not mime):
+        if recorded is not None and state != 'same' and (held is not None or not mime) and not moved:
             state = 'held'  # reproducing a row printed earlier: its own bytes, or a link, stand for the file
+        if moved and state != 'same':
+            state = moved  # reproducing a retired row printed when its evidence was in that state
         if state not in ('same', 'held') and status in ('overturned', 'superseded'):
             # A retired call's evidence may move on; say so rather than show the new bytes as the old.
             figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
@@ -1165,7 +1175,7 @@ def render_row(call, base, where, status=None, recorded=None):
             body = (f'<img src="data:{mime};base64,{base64.b64encode(raw).decode()}" '
                     f'alt="{e("What the call was decided on: " + call["title"])}">')
         else:
-            body = f'<p><a href="{e(os.path.relpath(source, where))}">{e(item["href"])}</a></p>'
+            body = f'<p><a href="{e(quote(os.path.relpath(source, where)))}">{e(item["href"])}</a></p>'
         figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
                        f'{kind} {short}</span>{body}<figcaption><b>What I was looking at when I chose: '
                        f'{e(call["chose"])}.</b> A concur covers this {kind}, {short}, and no later one.'
@@ -1227,7 +1237,9 @@ def standing(path, seen=None, depth=0, ledger=None):
     else:
         prose = markdown_prose(text)
         found = [{'anchor': a, 'title': h.strip()} for a, h in
-                 re.findall(r'<a id="((?:q|call)-[a-z0-9-]+)"></a>\s*\n#{1,6}\s+(.+)', prose)]
+                 re.findall(r'<a id=["\']((?:q|call)-[a-z0-9-]+)["\']\s*/?>(?:</a>)?\s*\n#{1,6}\s+(.+)', prose)]
+        found += [{'anchor': a, 'title': h.strip()} for h, a in
+                  re.findall(r'^#{1,6}\s+(.+?)\s+\^((?:q|call)-[a-z0-9-]+)[ \t]*$', prose, re.M)]
         rows = None
         side = path.with_name(path.name.removesuffix('.md') + '.feedback.json')
         same = False
@@ -1266,14 +1278,26 @@ def standing(path, seen=None, depth=0, ledger=None):
             approved.append({'anchor': anchor, 'title': title, 'at': (call.get('verdict') or {}).get('at')})
         elif status == 'overturned':
             overturned.append({'anchor': anchor, 'title': title, 'note': (call.get('verdict') or {}).get('note')})
-        elif status == 'superseded' or (status in ('open', 'asked') and depth == 0 and anchor not in concurs):
-            continue  # this brief's own open and asked calls have their own lists in the read-out
+        elif status == 'superseded' or (status in ('open', 'asked') and anchor not in concurs):
+            continue  # open and asked calls have their own lists in the read-out, at every depth
         elif anchor in concurs and current(concurs[anchor]):
             approved.append({'anchor': anchor, 'title': title, 'at': concurs[anchor]})
         elif anchor in concurs:
             restamp.append({'anchor': anchor, 'title': title, 'at': concurs[anchor]})
         else:
             unstamped.append({'anchor': anchor, 'title': title})
+    # Answered calls whose rows a regenerated section left out still stand, or still stand overturned.
+    listed = {d['anchor'] for d in found}
+    for call in verdicts.values():
+        if call['id'] in listed:
+            continue
+        if call['status'] == 'concurred':
+            approved.append({'anchor': call['id'], 'title': call['title'], 'at': (call.get('verdict') or {}).get('at')})
+        elif call['status'] == 'overturned':
+            overturned.append({'anchor': call['id'], 'title': call['title'], 'note': (call.get('verdict') or {}).get('note')})
+    open_calls = [{'id': c['id'], 'title': c['title'], 'judgement': c['judgement']} for c in verdicts.values() if c['status'] == 'open']
+    asked_calls = [{'id': c['id'], 'title': c['title'], 'reasons': c['judgement']['reasons']}
+                   for c in verdicts.values() if c['status'] == 'asked']
     said = [{'anchor': a, 'text': n['text'], 'at': n.get('ts')} for a, entries in saved.items() for n in entries]
     parents = [standing(path.parent / p, seen, depth + 1) if depth < 8 else {'href': p, 'state': 'not read: too deep'}
                for p in meta.get('derives_from') or []]
@@ -1282,7 +1306,8 @@ def standing(path, seen=None, depth=0, ledger=None):
             'calls': meta.get('calls'), 'ledger_state': ledger_state, 'ledger_path': str(ledger) if ledger else None,
             'ledger_settled': report['settled'] if report else None, 'approved': approved, 'unstamped': unstamped,
             'overturned': overturned, 'restamp': restamp, 'mismatched': mismatched, 'notes': said, 'parents': parents,
-            'shows_calls': any((d['anchor'] or '').startswith('call-') for d in found)}
+            'shows_calls': any((d['anchor'] or '').startswith('call-') for d in found),
+            'open_calls': open_calls, 'asked_calls': asked_calls}
 
 
 def settlement(tree):
@@ -1373,15 +1398,15 @@ def orient_text(tree):
         lines.append('')
         lines.append('CALLS  ' + ('no ledger named: pass --calls, or name one in the brief' if tree['ledger_state'] == 'none named'
                                   else f"the ledger {tree['ledger_path']} is missing"))
-    else:
-        ledger = tree['ledger']
-        block('OPEN CALLS  carrying on as if the person concurs', [(c,) for c in ledger['open']],
-              lambda c: f"  [{c['id']}]  {c['title']}   · uncertainty {c['judgement']['uncertainty']}, taste {c['judgement']['taste']}")
-        block('ASKED  stopped, waiting on the person', [(c,) for c in ledger['asked']],
-              lambda c: f"  [{c['id']}]  {c['title']}   · {'; '.join(c['reasons'])}")
-        if ledger['stale']:
-            block('STALE  answered, but the evidence moved since', [(c,) for c in ledger['stale']],
-                  lambda c: f"  [{c['id']}]  {'; '.join(c['needs'])}")
+    # A parent's calls are listed even when this brief names no ledger of its own.
+    block('OPEN CALLS  carrying on as if the person concurs', every(tree, 'open_calls'),
+          lambda c, owner: f"  [{c['id']}]  {c['title']}   · uncertainty {c['judgement']['uncertainty']}, taste {c['judgement']['taste']}"
+          + ('' if owner == tree['id'] else f'   · from {owner}'))
+    block('ASKED  stopped, waiting on the person', every(tree, 'asked_calls'),
+          lambda c, owner: f"  [{c['id']}]  {c['title']}   · {'; '.join(c['reasons'])}" + ('' if owner == tree['id'] else f'   · from {owner}'))
+    if tree['ledger'] and tree['ledger']['stale']:
+        block('STALE  answered, but the evidence moved since', [(c,) for c in tree['ledger']['stale']],
+              lambda c: f"  [{c['id']}]  {'; '.join(c['needs'])}")
     lines.append('')
     lines.append('SETTLED  ' + tree['settled']['state'])
     lines.extend('  · ' + why for why in tree['settled']['why'])
@@ -1576,7 +1601,7 @@ def main():
     p.add_argument('ledger', type=Path)
     p.add_argument('--html', action='store_true', help='print the brief section of open and asked calls')
     p.add_argument('--all', action='store_true', help='with --html, include answered calls')
-    p.add_argument('--for', dest='for_source', type=Path, metavar='SOURCE', help='with --html, make links relative to this source')
+    p.add_argument('--for', dest='for_source', type=Path, metavar='PAGE', help='with --html, the built page that will show the rows; links are made relative to it')
     p.add_argument('--number', help='with --html, the section number')
     p.add_argument('--sync', type=Path, metavar='BRIEF', help='take the CONCUR stamps saved in this built brief')
     p = commands.add_parser('verdict', help='record the person\'s answer to a call')

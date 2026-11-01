@@ -1049,3 +1049,74 @@ class ReviewRoundFourTests(WorkLoopFixture):
         self.assertTrue(brief.stamp_is_current(meta, 'r', '2030-01-01 12:01'))          # notes.js: UTC, no zone
         self.assertFalse(brief.stamp_is_current(meta, 'r', '2030-99-99T99:99Z'))
         self.assertFalse(brief.stamp_is_current(meta, 'r', None))
+
+
+class ReviewRoundFiveTests(WorkLoopFixture):
+    """One test per finding of the fifth and last Codex round, which was aimed at ordinary use."""
+    def test_answers_survive_a_regenerated_section_that_leaves_their_rows_out(self):
+        self.call('Keep data')
+        self.call('Drop logs')
+        brief.record_verdict(self.ledger, 'call-keep-data', 'concurred')
+        brief.record_verdict(self.ledger, 'call-drop-logs', 'overturned', note='keep them')
+        page = self.page('closing', brief.render_calls(self.ledger) or '<p>No open calls.</p>', {'calls': 'work.calls.json'})
+        tree = brief.orient(page)
+        self.assertEqual([d['anchor'] for d in tree['approved']], ['call-keep-data'])
+        self.assertEqual([d['anchor'] for d in tree['overturned']], ['call-drop-logs'])
+
+    def test_a_parents_asked_call_is_listed_as_asked(self):
+        plan_ledger = self.root / 'plan.calls.json'
+        brief.record_call(plan_ledger, 'Accent colour', 'rose', 'cover', 'low', 'high', 'relaxed')
+        self.page('plan', brief.render_calls(plan_ledger), {'calls': 'plan.calls.json'})
+        child = self.page('closing', '', {'derives_from': ['plan.html']})
+        tree = brief.orient(child)
+        self.assertEqual(tree['unstamped'], [])
+        text = brief.orient_text(tree)
+        self.assertIn('[call-accent-colour]  Accent colour   · taste is high   · from plan', text.split('ASKED')[1])
+
+    def test_a_browser_saving_lf_for_crlf_keeps_the_fingerprint(self):
+        crlf = '<div class="grill"><div class="ask" id="q-a" data-brief-anchor="q-a"><h3>First\r\nline</h3></div></div>'
+        page = self.page('plan', crlf)
+        page.write_text(brief.read(page).replace('\r\n', '\n'))
+        self.assertFalse(brief.check(page)['edited_since_build'])
+
+    def test_a_retired_calls_fresh_rendering_passes_check_after_its_evidence_moves(self):
+        log = self.root / 'run #2.log'
+        log.write_text('before')
+        self.call('Ship the log', evidence=[log])
+        brief.record_verdict(self.ledger, 'call-ship-the-log', 'overturned', note='fix it')
+        log.write_text('after the fix')
+        page = self.page('closing', brief.render_calls(self.ledger, every=True), {'calls': 'work.calls.json'})
+        self.assertIn('calls', brief.check(page))
+        log.unlink()  # present when printed, missing now
+        self.assertEqual(brief.orient(page)['mismatched'], [])
+
+    def test_markdown_decisions_by_single_quoted_anchor_or_block_id_are_read(self):
+        md = self.root / 'plan.md'
+        md.write_text(MD.replace('example-md', 'plan-md') + "\n<a id='q-one'></a>\n## Keep the reserve\n\n## Fold the bar ^q-two\n")
+        found = [d['anchor'] for d in brief.orient(md)['unstamped']]
+        self.assertEqual(sorted(found), ['q-one', 'q-two'])
+
+    def test_a_page_built_elsewhere_keeps_its_parent_and_ledger_reachable(self):
+        self.call('Keep data')
+        parent = self.page('plan', '')
+        source = self.root / 'src' / 'deep' / 'closing.src.html'  # two levels down; the page is built one level down
+        source.parent.mkdir(parents=True)
+        text = GRILL_SOURCE.replace('{grill}', '').replace('<!--BRIEF:head-->', '<!-- briefing: ' + json.dumps(
+            {'derives_from': ['../../plan.html'], 'calls': '../../work.calls.json'}) + ' --><!--BRIEF:head-->')
+        source.write_text(text)
+        output = self.root / 'out' / 'closing.html'
+        output.parent.mkdir()
+        brief.build(source, output, 'closing', 'summary')
+        meta = brief.island(brief.read(output), 'brief-meta')[1]
+        self.assertEqual((meta['derives_from'], meta['calls']), (['../plan.html'], '../work.calls.json'))
+        self.assertEqual(brief.orient(output)['parents'][0]['state'], 'read')
+        self.assertTrue(parent.exists())
+
+    def test_an_evidence_name_with_a_hash_links_correctly(self):
+        log = self.root / 'run #2.log'
+        log.write_text('passed')
+        self.call('Ship the log', evidence=[log])
+        section = brief.render_calls(self.ledger)
+        self.assertIn('href="run%20%232.log"', section)
+        page = self.page('closing', section, {'calls': 'work.calls.json'})
+        self.assertIn('calls', brief.check(page))

@@ -55,7 +55,7 @@ A concur covers the evidence it was given, by hash, and the row it was given on.
 A call that carries on reaches the person three times, so it cannot be missed by someone who reads only one of them.
 
 1. **Your next reply** names it in a line: what you decided, and that you are carrying on. A host with a typed channel for wanted-but-not-blocking asks gets it there as well. In Terminal Delight that is a `response` surface whose `escalation` has level `wanted`.
-2. **The closing brief** carries it as a row the reader can stamp. `brief.py calls work.calls.json --html` prints the section with each call's evidence drawn in; paste it into the source before the footer. Start that brief with `new --calls work.calls.json`, and `check` will refuse it if it leaves an open call out.
+2. **The closing brief** carries it as a row the reader can stamp. `brief.py calls work.calls.json --html --for closing.html` prints the section with each call's evidence drawn in, and links made relative to the page that will show them; paste it into the source before the footer. Regenerating the section later leaves answered calls out, and their answers still stand: `orient` reads them from the ledger. Start that brief with `new --calls work.calls.json`, and `check` will refuse it if it leaves an open call out.
 3. **Settling.** `brief.py calls work.calls.json` exits 2 until every call is concurred, overturned or superseded and every call still standing has its evidence unchanged. Until then the work is finished, but it has not settled. `calls --html` only prints, and exits 0 whenever it printed; ask `calls` alone whether the work has settled.
 
 ## Answers

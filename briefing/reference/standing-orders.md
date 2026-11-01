@@ -37,7 +37,7 @@ SETTLED  yes
 - **The brief's decisions.** Every `.ask`, `.grill-q`, or `.q` inside a `.grill`, by anchor and title: the elements that take a CONCUR stamp. A stamp made on this version of the page, or a `concurred` verdict in the calls ledger, makes one standing. A stamp made on another version is listed apart, as stamped on another version, because the words it agreed to may be gone; a stamp made after the page was last built counts, to the minute, and one made in the build's own minute stays unknown. A rebuild that changes nothing keeps the earlier build time, and a page edited by hand since its build cannot place any stamp on a version. Times are compared in UTC; a stamp with no zone is UTC, as the notes engine writes it, and a stamp that cannot be read never counts. For a call, the ledger decides: a later overturn there outranks a stamp left on the page. Anything else is a recommendation, and acting on it is a judgement call. If that call would contradict something standing, it stops: pass the standing anchor with `--conflicts`.
 - **The notes on it.** Format 1 does not record which notes have been answered, so every note is listed.
 - **Its parents.** Each brief named in `derives_from`, followed upward, with what each approved. A parent that has gone is printed as unavailable rather than skipped, and a derivation that loops is read once. Name parents when the brief starts: `new --derives-from PLAN`.
-- **Its calls.** Open, asked, overturned, and answered calls whose evidence has changed since. With no ledger named, it says so; that is not the same as having no calls.
+- **Its calls.** Open, asked, overturned, and answered calls whose evidence has changed since, from this brief's ledger and from any ledger a parent names, each marked with the brief it came from. An answered call stands whether or not the page still shows its row. With no ledger named, it says so; that is not the same as having no calls.
 - **Rows that do not show their calls.** A call row whose words or pictures differ from its ledger entry, or that names a call the ledger does not hold, is listed as mismatched; neither its stamp nor the ledger's verdict counts for it.
 - **Whether the work has settled.** `yes`, `no`, or `unknown` with its reasons. A missing parent, a ledger a brief names but that is not there, a row that does not show its call, or this brief naming no ledger makes it unknown, never yes. Open calls in this brief's ledger or in a ledger a parent names make it no. A parent that names no ledger adds nothing, unless it shows call rows: a plan brief usually has no calls of its own, and treating that as unknown would leave every brief derived from it unsettled forever, but a parent that shows calls and names nowhere to answer them makes settlement unknown.
 
@@ -45,7 +45,7 @@ SETTLED  yes
 
 ## Markdown
 
-A Markdown brief marks a decision with an explicit anchor named `q-…` or `call-…` on the line above its heading. Agreement comes from the `agree` stances in the adjacent `name.feedback.json`.
+A Markdown brief marks a decision with an explicit anchor named `q-…` or `call-…` on the line above its heading, in single or double quotes, or with a block id at the end of the heading line, `## Fold the bar ^q-fold`. Agreement comes from the `agree` stances in the adjacent `name.feedback.json`.
 
 ## Where It Comes From
 

@@ -73,7 +73,7 @@ A plan cannot foresee every decision. When the work meets one nobody made, the a
 
 ```bash
 python3 scripts/brief.py call work.calls.json --title "Drag footer at 28 px" --chose "a 28 px footer" --because "the map needs the room" --evidence shot.png --uncertainty low --taste medium --posture relaxed
-python3 scripts/brief.py calls work.calls.json --html
+python3 scripts/brief.py calls work.calls.json --html --for closing.html
 ```
 
 The second command prints the closing brief's section of calls, one row each with its screenshot, for you to stamp CONCUR or leave a note on. The work has settled when `calls` exits 0. The policy, the record's fields and their debt to T3 Code, MADR and Amazon's one-way doors are in [judgement calls](reference/judgement.md); `orient` is in [standing orders](reference/standing-orders.md). Where the two readings come from is a named slot, `{System 1 JUDGEMENT Surface Placeholder}`: the agent fills it today, and a typed judgement service can fill it later.
