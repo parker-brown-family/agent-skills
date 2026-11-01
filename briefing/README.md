@@ -95,7 +95,8 @@ A comment whose passage was removed stays in the results, marked unresolved. A c
 - Markdown has no comment controls of its own; inline commenting depends on the reader app.
 - Saving notes into the file inside Terminal Delight has not been exercised by these tests.
 - The two readings behind a judgement call are the agent's own today, and so is noticing that a planned step contradicts a standing decision. The tool applies the policy to the readings; it cannot check them.
-- A call's evidence is embedded in the brief up to 3 MB per image; larger screenshots are refused rather than linked.
+- A call's evidence is embedded in the brief up to 3 MB per image; larger screenshots are refused rather than linked. Other evidence files are linked, and checked against their recorded hash before every render.
+- Ledger writes are serialized with an `flock` on `NAME.calls.json.lock`, which stays beside the ledger. Where `fcntl` is unavailable, the write still refuses a ledger that changed underneath it, but two writers can collide.
 
 ## MP4
 

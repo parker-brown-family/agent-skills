@@ -34,10 +34,11 @@ SETTLED  yes
 
 ## What It Reads
 
-- **The brief's decisions.** Every `.ask`, `.grill-q`, or `.q` inside a `.grill`, by anchor and title: the elements that take a CONCUR stamp. A stamp, or a `concurred` verdict in the calls ledger, makes one standing. Anything else is a recommendation, and acting on it is a judgement call. If that call would contradict something standing, it stops: pass the standing anchor with `--conflicts`.
+- **The brief's decisions.** Every `.ask`, `.grill-q`, or `.q` inside a `.grill`, by anchor and title: the elements that take a CONCUR stamp. A stamp made on this version of the page, or a `concurred` verdict in the calls ledger, makes one standing. A stamp made on another version is listed apart, as stamped on another version, because the words it agreed to may be gone. For a call, the ledger decides: a later overturn there outranks a stamp left on the page. Anything else is a recommendation, and acting on it is a judgement call. If that call would contradict something standing, it stops: pass the standing anchor with `--conflicts`.
 - **The notes on it.** Format 1 does not record which notes have been answered, so every note is listed.
 - **Its parents.** Each brief named in `derives_from`, followed upward, with what each approved. A parent that has gone is printed as unavailable rather than skipped, and a derivation that loops is read once. Name parents when the brief starts: `new --derives-from PLAN`.
 - **Its calls.** Open, asked, overturned, and answered calls whose evidence has changed since. With no ledger named, it says so; that is not the same as having no calls.
+- **Whether the work has settled.** `yes`, `no`, or `unknown` with its reasons. A missing parent, a ledger a brief names but that is not there, or a brief that names no ledger makes it unknown, never yes. Open calls in this brief's ledger or a parent's make it no.
 
 `--json` gives the same tree for a host that follows the work. A host that wants a gate uses the exit codes: `calls` exits 0 when the work has settled and 2 when it has not, and `call` exits 3 when the policy says stop.
 

@@ -52,6 +52,7 @@
 | `every decision a reader can stamp …` | A built page has a decision without an anchor; see the same row under `html` | Fix the source and rebuild |
 | `derives_from names …, which is not there` | A parent brief moved or was deleted | Fix the path, or drop it from the identity comment |
 | `open calls missing from the brief: …` | The brief names a calls ledger and leaves an open or asked call out | Paste the section `calls LEDGER --html` prints into the source and rebuild |
+| `call rows rendered from other words or evidence than the ledger holds: …` | A row was rendered from another ledger or an earlier version of the call | Paste a fresh `calls LEDGER --html` and rebuild |
 
 ## While the work runs: `orient`, `call`, `calls`, `verdict`
 
@@ -61,7 +62,9 @@
 |---|---|---|
 | `… a calls ledger is named NAME.calls.json …` | The ledger path has another name | Name it `something.calls.json`; no other JSON is ever written over |
 | `… no calls ledger here …` | `calls`, `verdict` or `orient --calls` named a ledger that does not exist | `call` starts one; check the path |
-| `… malformed JSON …` / `… not a format-1 briefing calls ledger` / `every call needs an id and a known status` | The ledger is damaged | Repair it by hand; nothing was written |
+| `… malformed JSON …` / `… not a format-1 briefing calls ledger` / `every call needs an id and a known status, and …` | The ledger is damaged; the message names the call and the missing or malformed field. A field that is absent is refused, never read as empty | Repair it by hand; nothing was written |
+| `… appears twice …` | Two calls share an id | Rename or remove one by hand |
+| `… is missing; … was decided on it …` | A call's evidence file is gone | Restore it, or supersede the call |
 | `a call needs --title …` / `--chose` / `--because` | A call must say what was decided, what was chosen and why | Write them in plain words |
 | `--uncertainty is one of …` / `--posture is one of …` / `--door is …` | An unknown value | Use one listed; a reading you cannot make is `unknown` |
 | `… is already in the ledger …` | The id is taken | Pass `--id call-new-name`, or supersede the old call |

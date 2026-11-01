@@ -8,6 +8,7 @@ records the reader's answer."""
 import argparse
 import base64
 from collections import Counter
+from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
 from html import escape as html_escape
@@ -21,6 +22,10 @@ import subprocess
 import sys
 import tempfile
 from urllib.parse import unquote, urlsplit
+try:
+    import fcntl  # POSIX; elsewhere the compare-before-replace in `atomic` is the only guard
+except ImportError:
+    fcntl = None
 
 HERE = Path(__file__).resolve().parents[1]
 KIT = HERE.parent / 'decision-brief'
@@ -45,6 +50,11 @@ VERDICTS = ('concurred', 'overturned', 'superseded')
 CALL_ID = re.compile(r'^call-[a-z0-9][a-z0-9-]*$')
 IMAGE_TYPES = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif'}
 EMBED_LIMIT = 3 * 1024 * 1024
+EVIDENCE_KINDS = ('screenshot', 'file')
+SHA256 = re.compile(r'^sha256:[0-9a-f]{64}$')
+# A browser closes an open <p> when one of these starts inside it; the parsers below do the same.
+BLOCKS = set('address article aside blockquote details div dl fieldset figcaption figure footer form h1 h2 h3 h4 h5 h6 '
+             'header hr main nav ol p pre section table ul'.split())
 
 
 class Refusal(ValueError):
@@ -99,19 +109,23 @@ class Decisions(HTMLParser):
         self.feed(text)
 
     def owner(self):
-        return next((index for _, _, index in reversed(self.stack) if index is not None), None)
+        return next((index for _, _, index, _ in reversed(self.stack) if index is not None), None)
 
     def handle_starttag(self, tag, attributes):
         if tag in VOID_TAGS:
             return
+        if tag in BLOCKS and self.stack and self.stack[-1][0] == 'p':
+            self.handle_endtag('p')
         attrs = dict(attributes)
         classes = set((attrs.get('class') or '').split())
-        in_grill = any(grill for _, grill, _ in self.stack)
+        in_grill = any(grill for _, grill, _, _ in self.stack)
+        in_ask = any(ask for _, _, _, ask in self.stack)
         index = None
-        if classes & DECISION_CLASSES or ('q' in classes and in_grill and self.owner() is None):
+        # notes.js: '.grill .q:not(.ask .q), .grill-q, .ask' — only an .ask ancestor excludes a .q.
+        if classes & DECISION_CLASSES or ('q' in classes and in_grill and not in_ask):
             self.found.append({'anchor': attrs.get('data-brief-anchor'), 'title': '', 'tag': tag})
             index = len(self.found) - 1
-        self.stack.append((tag, 'grill' in classes, index))
+        self.stack.append((tag, 'grill' in classes, index, 'ask' in classes))
         owner = self.owner()
         if tag in ('h3', 'h4', 'b') and owner is not None and not self.found[owner]['title'] and self.capture is None:
             self.capture = (owner, len(self.stack) - 1)
@@ -363,6 +377,11 @@ def check(path):
     if meta.get('calls'):
         ledger = path.parent / meta['calls']
         data = load_ledger(ledger)
+        shown = CallRows(CONTENT.search(text)[1]).rows if path.suffix == '.html' else {}
+        stale = [c['id'] for c in data['calls'] if c['id'] in shown and shown[c['id']] != call_fingerprint(c)]
+        if stale:
+            raise Refusal('call rows rendered from other words or evidence than the ledger holds: ' + ', '.join(stale) +
+                          f'. Paste a fresh `brief.py calls {meta["calls"]} --html` and rebuild')
         waiting = [c['id'] for c in data['calls'] if c['status'] in ('open', 'asked') and c['id'] not in anchors]
         if waiting:
             raise Refusal('open calls missing from the brief: ' + ', '.join(waiting) +
@@ -720,10 +739,76 @@ def load_ledger(path, create=False):
     if not isinstance(data, dict) or data.get('format') != 1 or data.get('kind') != 'briefing-calls':
         raise Refusal(f'{path}: not a format-1 briefing calls ledger')
     calls = data.get('calls')
-    if not isinstance(calls, list) or not all(isinstance(c, dict) and isinstance(c.get('id'), str) and
-                                               c.get('status') in ('open', 'asked') + VERDICTS for c in calls):
+    if not isinstance(calls, list):
         raise Refusal(f'{path}: every call needs an id and a known status')
+    seen = set()
+    for call in calls:
+        problem = call_problem(call)
+        if problem:
+            raise Refusal(f'{path}: every call needs an id and a known status, and {problem}; repair it by hand')
+        if call['id'] in seen:
+            raise Refusal(f'{path}: {call["id"]} appears twice; repair it by hand')
+        seen.add(call['id'])
     return data
+
+
+def call_problem(call):
+    """What makes a ledger entry unusable, or None. A missing field is never read as an empty one."""
+    if not isinstance(call, dict) or not isinstance(call.get('id'), str) or not CALL_ID.fullmatch(call['id']):
+        return 'a call has no valid call-… id'
+    name = call['id']
+    if call.get('status') not in ('open', 'asked') + VERDICTS:
+        return f'{name} has no known status'
+    for field in ('title', 'chose', 'because'):
+        if not isinstance(call.get(field), str) or not call[field].strip():
+            return f'{name} has no {field}'
+    judgement = call.get('judgement')
+    if (not isinstance(judgement, dict) or judgement.get('uncertainty') not in LEVELS or judgement.get('taste') not in LEVELS
+            or judgement.get('posture') not in POSTURES or judgement.get('outcome') not in ('carry-on', 'stop')):
+        return f'{name} has no complete judgement'
+    evidence = call.get('evidence')
+    if not isinstance(evidence, list) or not all(
+            isinstance(e, dict) and isinstance(e.get('href'), str) and e['href'] and SHA256.fullmatch(str(e.get('sha256')))
+            and e.get('kind') in EVIDENCE_KINDS for e in evidence):
+        return f'{name} has malformed evidence'
+    if call['status'] in VERDICTS and not isinstance(call.get('verdict'), dict):
+        return f'{name} says {call["status"]} with no verdict recorded'
+    return None
+
+
+@contextmanager
+def ledger_lock(path):
+    """Serialize read, change and replace of one ledger across processes."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle = os.open(str(path) + '.lock', os.O_CREAT | os.O_RDWR, 0o644)
+    try:
+        if fcntl:
+            fcntl.flock(handle, fcntl.LOCK_EX)
+        yield
+    finally:
+        if fcntl:
+            fcntl.flock(handle, fcntl.LOCK_UN)
+        os.close(handle)
+
+
+def call_fingerprint(call):
+    """What a reader judged when they stamped a call's row: its words and its evidence's bytes."""
+    seen = {k: call.get(k) for k in ('id', 'title', 'context', 'chose', 'because', 'passed_over', 'undo', 'door')}
+    seen['evidence'] = [e['sha256'] for e in call.get('evidence') or []]
+    return digest(json.dumps(seen, ensure_ascii=False, sort_keys=True))
+
+
+class CallRows(HTMLParser):
+    """The call rows a page shows, with the fingerprint each was rendered from."""
+    def __init__(self, text):
+        super().__init__()
+        self.rows = {}
+        self.feed(text)
+
+    def handle_starttag(self, tag, attributes):
+        attrs = dict(attributes)
+        if attrs.get('data-call') and attrs.get('id'):
+            self.rows[attrs['id']] = attrs['data-call']
 
 
 def save_ledger(path, data, before):
@@ -773,6 +858,13 @@ def record_call(ledger, title, chose, because, uncertainty, taste, posture=None,
         raise Refusal('--posture is one of ' + ', '.join(POSTURES) + '; read it from the project\'s instructions')
     if door not in (None, 'two-way', 'one-way'):
         raise Refusal('--door is two-way (cheap to undo) or one-way (undoing it needs the person)')
+    with ledger_lock(ledger):
+        return _record_call(ledger, title, chose, because, uncertainty, taste, posture, context, passed_over, undo, door,
+                            evidence, conflicts, under, call_id, filled_by, now)
+
+
+def _record_call(ledger, title, chose, because, uncertainty, taste, posture, context, passed_over, undo, door,
+                 evidence, conflicts, under, call_id, filled_by, now):
     before = ledger.read_bytes() if ledger.exists() else None
     data = load_ledger(ledger, create=True)
     call_id = call_id or 'call-' + re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')[:48].rstrip('-')
@@ -823,7 +915,8 @@ def calls_report(ledger):
             needs.append('a concur or an overturn')
         elif call['status'] == 'asked':
             needs.append('an answer before the agent acts')
-        if call['status'] != 'superseded' and any(s != 'same' for s in states):
+        # An overturned call's evidence is meant to change, and a superseded one no longer stands.
+        if call['status'] in ('open', 'asked', 'concurred') and any(s != 'same' for s in states):
             needs.append('evidence ' + ', '.join(sorted(set(s for s in states if s != 'same'))) + ' since it was recorded')
         rows.append({'id': call['id'], 'title': call['title'], 'status': call['status'], 'evidence': states, 'needs': needs})
     return {'ledger': str(ledger), 'settled': not any(r['needs'] for r in rows), 'calls': rows,
@@ -836,6 +929,11 @@ def record_verdict(ledger, call_id, verdict, note=None, follow_up=None, supersed
         raise Refusal('a verdict is concurred, overturned or superseded')
     if verdict == 'overturned' and not (note or '').strip():
         raise Refusal('an overturn carries the person\'s reason in --note; it is what the follow-up is built from')
+    with ledger_lock(ledger):
+        return _record_verdict(ledger, call_id, verdict, note, follow_up, superseded_by, now)
+
+
+def _record_verdict(ledger, call_id, verdict, note, follow_up, superseded_by, now):
     before = ledger.read_bytes() if ledger.exists() else None
     data = load_ledger(ledger)
     call = next((c for c in data['calls'] if c['id'] == call_id), None)
@@ -854,25 +952,31 @@ def sync_calls(ledger, page):
     if page.suffix != '.html':
         raise Refusal('sync reads the CONCUR stamps saved in a built HTML brief')
     _, saved_notes, _, concurs = notes(text)
-    before = ledger.read_bytes() if ledger.exists() else None
-    data = load_ledger(ledger)
-    concurred, to_answer = [], {}
-    for call in data['calls']:
-        said = [n['text'] for n in saved_notes.get(call['id'], [])]
-        if call['id'] in concurs and call['status'] in ('open', 'asked'):
-            call['status'] = 'concurred'
-            call['verdict'] = {'at': concurs[call['id']], 'via': 'concur stamp', 'note': ' '.join(said) or None,
-                               'follow_up': None, 'superseded_by': None, 'brief': meta['id'],
-                               'revision': meta.get('feedback_revision'),
-                               'seen': [e['sha256'] for e in call.get('evidence') or []]}
-            concurred.append(call['id'])
-        elif said and call['status'] in ('open', 'asked'):
-            to_answer[call['id']] = said
-    if concurred:
-        save_ledger(ledger, data, before)
+    shown = CallRows(CONTENT.search(text)[1]).rows
+    with ledger_lock(ledger):
+        before = ledger.read_bytes() if ledger.exists() else None
+        data = load_ledger(ledger)
+        concurred, to_answer, mismatched = [], {}, []
+        for call in data['calls']:
+            said = [n['text'] for n in saved_notes.get(call['id'], [])]
+            if call['id'] in concurs and call['status'] in ('open', 'asked') and shown.get(call['id']) != call_fingerprint(call):
+                # The reader stamped a row rendered from other words or other evidence; it says nothing about this call.
+                mismatched.append(call['id'])
+                continue
+            if call['id'] in concurs and call['status'] in ('open', 'asked'):
+                call['status'] = 'concurred'
+                call['verdict'] = {'at': concurs[call['id']], 'via': 'concur stamp', 'note': ' '.join(said) or None,
+                                   'follow_up': None, 'superseded_by': None, 'brief': meta['id'],
+                                   'revision': meta.get('feedback_revision'),
+                                   'seen': [e['sha256'] for e in call.get('evidence') or []]}
+                concurred.append(call['id'])
+            elif said and call['status'] in ('open', 'asked'):
+                to_answer[call['id']] = said
+        if concurred:
+            save_ledger(ledger, data, before)
     report = calls_report(ledger)
     return {'ledger': str(ledger), 'brief': meta['id'], 'concurred': concurred, 'notes_to_answer': to_answer,
-            'settled': report['settled'], 'calls': report['calls']}
+            'mismatched': mismatched, 'settled': report['settled'], 'calls': report['calls']}
 
 
 def render_calls(ledger, relative_to=None, number=None, every=False):
@@ -897,32 +1001,36 @@ def render_calls(ledger, relative_to=None, number=None, every=False):
         figures = []
         for n, item in enumerate(call.get('evidence') or [], 1):
             source = base / item['href']
-            short = item['sha256'][7:19]
+            if not source.is_file():
+                raise Refusal(f"{item['href']} is missing; {call['id']} was decided on it, so restore it or supersede the call")
+            if file_digest(source) != item['sha256']:
+                raise Refusal(f"{item['href']} changed since {call['id']} was recorded; record the call again or supersede it")
+            short, kind = e(item['sha256'][7:19]), e(item['kind'])
             fid = f"fig-{call['id']}-{n}"
             mime = IMAGE_TYPES.get(source.suffix.lower())
-            if mime and source.is_file() and source.stat().st_size <= EMBED_LIMIT:
-                if file_digest(source) != item['sha256']:
-                    raise Refusal(f"{item['href']} changed since {call['id']} was recorded; record the call again or supersede it")
+            if mime and source.stat().st_size > EMBED_LIMIT:
+                raise Refusal(f"{item['href']} is over {EMBED_LIMIT // 1048576} MB; save a smaller screenshot and record the call again")
+            if mime:
                 body = (f'<img src="data:{mime};base64,{base64.b64encode(source.read_bytes()).decode()}" '
                         f'alt="{e("What the call was decided on: " + call["title"])}">')
-            elif mime and source.is_file():
-                raise Refusal(f"{item['href']} is over {EMBED_LIMIT // 1048576} MB; save a smaller screenshot and record the call again")
             else:
                 href = os.path.relpath(source, where)
                 body = f'<p><a href="{e(href)}">{e(item["href"])}</a></p>'
             figures.append(f'<figure id="{fid}" data-brief-anchor="{fid}"><span class="lbl">{e(call["title"])} · '
-                           f'{item["kind"]} {short}</span>{body}<figcaption><b>What I was looking at when I chose: '
-                           f'{e(call["chose"])}.</b> A concur covers this {item["kind"]}, {short}, and no later one.'
+                           f'{kind} {short}</span>{body}<figcaption><b>What I was looking at when I chose: '
+                           f'{e(call["chose"])}.</b> A concur covers this {kind}, {short}, and no later one.'
                            f'</figcaption></figure>')
+        # Green is for carrying on; a stop is a decision waiting, and red says so.
         if call['status'] == 'asked':
-            stance = '<b>Stopped:</b> waiting on your answer, because ' + e('; '.join(j['reasons'])) + '.'
+            stance = ('<p class="callout crit"><b>Stopped:</b> waiting on your answer, because ' +
+                      e('; '.join(j['reasons'])) + '.</p>')
         elif call['status'] == 'open':
-            stance = '<b>Meanwhile:</b> carrying on as if you concur.'
+            stance = '<p class="rec"><b>Meanwhile:</b> carrying on as if you concur.</p>'
         else:
-            stance = f"<b>{e(call['status'].capitalize())}.</b>"
+            stance = f"<p class=\"rec\"><b>{e(call['status'].capitalize())}.</b></p>"
         dl = ''.join(f'<dt>{e(k)}</dt><dd>{e(v)}</dd>' for k, v in facts)
-        rows.append(f'<div class="ask call" id="{call["id"]}" data-brief-anchor="{call["id"]}"><h3>{e(call["title"])}</h3>'
-                    f'<dl class="facts">{dl}</dl>{"".join(figures)}<p class="rec">{stance}</p></div>')
+        rows.append(f'<div class="ask call" id="{call["id"]}" data-brief-anchor="{call["id"]}" data-call="{call_fingerprint(call)}">'
+                    f'<h3>{e(call["title"])}</h3><dl class="facts">{dl}</dl>{"".join(figures)}{stance}</div>')
     asked = sum(c['status'] == 'asked' for c in shown)
     lead = ('Nobody had decided these. I decided them and kept working' +
             (f', except {asked} I stopped to ask you about' if asked else '') +
@@ -933,7 +1041,10 @@ def render_calls(ledger, relative_to=None, number=None, every=False):
 
 
 def standing(path, seen=None, depth=0, ledger=None):
-    """What a brief has approved, what it only recommends, and the notes on it, followed up its derives_from."""
+    """What a brief has approved, what it only recommends, and the notes on it, followed up its derives_from.
+
+    The calls ledger is the record for calls: a later overturn there outranks a stamp left on the page. A stamp
+    made on another version of the page is listed for re-stamping, never counted as approval."""
     seen = seen if seen is not None else set()
     key = str(path.resolve())
     if key in seen:
@@ -942,39 +1053,73 @@ def standing(path, seen=None, depth=0, ledger=None):
     if not path.is_file():
         return {'href': str(path), 'state': 'unavailable: file missing'}
     text, meta, revision, anchors, _ = inspect(path)
-    found, concurs, saved = [], {}, {}
+    found, concurs, saved, current = [], {}, {}, True
     if path.suffix == '.html':
         found = Decisions(CONTENT.search(text)[1]).decisions()
         _, saved, _, concurs = notes(text)
+        current = meta.get('feedback_revision') == revision
     else:
         prose = markdown_prose(text)
         found = [{'anchor': a, 'title': h.strip()} for a, h in
                  re.findall(r'<a id="((?:q|call)-[a-z0-9-]+)"></a>\s*\n#{1,6}\s+(.+)', prose)]
         side = path.with_name(path.name.removesuffix('.md') + '.feedback.json')
         if side.is_file():
-            for c in json.loads(read(side)).get('comments', []):
+            envelope = json.loads(read(side))
+            current = (envelope.get('document') or {}).get('revision') == revision
+            for c in envelope.get('comments', []):
                 if c.get('stance') == 'agree':
                     concurs[c['target']] = c.get('at') or ''
                 elif c.get('text'):
                     saved.setdefault(c['target'], []).append({'text': c['text'], 'ts': c.get('at')})
-    # A verdict reported in chat counts as much as a stamp, and an overturned call is not merely unstamped.
     ledger = ledger or (path.parent / meta['calls'] if meta.get('calls') else None)
-    verdicts = {c['id']: c for c in load_ledger(ledger)['calls']} if ledger is not None and ledger.exists() else {}
+    ledger_state = 'none named' if ledger is None else ('read' if ledger.exists() else 'missing')
+    verdicts = {c['id']: c for c in load_ledger(ledger)['calls']} if ledger_state == 'read' else {}
+    approved, unstamped, overturned, restamp = [], [], [], []
     for d in found:
-        call = verdicts.get(d['anchor'])
-        if call and call['status'] == 'concurred' and d['anchor'] not in concurs:
-            concurs[d['anchor']] = (call.get('verdict') or {}).get('at') or ''
-    settled = lambda a: a in concurs or (a in verdicts and verdicts[a]['status'] in VERDICTS)
-    approved = [{'anchor': d['anchor'], 'title': d['title'], 'at': concurs[d['anchor']]} for d in found if d['anchor'] in concurs]
-    unstamped = [{'anchor': d['anchor'], 'title': d['title']} for d in found if not settled(d['anchor'])]
-    overturned = [{'anchor': d['anchor'], 'title': d['title'], 'note': (verdicts[d['anchor']].get('verdict') or {}).get('note')}
-                  for d in found if d['anchor'] not in concurs and verdicts.get(d['anchor'], {}).get('status') == 'overturned']
+        anchor, title, call = d['anchor'], d['title'], verdicts.get(d['anchor'])
+        status = call['status'] if call else None
+        if status == 'concurred':
+            approved.append({'anchor': anchor, 'title': title, 'at': (call.get('verdict') or {}).get('at')})
+        elif status == 'overturned':
+            overturned.append({'anchor': anchor, 'title': title, 'note': (call.get('verdict') or {}).get('note')})
+        elif status == 'superseded':
+            continue
+        elif anchor in concurs and current:
+            approved.append({'anchor': anchor, 'title': title, 'at': concurs[anchor]})
+        elif anchor in concurs:
+            restamp.append({'anchor': anchor, 'title': title, 'at': concurs[anchor]})
+        else:
+            unstamped.append({'anchor': anchor, 'title': title})
     said = [{'anchor': a, 'text': n['text'], 'at': n.get('ts')} for a, entries in saved.items() for n in entries]
     parents = [standing(path.parent / p, seen, depth + 1) if depth < 8 else {'href': p, 'state': 'not read: too deep'}
                for p in meta.get('derives_from') or []]
+    report = calls_report(ledger) if ledger_state == 'read' else None
     return {'href': str(path), 'id': meta['id'], 'purpose': meta['purpose'], 'revision': revision, 'state': 'read',
-            'calls': meta.get('calls'), 'approved': approved, 'unstamped': unstamped, 'overturned': overturned,
-            'notes': said, 'parents': parents}
+            'calls': meta.get('calls'), 'ledger_state': ledger_state, 'ledger_path': str(ledger) if ledger else None,
+            'ledger_settled': report['settled'] if report else None, 'approved': approved, 'unstamped': unstamped,
+            'overturned': overturned, 'restamp': restamp, 'notes': said, 'parents': parents}
+
+
+def settlement(tree):
+    """yes, no or unknown, with the reasons. Unknown ancestry or an unread ledger is never reported as settled."""
+    no, unknown = [], []
+    def walk(node, top):
+        if node['state'] == 'already read':
+            return
+        if node['state'] != 'read':
+            unknown.append(f"{node['href']}: {node['state']}")
+            return
+        label = 'this brief' if top else node['id']
+        if node['ledger_state'] == 'missing':
+            unknown.append(f"{label}: its calls ledger {node['ledger_path']} is missing")
+        elif node['ledger_state'] == 'none named' and top:
+            unknown.append('this brief names no calls ledger')
+        elif node['ledger_settled'] is False:
+            no.append(f'{label}: calls still open, asked or stale')
+        for parent in node['parents']:
+            walk(parent, False)
+    walk(tree, True)
+    return {'state': 'no' if no else 'unknown' if unknown else 'yes', 'why': no + unknown}
 
 
 def orient(path, ledger=None):
@@ -982,12 +1127,11 @@ def orient(path, ledger=None):
     tree = standing(path, ledger=ledger)
     if tree['state'] != 'read':
         raise Refusal(f'{path}: {tree["state"]}')
-    ledger = ledger or (path.parent / tree['calls'] if tree.get('calls') else None)
     tree['ledger'] = None
-    if ledger is not None:
+    if tree['ledger_state'] == 'read':
+        ledger = Path(tree['ledger_path'])
         report = calls_report(ledger)
-        data = load_ledger(ledger)
-        by_id = {c['id']: c for c in data['calls']}
+        by_id = {c['id']: c for c in load_ledger(ledger)['calls']}
         tree['ledger'] = {'href': str(ledger), 'settled': report['settled'],
                           'open': [{'id': r['id'], 'title': r['title'], 'judgement': by_id[r['id']]['judgement']}
                                    for r in report['calls'] if r['status'] == 'open'],
@@ -995,6 +1139,7 @@ def orient(path, ledger=None):
                                     for r in report['calls'] if r['status'] == 'asked'],
                           'stale': [{'id': r['id'], 'needs': r['needs']} for r in report['calls']
                                     if r['status'] in VERDICTS and r['needs']]}
+    tree['settled'] = settlement(tree)
     return tree
 
 
@@ -1022,6 +1167,10 @@ def orient_text(tree):
           lambda d, owner: f"  [{d['anchor']}]  {d['title']}" + ('' if owner == tree['id'] else f'   · from {owner}'))
     block('NOT STAMPED  recommended, never approved; acting on one is a judgement call', every(tree, 'unstamped'),
           lambda d, owner: f"  [{d['anchor']}]  {d['title']}" + ('' if owner == tree['id'] else f'   · from {owner}'))
+    restamp = every(tree, 'restamp')
+    if restamp:
+        block('STAMPED ON ANOTHER VERSION  the wording changed since; ask again before relying on these', restamp,
+              lambda d, owner: f"  [{d['anchor']}]  {d['title']}" + ('' if owner == tree['id'] else f'   · from {owner}'))
     overturned = every(tree, 'overturned')
     if overturned:
         block('OVERTURNED  the person said no; do not build on these', overturned,
@@ -1031,7 +1180,8 @@ def orient_text(tree):
           lambda n, owner: f"  [{n['anchor']}]  \"{n['text']}\"" + ('' if owner == tree['id'] else f'   · on {owner}'))
     if tree['ledger'] is None:
         lines.append('')
-        lines.append('CALLS  no ledger named: pass --calls, or name one in the brief')
+        lines.append('CALLS  ' + ('no ledger named: pass --calls, or name one in the brief' if tree['ledger_state'] == 'none named'
+                                  else f"the ledger {tree['ledger_path']} is missing"))
     else:
         ledger = tree['ledger']
         block('OPEN CALLS  carrying on as if the person concurs', [(c,) for c in ledger['open']],
@@ -1041,8 +1191,9 @@ def orient_text(tree):
         if ledger['stale']:
             block('STALE  answered, but the evidence moved since', [(c,) for c in ledger['stale']],
                   lambda c: f"  [{c['id']}]  {'; '.join(c['needs'])}")
-        lines.append('')
-        lines.append('SETTLED  ' + ('yes' if ledger['settled'] else 'no'))
+    lines.append('')
+    lines.append('SETTLED  ' + tree['settled']['state'])
+    lines.extend('  · ' + why for why in tree['settled']['why'])
     return '\n'.join(lines) + '\n'
 
 

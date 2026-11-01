@@ -48,7 +48,7 @@ Exit 0 means carry on. Exit 3 means stop and ask: the call is recorded as `asked
 | `judgement` | none | the slot, who filled it, both readings, the posture and the outcome |
 | `under` | none | the approved brief the work ran under, with its revision |
 
-A concur covers the evidence it was given, by hash. If the screenshot changes afterwards, `calls` reports the evidence as changed and the work is no longer settled until someone looks again.
+A concur covers the evidence it was given, by hash, and the row it was given on: each rendered row carries a fingerprint of the call's words and evidence, and a stamp on a row that does not match the ledger is reported as `mismatched` rather than applied. If the evidence of a call that still stands (open, asked or concurred) changes afterwards, `calls` reports it and the work is no longer settled until someone looks again. An overturned call's evidence is expected to change, since the fix replaces it, and a superseded call no longer stands; neither holds the work open. Writes to a ledger take a lock beside it, `NAME.calls.json.lock`, so two agents recording at once lose nothing.
 
 ## Reporting It
 
@@ -56,7 +56,7 @@ A call that carries on reaches the person three times, so it cannot be missed by
 
 1. **Your next reply** names it in a line: what you decided, and that you are carrying on. A host with a typed channel for wanted-but-not-blocking asks gets it there as well. In Terminal Delight that is a `response` surface whose `escalation` has level `wanted`.
 2. **The closing brief** carries it as a row the reader can stamp. `brief.py calls work.calls.json --html` prints the section with each call's evidence drawn in; paste it into the source before the footer. Start that brief with `new --calls work.calls.json`, and `check` will refuse it if it leaves an open call out.
-3. **Settling.** `brief.py calls work.calls.json` exits 2 until every call is concurred, overturned or superseded and its evidence is unchanged. Until then the work is finished, but it has not settled.
+3. **Settling.** `brief.py calls work.calls.json` exits 2 until every call is concurred, overturned or superseded and every call still standing has its evidence unchanged. Until then the work is finished, but it has not settled. `calls --html` only prints, and exits 0 whenever it printed; ask `calls` alone whether the work has settled.
 
 ## Answers
 
