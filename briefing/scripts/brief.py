@@ -2,6 +2,7 @@
 """Start, build and check a brief, then place a reader's returned comments against it.
 
 new → write → html (HTML only) → check → deliver → feedback / resolve. `doctor` says what works here.
+adopt turns a glass page built some other way into a source and a commentable page: no brief is read-only.
 While the work runs: orient re-reads what was approved; call records a decision nobody made;
 calls lists them, renders them into the closing brief and says whether the work has settled; verdict
 records the reader's answer."""
@@ -11,7 +12,7 @@ from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
-from html import escape as html_escape
+from html import escape as html_escape, unescape as html_unescape
 from html.parser import HTMLParser
 import json
 import os
@@ -534,7 +535,7 @@ def source_extras(text):
     return extras
 
 
-def build(source, output, identity=None, purpose=None, no_wall=False, discard_edits=False):
+def build(source, output, identity=None, purpose=None, no_wall=False, discard_edits=False, wall_from=None):
     if output.suffix != '.html':
         raise Refusal('HTML output needs an .html suffix')
     if source.resolve() == output.resolve():
@@ -602,7 +603,7 @@ def build(source, output, identity=None, purpose=None, no_wall=False, discard_ed
     note_js = note_js.replace(hook, "if (el.hasAttribute('data-brief-anchor')) id = el.getAttribute('data-brief-anchor');\n        else " + hook)
     if '</script' in note_js.lower():
         raise Refusal('canonical notes script contains a closing script tag')
-    wall = pick_wall(old, no_wall)
+    wall = pick_wall(old if old is not None else wall_from, no_wall)
     revision = content_revision(text, identity, purpose)
     meta = {'id': identity, 'medium': 'html', 'purpose': purpose, 'revision': revision, 'feedback_revision': revision,
             'built_at': utc_minute(), **extras}
@@ -649,6 +650,132 @@ def build(source, output, identity=None, purpose=None, no_wall=False, discard_ed
         result['backup'] = str(backup)
     if edited:
         result['discarded_output_edits'] = str(backup)
+    return result
+
+
+LOOK_MARKS = ('decision-brief — glass over an Omarchy wallpaper', 'fancy-pants-brief — the rail of gel buttons')
+HEAD_METAS = re.compile(r'<meta\b[^>]*(?:charset|name=["\']?(?:viewport|color-scheme))[^>]*>\s*', re.I)
+START_TAG = re.compile(r'<(h2|figure|div|section|aside|p|li)\b([^>]*)>', re.I)
+
+
+def anchor_slug(words, prefix, taken):
+    words = re.sub(r'<[^>]+>', ' ', words)
+    words = re.sub(r'^\s*\d+\s*', '', html_unescape(words))
+    slug = '-'.join(re.findall(r'[a-z0-9]+', words.lower())[:6]) or 'part'
+    base = candidate = f'{prefix}-{slug}'
+    n = 2
+    while candidate in taken:
+        candidate, n = f'{base}-{n}', n + 1
+    taken.add(candidate)
+    return candidate
+
+
+def stamp_anchors(region):
+    """Give every h2, figure and decision block in the region an id equal to its data-brief-anchor.
+
+    An existing lowercase id is kept as the anchor; an element without one is named from its words."""
+    taken = set(re.findall(r'\bid=["\']([^"\']+)["\']', region))
+    out, at, made = [], 0, []
+    for m in START_TAG.finditer(region):
+        tag, attrs = m[1].lower(), m[2]
+        classes = (re.search(r'\bclass=["\']([^"\']*)["\']', attrs) or [None, ''])[1].split()
+        if tag not in ('h2', 'figure') and not DECISION_CLASSES & set(classes):
+            continue
+        if 'data-brief-anchor' in attrs:
+            continue
+        given = re.search(r'\bid=["\']([^"\']+)["\']', attrs)
+        if given and SAFE_ID.fullmatch(given[1]):
+            anchor, add = given[1], f' data-brief-anchor="{given[1]}"'
+        elif given:
+            raise Refusal(f'<{tag} id="{given[1]}">: an anchor must be a lowercase id; rename it, then adopt again')
+        else:
+            if tag == 'h2':
+                words = region[m.end():region.find('</h2', m.end())]
+                anchor = anchor_slug(words, 'sec', taken)
+            elif tag == 'figure':
+                end = region.find('</figure', m.end())
+                inner = region[m.end():end if end > 0 else None]
+                label = re.search(r'<(?:figcaption|span class="lbl")[^>]*>(.*?)</', inner, re.S)
+                anchor = anchor_slug(label[1] if label else 'figure', 'fig', taken)
+            else:
+                anchor = anchor_slug(region[m.end():m.end() + 200], 'ask', taken)
+            add = f' id="{anchor}" data-brief-anchor="{anchor}"'
+        made.append(anchor)
+        out.append(region[at:m.end() - 1] + add)
+        at = m.end() - 1
+    out.append(region[at:])
+    return ''.join(out), made
+
+
+def adopt(page, identity=None, purpose=None):
+    """Turn a finished glass page built without briefing into a briefing source, and rebuild the page from it.
+
+    The page keeps its own CSS, scripts, figures and wallpaper. What it gains is the reader's half: a note on
+    every section, figure and decision, the copy map, and Terminal Delight's send-back to the agent."""
+    if page.suffix != '.html' or page.name.endswith('.src.html'):
+        raise Refusal('adopt takes a built .html page, not a source')
+    text = read(page)
+    if 'id="brief-meta"' in text:
+        raise Refusal(f'{page.name} is already a brief; edit its .src.html and run html')
+    if '<!--BRIEF:' in text or CONTENT.search(text):
+        raise Refusal(f'{page.name} already carries briefing markers; it is a source, not a page to adopt')
+    identity = identity or re.sub(r'[^a-z0-9]+', '-', page.stem.lower()).strip('-')
+    if not SAFE_ID.fullmatch(identity):
+        raise Refusal('name the brief with --id: a stable lowercase id such as update-channels-gate-1')
+    if not purpose or not purpose.strip():
+        raise Refusal('name the purpose with --purpose: summary, engineering, decision, or an outcome stated plainly')
+    source = page.with_name(page.stem + '.src.html')
+    if source.exists():
+        raise Refusal(f'{source.name} exists; that page is already adopted, so edit the source and run html')
+    wall = wall_of(text)
+    # The look's own blocks come back through BRIEF:head and BRIEF:notes; everything the page wrote stays.
+    cuts = []
+    for kind in ('style', 'script'):
+        for attrs, start, content_start, content_end, end in Scripts(text, kind).blocks:
+            body = text[content_start:content_end]
+            if attrs.get('id') == 'brief-wall' or any(mark in body[:400] for mark in LOOK_MARKS):
+                cuts.append((start, end))
+    for start, end in sorted(cuts, reverse=True):
+        text = text[:start] + text[end:]
+    head = re.search(r'</head\s*>', text, re.I)
+    if not head:
+        raise Refusal('the page has no </head>; adopt needs an ordinary html document')
+    marker = '<!-- briefing: ' + json.dumps({'id': identity, 'purpose': purpose}, ensure_ascii=False).replace('--', '\\u002d\\u002d') + ' --><!--BRIEF:head-->\n'
+    title = re.search(r'</title\s*>', text[:head.start()], re.I)
+    at = title.end() if title else head.start()
+    text = HEAD_METAS.sub('', text[:at]) + marker + text[at:]
+    body = re.search(r'<body\b[^>]*>', text, re.I)
+    close = text.lower().rfind('</body')
+    if not body or close < 0:
+        raise Refusal('the page has no <body>…</body>')
+    first = re.search(r'<(header|main)\b', text[body.end():close], re.I)
+    if not first:
+        raise Refusal('adopt looks for the authored <header> or <main>; the page has neither')
+    start = body.end() + first.start()
+    end = text.lower().rfind('</main>', start, close)
+    if end < 0:
+        raise Refusal('the page has no </main>; wrap its authored content in <main>')
+    end += len('</main>')
+    tail = re.match(r'\s*<footer\b.*?</footer>', text[end:close], re.S | re.I)
+    if tail:
+        end += tail.end()
+    region, made = stamp_anchors(text[start:end])
+    text = text[:start] + '<!--brief-content-->\n' + region + '\n<!--/brief-content-->' + text[end:close] + '<!--BRIEF:notes-->' + text[close:]
+    if not Page(text).headings:
+        raise Refusal('the page has no h2 sections; a brief is commented on by section, so give it some first')
+    with source.open('x', encoding='utf-8') as stream:
+        stream.write(text)
+    original = read(page)
+    backup = page.with_name(page.name + '.' + hashlib.sha256(original.encode()).hexdigest()[:12] + '.pre-adopt.bak')
+    page.rename(backup)
+    try:
+        result = build(source, page, wall_from=wall)
+    except Exception:
+        backup.rename(page)
+        source.unlink()
+        raise
+    result.update({'source': str(source), 'pre_adopt': str(backup), 'anchors_added': made,
+                   'next': f'edit {source.name}, then: python3 {Path(__file__).resolve()} html {source} {page}'})
     return result
 
 
@@ -1559,6 +1686,10 @@ def main():
     p.add_argument('--derives-from', type=Path, action='append', default=[], metavar='BRIEF',
                    help='a brief this one builds on; orient reads what it approved too (repeatable)')
     p.add_argument('--calls', type=Path, metavar='LEDGER', help='the NAME.calls.json ledger this brief shows')
+    p = commands.add_parser('adopt', help='make a finished glass page commentable: write its .src.html and rebuild it with notes')
+    p.add_argument('page', type=Path)
+    p.add_argument('--id', help='defaults to the page\'s file name')
+    p.add_argument('--purpose', required=True)
     p = commands.add_parser('html', help='assemble a .src.html source into a self-contained, commentable page')
     p.add_argument('source', type=Path)
     p.add_argument('output', type=Path)
@@ -1639,6 +1770,8 @@ def main():
             return 0
         if args.command == 'new':
             result = scaffold(args.source, args.id, args.purpose, args.title, args.derives_from, args.calls)
+        elif args.command == 'adopt':
+            result = adopt(args.page, args.id, args.purpose)
         elif args.command == 'html':
             result = build(args.source, args.output, args.id, args.purpose, args.no_wall, args.discard_output_edits)
         elif args.command == 'check':

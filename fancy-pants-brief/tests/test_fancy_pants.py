@@ -13,11 +13,14 @@ loader.exec_module(fp)
 
 BASE = f'<style>/* {fp.BASE_MARK} */ body{{background:transparent}} .glass{{background:#fff}}</style>'
 WALL = '<style id="brief-wall">:root{--bg:#111;--wall:url("data:image/webp;base64,AAAA")}</style>'
+NOTES = ('<script type="application/json" id="report-notes" data-format="1">{}</script>'
+         '<script>window.NOTES_FILE="fixture-0123456789ab";</script>')
+READ_ONLY_GATE_1 = '<h1>Settings → Updates</h1><section class="pane"><h2><span class="n">01</span>What one press does</h2><figure><svg viewBox="0 0 1 1"></svg></figure></section>'
 
 
-def page(own='', body='<h1>x</h1>', look=True, head_extra=''):
+def page(own='', body='<h1>x</h1>', look=True, head_extra='', notes=True):
     return (f'<!doctype html><html><head>{head_extra}{BASE + WALL if look else ""}'
-            f'<style>{own}</style></head><body>{body}</body></html>')
+            f'<style>{own}</style></head><body>{body}{NOTES if notes else ""}</body></html>')
 
 
 def fails(doc):
@@ -57,6 +60,24 @@ class Gate(unittest.TestCase):
         meta = '<meta name="color-scheme" content="light">'
         self.assertTrue(any('light colour scheme' in x for x in fails(page(head_extra=meta))))
 
+    def test_a_read_only_page_fails(self):
+        # td-update-channels' Gate 1 mockups, 2026-11-02: glass, wallpaper, rail, and not one note.
+        # Parker: "READ ONLY BRIEFS ARE JUST TRASH!!!!"
+        f = fails(page(body=READ_ONLY_GATE_1, notes=False))
+        self.assertTrue(any(x.startswith('read-only') and 'adopt' in x for x in f), f)
+
+    def test_a_section_without_a_note_target_fails(self):
+        f = fails(page(body=READ_ONLY_GATE_1))
+        self.assertTrue(any('take no note' in x and 'h2' in x and 'figure' in x for x in f), f)
+
+    def test_a_declared_read_only_page_warns_with_its_reason(self):
+        meta = '<meta name="fancy-pants-read-only" content="a client résumé that leaves as a PDF">'
+        f, w = fp.static_check(page(head_extra=meta, body=READ_ONLY_GATE_1, notes=False))
+        self.assertEqual(f, [])
+        self.assertTrue(any('résumé' in x for x in w))
+        bare = '<meta name="fancy-pants-read-only" content="">'
+        self.assertTrue(any('without saying why' in x for x in fails(page(head_extra=bare, notes=False))))
+
     # ---- innocent pages, so the gate is never switched off for crying wolf
 
     def test_a_print_rule_that_whitens_paper_passes(self):
@@ -87,15 +108,27 @@ class Builders(unittest.TestCase):
     def run_tool(self, *args):
         return subprocess.run([sys.executable, str(TOOL), *args], capture_output=True, text=True)
 
-    def test_new_page_passes_the_static_gate(self):
+    def test_new_builds_a_commentable_brief_that_passes_the_static_gate(self):
         with tempfile.TemporaryDirectory() as tmp:
-            p = Path(tmp) / 'p.html'
-            r = self.run_tool('new', str(p), '--title', 'A <test> page')
+            p = Path(tmp) / 'gate-one.html'
+            r = self.run_tool('new', str(p), '--title', 'A <test> page', '--eyebrow', 'Plan · Gate 1')
             self.assertEqual(r.returncode, 0, r.stderr)
+            self.assertTrue((Path(tmp) / 'gate-one.src.html').is_file())
             doc = p.read_text()
             self.assertIn('A &lt;test&gt; page', doc)
+            self.assertIn('Plan · Gate 1', doc)
             self.assertIn(fp.SECTIONS_MARK, doc)
+            self.assertIn('id="report-notes"', doc)
+            self.assertIn('gate-one-', doc)   # NOTES_FILE, the copy map's header, names the brief
             self.assertEqual(fails(doc), [])
+
+    def test_new_never_replaces_a_page_unasked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'p.html'
+            p.write_text('<p>commented on</p>')
+            r = self.run_tool('new', str(p), '--title', 'x')
+            self.assertEqual(r.returncode, 1)
+            self.assertEqual(p.read_text(), '<p>commented on</p>')
 
     def test_dress_adds_the_look_and_names_what_still_fights_it(self):
         with tempfile.TemporaryDirectory() as tmp:

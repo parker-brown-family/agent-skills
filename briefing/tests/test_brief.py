@@ -393,6 +393,51 @@ class BriefTests(unittest.TestCase):
                 brief.resolve(self.out, Path('-'))
 
 
+    # ---- adopt: a glass page built without briefing becomes commentable (Parker, 2026-11-02:
+    # "READ ONLY BRIEFS ARE JUST TRASH!!!!", on td-update-channels' Gate 1 mockups)
+    def glass_page(self, extra_body=''):
+        base = '<style>/* decision-brief — glass over an Omarchy wallpaper */ body{}</style>'
+        rail = '<script>/* fancy-pants-brief — the rail of gel buttons */</script>'
+        page = self.root / 'mockups.html'
+        page.write_text('<!doctype html><html><head><meta charset="utf-8"><title>Mockups</title>' + base + WALL +
+                        '<style>.td{border:1px solid} .redq{color:red}</style></head><body>'
+                        '<header class="top"><h1>Mockups</h1><nav class="sections"></nav></header>'
+                        '<main class="wrap"><section class="pane"><h2><span class="n">01</span>What one press does</h2>'
+                        '<figure><span class="lbl">Figure 1 · the path</span><svg viewBox="0 0 1 1"></svg></figure></section>'
+                        '<section class="pane"><h2 id="sec-kept">Kept id</h2><div class="ask">Ship in 0.5.0?</div>'
+                        + extra_body + '</section></main>' + rail + '</body></html>')
+        return page
+
+    def test_adopt_makes_a_read_only_page_commentable_and_keeps_its_own_css_and_wall(self):
+        page = self.glass_page()
+        brief.subprocess.run.reset_mock()
+        result = brief.adopt(page, None, 'decision')
+        brief.subprocess.run.assert_not_called()   # the page's own wallpaper is kept, not re-picked
+        self.assertEqual(result['id'], 'mockups')
+        self.assertEqual(result['anchors_added'], ['sec-what-one-press-does', 'fig-figure-1-the-path', 'sec-kept', 'ask-ship-in-0-5-0'])
+        built = brief.read(page)
+        self.assertIn('id="report-notes"', built)
+        self.assertIn('.redq{color:red}', built)
+        self.assertEqual(built.count('decision-brief — glass over an Omarchy wallpaper'), 1)
+        self.assertEqual(built.count('fancy-pants-brief — the rail of gel buttons'), 1)
+        self.assertEqual(brief.wall_of(built), WALL)
+        self.assertIn('data-brief-anchor="sec-kept"', built)
+        self.assertTrue(Path(result['pre_adopt']).is_file())
+        self.assertEqual(brief.check(page)['comment_targets'], 4)
+
+    def test_adopt_refuses_a_page_that_is_already_a_brief(self):
+        self.build()
+        with self.assertRaisesRegex(brief.Refusal, 'already a brief'):
+            brief.adopt(self.out, None, 'decision')
+
+    def test_adopt_leaves_the_page_alone_when_the_build_refuses(self):
+        page = self.glass_page('<h2 id="sec-kept">Same id twice</h2>')
+        original = page.read_text()
+        with self.assertRaises(brief.Refusal):
+            brief.adopt(page, None, 'decision')
+        self.assertEqual(page.read_text(), original)
+        self.assertFalse(page.with_name('mockups.src.html').exists())
+
     # ---- found by a clean-context agent following only the docs
     def test_rebuild_keeps_the_real_wallpaper_not_base_css_naming_it(self):
         self.build()

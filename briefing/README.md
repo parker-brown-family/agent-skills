@@ -55,6 +55,7 @@ python3 ~/.claude/skills/briefing/scripts/brief.py doctor
 | Command | Does |
 |---|---|
 | `new SOURCE --id ID --purpose P [--title T]` | Writes a starting `.md` or `.src.html` with every marker in place. Never overwrites |
+| `adopt PAGE --purpose P [--id ID]` | Makes a finished glass page commentable. It writes `PAGE.src.html`, anchors every section, figure and decision, and rebuilds the page with notes, the copy map and Terminal Delight's send-back. It keeps the page's own CSS, scripts and wallpaper, and leaves the original as `.pre-adopt.bak`. No brief is read-only |
 | `html SOURCE OUTPUT [--id ID --purpose P]` | Assembles a self-contained, commentable page; a source from `new` names itself, so the flags are optional. On a rebuild it keeps the reader's notes, agreements and wallpaper byte for byte and backs up the old page |
 | `check DOCUMENT` | Checks anchors, leftover `TODO(brief)` passages and every local link, image, `file://` URL and fragment, listing every problem at once. Reports `wallpaper` and `edited_since_build` for a built page |
 | `feedback DOCUMENT` | Prints a page's saved notes, or a blank Markdown comment file, as JSON |

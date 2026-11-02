@@ -1,6 +1,6 @@
 ---
 name: fancy-pants-brief
-description: "The house look for every HTML page an agent makes for a person to read: glass over a random Omarchy wallpaper in that wallpaper's theme, always dark, with gel buttons, a rail of sections and plenty of pictures, built with one tool and passed through one gate. Use whenever you are about to write ANY .html a person will open: a report, a review page, a storyboard, a results or status page, an index, a gallery, a comparison, a preview, a handoff page, a dashboard, a demo page; when a tool you are writing generates HTML for people; when a page came out white, plain or flat; when the user says \"fancy pants\", \"/fancy-pants-brief\", \"make it look nice\", \"the glass look\", \"Omarchy theme\". A decision brief is one of these pages and keeps its own skill, decision-brief, which wears the same look. NOT for HTML that belongs to another design: a product's or client's own site, an email body, a résumé or invoice that leaves as a PDF, or a scene page a film renders frames from."
+description: "The house look for every HTML page an agent makes for a person to read: glass over a random Omarchy wallpaper in that wallpaper's theme, always dark, with gel buttons, a rail of sections and plenty of pictures, and never read-only: every section and figure takes a note, with a copy map and Terminal Delight's one-click send-back to the agent. Built with one tool and passed through one gate. Use whenever you are about to write ANY .html a person will open: a report, a review page, a storyboard, a results or status page, an index, a gallery, a comparison, a preview, a handoff page, a dashboard, a demo page; when a tool you are writing generates HTML for people; when a page came out white, plain or flat; when a page has no notes, no copy map, or \"no commentable sections\"; when the user says \"fancy pants\", \"/fancy-pants-brief\", \"make it look nice\", \"the glass look\", \"Omarchy theme\". A decision brief is one of these pages and keeps its own skill, decision-brief, which wears the same look. NOT for HTML that belongs to another design: a product's or client's own site, an email body, a résumé or invoice that leaves as a PDF, or a scene page a film renders frames from."
 license: MIT
 ---
 
@@ -20,20 +20,48 @@ flat black or white. Parker, 2026-10-29: *"We're getting white screen plain HTML
 *"I never want an agent to produce HTML that isn't done in this way."* This skill gives every
 other page the same look, and a gate that fails a page without it.
 
+**Every page also takes notes.** A reader comments on any section or figure, copies the map, and
+in Terminal Delight sends the notes straight back to the agent's prompt in one click. The look
+was half the job: on 2026-11-02 this skill's own `new` produced a Gate 1 mockups page in perfect
+glass that nobody could answer. Parker: *"NO commentable sections --- THIS IS TERRIBLE!!!! ALL
+BRIEFS MUST HAVE COMMENTABLE SECIONTS AND THE COPY MAP | ONE-CLICK BACK TO AGENT PROMPT (TD
+functionality) --- READ ONLY BRIEFS ARE JUST TRASH!!!!"* So `new` now builds through the
+`briefing` skill, and the gate fails a read-only page.
+
 ## Build the page on the look
 
 The tool is `scripts/fancy-pants`. Run it through `python3` rather than by its bare name, because
 some shell sandboxes refuse a bare script.
 
-**A new page** starts from a page that already has the look, a masthead, an empty rail of
-sections, one milky card and one pane:
+**A new page** is a brief, and is built by `briefing`. `new` writes `page.src.html`, a source
+with a masthead, numbered sections, a figure and `TODO(brief)` where the writing goes. It then
+builds `page.html` from that source, with the look and the notes layer:
 
 ```bash
-python3 ~/.claude/skills/fancy-pants-brief/scripts/fancy-pants new page.html --title "Four showcases, retold" --eyebrow "Cinema Delight · review · 2026-10-29"
+python3 ~/.claude/skills/fancy-pants-brief/scripts/fancy-pants new page.html --title "Four showcases, retold" --eyebrow "Cinema Delight · review · 2026-10-29" --purpose summary
 ```
 
-The skeleton gives you structure, not content. Fill it, delete what the material does not
-need, and draw what it does. The shape of the page is still yours.
+Write in the **source**, then rebuild and check it:
+
+```bash
+python3 ~/.claude/skills/briefing/scripts/brief.py html page.src.html page.html
+```
+```bash
+python3 ~/.claude/skills/briefing/scripts/brief.py check page.html
+```
+
+Never edit the built page. A rebuild keeps the reader's notes and refuses to run over a
+hand edit. Give every `h2` and `figure` an `id` equal to its `data-brief-anchor`, the way the
+skeleton does. The skeleton gives you structure, not content: fill it, delete what the material
+does not need, and draw what it does. The shape of the page is still yours.
+
+**A page already built without notes**, by hand or by an older `new`, is converted in place.
+`adopt` keeps the page's own CSS, scripts, drawings and wallpaper. It writes the source beside
+the page and rebuilds the page as a commentable brief:
+
+```bash
+python3 ~/.claude/skills/briefing/scripts/brief.py adopt page.html --purpose decision
+```
 
 **A page another program writes** (a review page, an index a script regenerates) puts the
 look in its `<head>` before its own CSS:
@@ -44,7 +72,8 @@ python3 ~/.claude/skills/fancy-pants-brief/scripts/fancy-pants head --out /tmp/h
 
 A tool can also read `decision-brief/assets/base.css` and run `decision-brief/scripts/brief-wall`
 itself, as Cinema Delight's `ad.py` and `moments.py` already do. Either way, its output goes
-through the gate.
+through the gate, and the gate fails it until the generator emits the notes layer as well. The
+simplest way to get that is to write a briefing source and run `brief.py html` over it.
 
 **A page that was built without the look** can be dressed in place. The tool adds the look and
 then runs the gate, which names whatever in the page's own CSS is still fighting the look:
@@ -56,8 +85,8 @@ python3 ~/.claude/skills/fancy-pants-brief/scripts/fancy-pants dress page.html
 Fix what it names, or rebuild the page from `new`. Dressing a page does not make it look like
 it was designed on the glass.
 
-**A decision brief** is built with `decision-brief`. It wears this look and adds reader notes,
-concur stamps and the grill of questions.
+**A decision brief** is built with `briefing` (purpose `decision`) or `decision-brief`. Both
+wear this look, and both add concur stamps and the grill of questions to the notes.
 
 ## What the look already gives you
 
@@ -127,6 +156,8 @@ Chromium at 1280 × 1800 and measures it. It fails a page:
 - that has no wallpaper
 - that paints the ground, takes over the theme's colours, or asks for light
 - that loads anything from the network
+- **that is read-only**: no reader notes (`report-notes` and the notes script), or an `h2` or
+  `figure` with no `data-brief-anchor`, so it takes no note. The fix it names is `brief.py adopt`
 - whose photograph has a mean luminance above 120 of 255
 
 The glass briefs measure 36–49 and a white page measures 249. It warns, without failing, on
@@ -143,6 +174,11 @@ outside it.
 - **A document that leaves as print or PDF for someone else**, such as a résumé, an invoice or a
   cover letter. Those have their own templates.
 - **A scene page a film renders frames from.** The film's own look rules there.
+
+Such a page can declare itself read-only, and must say why:
+`<meta name="fancy-pants-read-only" content="a résumé that leaves as a PDF">`. The gate then
+prints the reason as a warning instead of failing the page. A declaration with no reason fails.
+No brief, review page, plan, mockup or report is one of these.
 
 The page a person reads in order to judge any of these, such as the review page around the film or
 the comparison of two résumé drafts, still wears the look.
