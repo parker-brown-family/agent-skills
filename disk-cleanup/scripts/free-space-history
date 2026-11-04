@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""Rebuild free space on / by day from the df output agents printed in their transcripts.
+
+    free-space-history [days]        default 21; a day is the local day of the reading
+
+Readings exist only when an agent ran df, so a quiet day is unknown, not unchanged.
+"""
+import collections, datetime, json, pathlib, re, sys, time
+
+days = int(sys.argv[1]) if len(sys.argv) > 1 else 21
+row = re.compile(r'/dev/mapper/root\s+[\d.]+[GT]\s+[\d.]+[GT]\s+([\d.]+)([GT])\s+\d+%')
+stamp = re.compile(r'"timestamp"\s*:\s*"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)')
+cutoff = time.time() - days * 86400
+home = pathlib.Path.home()
+seen = collections.defaultdict(list)
+files = 0
+for root in (home / '.claude/projects', home / '.codex/sessions'):
+    for path in root.rglob('*.jsonl'):
+        try:
+            if path.stat().st_mtime < cutoff:
+                continue
+            files += 1
+            with open(path, errors='ignore') as handle:
+                for line in handle:
+                    if '/dev/mapper/root' not in line:
+                        continue
+                    when = stamp.search(line)
+                    if not when:
+                        continue
+                    utc = datetime.datetime.fromisoformat(when.group(1)).replace(tzinfo=datetime.timezone.utc)
+                    if utc.timestamp() < cutoff:
+                        continue
+                    day = utc.astimezone().strftime('%Y-%m-%d')
+                    for value, unit in row.findall(line.replace('\\n', '\n').replace('\\t', ' ')):
+                        seen[day].append(float(value) * (1024 if unit == 'T' else 1))
+        except OSError:
+            continue
+if not seen:
+    sys.exit(f'no df readings in {files} transcripts: unknown, not unchanged')
+for day in sorted(seen):
+    print(f'{day}  most {max(seen[day]):5.0f} GB free  least {min(seen[day]):5.0f} GB  ({len(seen[day])} readings)')
