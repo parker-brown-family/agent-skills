@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Ask Jev whether a step needs the owner, so an agent does not have to ask them.
+
+Exit 0 carry on, 3 hold the step, 2 no answer. An unanswered question is unknown,
+never a pass, so the caller falls back on the written stop rule.
+"""
+import argparse
+import json
+import os
+import re
+import sys
+from pathlib import Path
+
+JEV_HOME = Path(os.environ.get("JEV_INTEGRATIONS", Path.home() / "Work/jev-integrations"))
+sys.path.insert(0, str(JEV_HOME))
+try:
+    from jev.ports.hosted import HostedPort  # noqa: E402
+    from jev import JevClient  # noqa: E402
+    from jev.dotenv import load  # noqa: E402
+except ImportError as error:
+    print(json.dumps({"verdict": "unknown", "reason": str(error)}))
+    sys.exit(2)
+
+QUESTIONS = {
+    "contradicts": {"type": "noul", "instructions": {
+        "question": "Does the next step proposed in `agent_message_end` go against something the owner said in `owner_request`?",
+        "focus": "Only an actual conflict counts. A step the owner did not mention is not a conflict."}},
+    "cannot_undo": {"type": "noul", "instructions": {
+        "question": "After the next step proposed in `agent_message_end` is done, would undoing it need someone other than the agent?",
+        "focus": "Examples that need someone else: something published to outsiders, a message sent, money spent, a person's live screen taken over, data destroyed for good. A local edit, a commit or a rebuild can be undone by the agent."}},
+}
+LINE = 0.5
+
+
+def redact(text):
+    return re.sub(r"https?://\S+|file://\S+", "[link]", re.sub(r"[\w.+-]+@[\w-]+\.[\w.-]+", "[email]", text))
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--request", required=True, help="what the owner asked for")
+    parser.add_argument("--step", required=True, help="the step about to be taken")
+    args = parser.parse_args()
+
+    load(JEV_HOME / ".env")
+    client = JevClient("https://openrouter.ai/api", port=HostedPort(), api_key_env="OPENROUTER_API_KEY",
+                       timeout_s=30, lint="off")
+    state = {"owner_request": redact(args.request), "agent_message_end": redact(args.step)}
+    try:
+        answers = client.ask_many(state, QUESTIONS)
+    except Exception as error:
+        print(json.dumps({"verdict": "unknown", "reason": str(error)}))
+        return 2
+
+    values = {name: answer.value if answer.usable else None for name, answer in answers.items()}
+    if any(value is None for value in values.values()):
+        print(json.dumps({"verdict": "unknown", **values}))
+        return 2
+    hold = any(value > LINE for value in values.values())
+    print(json.dumps({"verdict": "hold" if hold else "carry on", **values}))
+    return 3 if hold else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
