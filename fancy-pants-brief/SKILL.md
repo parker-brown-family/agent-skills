@@ -156,8 +156,10 @@ Chromium at 1280 × 1800 and measures it. It fails a page:
 - that has no wallpaper
 - that paints the ground, takes over the theme's colours, or asks for light
 - that loads anything from the network
-- **that is read-only**: no reader notes (`report-notes` and the notes script), or an `h2` or
-  `figure` with no `data-brief-anchor`, so it takes no note. The fix it names is `brief.py adopt`
+- **that is read-only**: no `report-notes` island, or no `notes.js`. The fix it names is
+  `brief.py adopt`. On a page built by `briefing`, it also fails an `h2` or `figure` with no
+  `data-brief-anchor`, because there the anchors are the targets. A `decision-brief` page has no
+  anchors to check: `notes.js` tags its sections and figures itself
 - whose photograph has a mean luminance above 120 of 255
 
 The glass briefs measure 36–49 and a white page measures 249. It warns, without failing, on

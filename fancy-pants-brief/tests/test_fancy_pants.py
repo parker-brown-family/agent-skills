@@ -13,8 +13,10 @@ loader.exec_module(fp)
 
 BASE = f'<style>/* {fp.BASE_MARK} */ body{{background:transparent}} .glass{{background:#fff}}</style>'
 WALL = '<style id="brief-wall">:root{--bg:#111;--wall:url("data:image/webp;base64,AAAA")}</style>'
-NOTES = ('<script type="application/json" id="report-notes" data-format="1">{}</script>'
-         '<script>window.NOTES_FILE="fixture-0123456789ab";</script>')
+ISLAND = '<script type="application/json" id="report-notes" data-format="1">{}</script>'
+ENGINE = f'<script>/* {fp.NOTES_ENGINE}\n */</script>'
+NOTES = ISLAND + ENGINE
+ANCHORED = "<script>window.NOTES_TARGETS=[['[data-brief-anchor]','brief']];</script>"
 READ_ONLY_GATE_1 = '<h1>Settings → Updates</h1><section class="pane"><h2><span class="n">01</span>What one press does</h2><figure><svg viewBox="0 0 1 1"></svg></figure></section>'
 
 
@@ -66,9 +68,24 @@ class Gate(unittest.TestCase):
         f = fails(page(body=READ_ONLY_GATE_1, notes=False))
         self.assertTrue(any(x.startswith('read-only') and 'adopt' in x for x in f), f)
 
-    def test_a_section_without_a_note_target_fails(self):
-        f = fails(page(body=READ_ONLY_GATE_1))
+    def test_a_section_without_a_note_target_fails_where_targets_are_the_anchors(self):
+        f = fails(page(body=READ_ONLY_GATE_1 + ANCHORED))
         self.assertTrue(any('take no note' in x and 'h2' in x and 'figure' in x for x in f), f)
+
+    def test_a_decision_brief_passes_because_notes_js_tags_its_own_targets(self):
+        # 67 real briefs failed the first version of this gate, 2026-11-03: built with decision-brief, fully
+        # commentable, no data-brief-anchor anywhere. A gate that cries wolf gets switched off.
+        self.assertEqual(fails(page(body=READ_ONLY_GATE_1)), [])
+
+    def test_the_engine_without_its_island_or_the_island_without_its_engine_is_read_only(self):
+        # Terminal Delight treats a page with no island as a read-only picture; doctrine-bio-pipeline.html has this shape
+        for body in (READ_ONLY_GATE_1 + ENGINE, READ_ONLY_GATE_1 + ISLAND):
+            self.assertTrue(any(x.startswith('read-only') for x in fails(page(body=body, notes=False))), body)
+
+    def test_the_notes_stylesheet_is_not_the_engine(self):
+        css = '<style>/* decision-brief — reader notes, styling. */</style>'
+        f = fails(page(head_extra=css, body=READ_ONLY_GATE_1 + ISLAND, notes=False))
+        self.assertTrue(any(x.startswith('read-only') for x in f), f)
 
     def test_a_declared_read_only_page_warns_with_its_reason(self):
         meta = '<meta name="fancy-pants-read-only" content="a client résumé that leaves as a PDF">'
