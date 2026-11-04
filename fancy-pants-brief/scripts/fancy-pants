@@ -38,6 +38,7 @@ BRIEF_PY = HERE.parent / 'briefing' / 'scripts' / 'brief.py'
 
 BASE_MARK = 'decision-brief — glass over an Omarchy wallpaper'
 NOTES_MARK = 'decision-brief — reader notes'
+NOTES_ENGINE = NOTES_MARK + '.'   # notes.js's own header; notes.css's reads "reader notes, styling"
 SECTIONS_MARK = 'fancy-pants-brief — the rail of gel buttons'
 
 # The theme's colour roles. brief-wall writes them; a page that writes them too has
@@ -204,18 +205,23 @@ def light(value):
 
 READ_ONLY = re.compile(r'<meta\b[^>]*name=["\']?fancy-pants-read-only["\']?[^>]*content=["\']([^"\']*)', re.I)
 ANCHOR = re.compile(r'<(h2|figure)\b([^>]*)>', re.I)
+# brief.py narrows the targets to the anchors. Everywhere else notes.js finds the h2s and figures itself.
+ANCHORED_TARGETS = re.compile(r'NOTES_TARGETS\s*=\s*\[\s*\[\s*[\'"]\[data-brief-anchor\]')
 
 
 def notes_check(doc):
-    """A page a person reads takes notes: the notes layer, and a note target on every h2 and figure.
+    """A page a person reads takes notes: the notes engine, its report-notes island, and a target on every part.
+
+    Terminal Delight reads a page with no island as a read-only picture. notes.js tags a decision brief's h2s and
+    figures at runtime, so a missing data-brief-anchor means something only on a page that narrows its targets to them.
 
     None when the page is commentable; otherwise what is missing. A page whose design is someone
     else's (the exceptions SKILL.md lists) says so with <meta name="fancy-pants-read-only" content="why">."""
-    if 'id="report-notes"' not in doc or 'NOTES_FILE' not in doc:
+    if 'id="report-notes"' not in doc or NOTES_ENGINE not in doc:
         return ('read-only: no reader notes, so nobody can comment on a section, copy the map, or send it back '
                 'to the agent from Terminal Delight. Build briefs with briefing (fancy-pants new, or brief.py new + html); '
                 'convert this page with: python3 ' + str(BRIEF_PY) + ' adopt PAGE --purpose <summary|engineering|decision>')
-    loose = [m[1].lower() for m in ANCHOR.finditer(doc) if 'data-brief-anchor' not in m[2]]
+    loose = [m[1].lower() for m in ANCHOR.finditer(doc) if 'data-brief-anchor' not in m[2]] if ANCHORED_TARGETS.search(doc) else []
     if loose:
         return (f'{len(loose)} of the page\'s h2s and figures take no note (no data-brief-anchor): '
                 + ', '.join(sorted(set(loose))) + '; give each an id equal to its data-brief-anchor and rebuild')
