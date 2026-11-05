@@ -1,0 +1,31 @@
+{
+  "source_locale": "en",
+  "locales": ["en", "es", "de", "fr", "ru", "zh", "ja", "ko", "hi"],
+  "entries": [
+    {
+      "key": "open_item",
+      "source": "Open {name} with Ctrl+T",
+      "context": "Hint beside an Open button. The product supplies the item's name; preserve the physical shortcut.",
+      "protected_tokens": ["Ctrl+T"]
+    },
+    {
+      "key": "file_count",
+      "source": {"one": "{n} file", "other": "{n} files"},
+      "context": "File-count example with explicitly chosen catalog shapes. Use the host project's actual plural schema.",
+      "protected_tokens": [],
+      "source_by_locale": {
+        "ru": {"one": "{n} file", "few": "{n} files", "many": "{n} files", "other": "{n} files"},
+        "zh": {"other": "{n} files"},
+        "ja": {"other": "{n} files"},
+        "ko": {"other": "{n} files"}
+      }
+    },
+    {
+      "key": "error",
+      "source": "error",
+      "context": "A lowercase error-state caption for a person; stored machine state ids are outside this batch.",
+      "protected_tokens": [],
+      "same_as_source": {"es": "error is the standard Spanish noun as well as the English noun."}
+    }
+  ]
+}
