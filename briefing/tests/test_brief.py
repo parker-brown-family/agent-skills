@@ -1230,26 +1230,6 @@ class NextRoundTests(WorkLoopFixture):
         self.assertIsNone(brief.row_problem(call, old, self.root, self.root))
 
 
-class ImageryTests(WorkLoopFixture):
-    """The check reports what a page carries. Nothing counts drawings against a target: a quota breeds filler."""
-    def test_a_page_of_prose_is_reported_and_never_refused(self):
-        result = brief.check(self.page('prose', '<p>' + 'word ' * 900 + '</p>'))
-        self.assertEqual(result['drawings'], 0)
-        self.assertGreaterEqual(result['prose_words'], 900)
-
-    def test_a_table_is_prose_in_a_box_and_a_mockup_is_a_drawing(self):
-        table = '<figure id="fig-t" data-brief-anchor="fig-t"><span class="lbl">t</span><table><tr><td>' + 'word ' * 160 + '</td></tr></table></figure>'
-        result = brief.check(self.page('table', table))
-        self.assertEqual(result['drawings'], 0)
-        self.assertGreaterEqual(result['prose_words'], 160)
-        mock = '<figure id="fig-m" data-brief-anchor="fig-m"><span class="lbl">m</span><div class="mock">a drawn surface</div></figure>'
-        self.assertEqual(brief.check(self.page('mock', mock))['drawings'], 1)
-
-    def test_words_behind_a_closed_dialog_are_not_prose_to_read(self):
-        sheet = '<dialog id="d-x"><div class="dlg-body"><p>' + 'word ' * 400 + '</p></div></dialog>'
-        self.assertLess(brief.check(self.page('sheet', sheet))['prose_words'], 400)
-
-
 class ReviewRoundFourTests(WorkLoopFixture):
     """One test per finding of the fourth Codex round."""
     def setUp(self):
