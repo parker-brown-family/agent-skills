@@ -13,7 +13,7 @@ SPEC = importlib.util.spec_from_file_location('brief', Path(__file__).resolve().
 brief = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(brief)
 SOURCE = '''<!doctype html><html><head><title>Fixture</title><!--BRIEF:head--></head><body>
-<!--brief-content--><header><h1>A reader's comment</h1><nav class="sections"></nav></header>
+<!--brief-content--><header><h1 id="top" data-brief-anchor="top">A reader's comment</h1><nav class="sections"></nav></header>
 <main><h2 id="sec-result" data-brief-anchor="sec-result">Result</h2>
 <p>A comment stays attached to its passage.</p></main><!--/brief-content-->
 <!--BRIEF:notes--></body></html>'''
@@ -495,7 +495,7 @@ class BriefTests(unittest.TestCase):
         result = brief.adopt(page, None, 'decision')
         brief.subprocess.run.assert_not_called()   # the page's own wallpaper is kept, not re-picked
         self.assertEqual(result['id'], 'mockups')
-        self.assertEqual(result['anchors_added'], ['sec-what-one-press-does', 'fig-figure-1-the-path', 'sec-kept', 'ask-ship-in-0-5-0'])
+        self.assertEqual(result['anchors_added'], ['top', 'sec-what-one-press-does', 'fig-figure-1-the-path', 'sec-kept', 'ask-ship-in-0-5-0'])
         built = brief.read(page)
         self.assertIn('id="report-notes"', built)
         self.assertIn('.redq{color:red}', built)
@@ -504,7 +504,7 @@ class BriefTests(unittest.TestCase):
         self.assertEqual(brief.wall_of(built), WALL)
         self.assertIn('data-brief-anchor="sec-kept"', built)
         self.assertTrue(Path(result['pre_adopt']).is_file())
-        self.assertEqual(brief.check(page)['comment_targets'], 4)
+        self.assertEqual(brief.check(page)['comment_targets'], 5)
 
     def test_adopt_refuses_a_page_that_is_already_a_brief(self):
         self.build()
@@ -709,7 +709,7 @@ class WorkLoopTests(WorkLoopFixture):
         self.call('Accent colour', taste='high')
         section = brief.render_calls(self.ledger)
         self.assertIn('data:image/png;base64,', section)
-        self.assertIn(brief.SLOT, section)
+        self.assertNotIn(brief.SLOT, section)  # the ledger holds the reading; the row is what a person stamps
         self.assertIn('Stopped:', section)
         page = self.page('closing', section, {'calls': 'work.calls.json'})
         found = {d['anchor']: d['title'] for d in brief.Decisions(brief.read(page)).decisions()}
@@ -928,10 +928,9 @@ class CallOrderTests(WorkLoopFixture):
         section = brief.render_calls(self.ledger)
         order = [d['anchor'] for d in brief.Decisions(section).decisions()]
         self.assertEqual(order, ['call-stopped-one', 'call-taste-call', 'call-routine-one'])
-        routine = section.split('id="call-routine-one"')[1]
-        self.assertNotIn('Passed over', routine)
-        self.assertIn('Undo', section.split('id="call-taste-call"')[1].split('id="call-routine-one"')[0])
-        self.assertIn('The last one was routine, with both readings low, and shows', section)
+        for fact in ('Passed over', 'Judged', 'Context'):
+            self.assertNotIn(fact, section)  # the ledger keeps these; a row says what was chosen and why
+        self.assertNotIn('Undo', section.split('id="call-taste-call"')[1].split('id="call-routine-one"')[0])
 
 
 
@@ -1029,7 +1028,7 @@ class ReviewRoundThreeTests(WorkLoopFixture):
     def test_any_edit_to_a_rendered_row_is_refused(self):
         edits = {
             'a second chose': lambda s: s.replace('<dt>Chose</dt>', '<dt>Chose</dt><dd>delete everything</dd><dt>Chose</dt>', 1),
-            'an invented fact': lambda s: s.replace('<dt>Judged</dt>', '<dt>Approved</dt><dd>by the owner</dd><dt>Judged</dt>', 1),
+            'an invented fact': lambda s: s.replace('<dt>Because</dt>', '<dt>Approved</dt><dd>by the owner</dd><dt>Because</dt>', 1),
             'false prose': lambda s: s.replace('carrying on as if you concur.', 'approved already.', 1),
             'a swapped picture source': lambda s: s.replace('<img ', '<picture><source srcset="data:image/png;base64,QUJD"><img ', 1).replace('one.</figcaption>', 'one.</figcaption>', 1),
             'a row on a paragraph': lambda s: s.replace('<div class="ask call"', '<p class="ask call"', 1),
@@ -1102,7 +1101,144 @@ class ReviewRoundThreeTests(WorkLoopFixture):
         self.call('With proof', evidence=[self.shot])
         section = brief.render_calls(self.ledger)
         self.assertEqual([d['anchor'] for d in brief.Decisions(section).decisions()], ['call-with-proof', 'call-routine-first'])
-        self.assertIn('The last one was routine', section)
+
+
+class NextRoundTests(WorkLoopFixture):
+    """A reader's next round is a new page: a closed strip of what they said, then only what is new."""
+    def stamped(self, title='Keep the footer'):
+        first = self.root / 'first.src.html'
+        first.write_text(SOURCE.replace('<title>Fixture</title>', f'<title>{title}</title>'))
+        page = self.root / 'first.html'
+        brief.build(first, page, 'first-round', 'decision')
+        text = brief.read(page)
+        island = {'sec-result': [{'text': 'wrong <b>footer</b>', 'title': 'Result', 'ts': '2026-11-05 08:00'}],
+                  'sec-gone': [{'text': 'said of a removed passage', 'title': 'Gone', 'ts': '2026-11-05 08:01'}]}
+        text = re.sub(r'(<script type="application/json" id="report-notes"[^>]*>).*?(</script>)',
+                      lambda m: m[1] + json.dumps(island) + m[2], text, count=1, flags=re.S)
+        page.write_text(text)
+        return page
+
+    def next_round(self, page, identity='second-round', title='Lose the footer'):
+        source = self.root / 'second.src.html'
+        brief.scaffold(source, identity, 'decision', title, follows=page)
+        return source
+
+    def test_a_next_round_opens_on_a_closed_strip_of_what_was_said(self):
+        page = self.stamped()
+        text = brief.read(self.next_round(page))
+        self.assertLess(text.index('id="last-time"'), text.index('<h1>'))  # above the title
+        self.assertIn('<b>Last time</b> 2 notes', text)
+        self.assertIn('data-dlg="d-last-time"', text)
+        self.assertIn('<dialog id="d-last-time">', text)  # closed until it is pressed, in a browser and in Terminal Delight
+        self.assertNotIn('<details', text)  # Terminal Delight cannot open one
+        self.assertIn('wrong &lt;b&gt;footer&lt;/b&gt;', text)  # the reader's words, escaped
+        self.assertIn('<a href="first.html#sec-result">Result</a>', text)
+        self.assertNotIn('href="first.html#sec-gone"', text)  # a passage since removed is named, not linked
+        self.assertIn('"derives_from": ["first.html"]', text)
+
+    def test_a_next_round_cannot_ship_until_each_note_says_what_came_of_it(self):
+        source = self.next_round(self.stamped())
+        output = self.root / 'second.html'
+        brief.build(source, output, 'second-round', 'decision')
+        with self.assertRaisesRegex(brief.Refusal, 'unwritten scaffold passage'):
+            brief.check(output)
+
+    def test_a_next_round_needs_its_own_title_and_id(self):
+        page = self.stamped('Keep the footer')
+        with self.assertRaisesRegex(brief.Refusal, 'a --title of its own'):
+            self.next_round(page, title=' keep THE footer ')
+        with self.assertRaisesRegex(brief.Refusal, 'a --title of its own'):
+            brief.scaffold(self.root / 'x.src.html', 'second-round', 'decision', follows=page)
+        with self.assertRaisesRegex(brief.Refusal, 'its own --id'):
+            self.next_round(page, identity='first-round')
+        with self.assertRaisesRegex(brief.Refusal, 'not there'):
+            self.next_round(self.root / 'gone.html')
+        with self.assertRaisesRegex(brief.Refusal, 'Markdown'):
+            brief.scaffold(self.root / 'x.md', 'second-round', 'decision', 'New', follows=page)
+
+    def test_a_page_whose_title_and_first_line_take_no_note_is_refused(self):
+        source = self.root / 'plain.src.html'
+        source.write_text(SOURCE.replace(' id="top" data-brief-anchor="top"', ''))
+        page = self.root / 'plain.html'
+        brief.build(source, page, 'plain', 'decision')
+        with self.assertRaisesRegex(brief.Refusal, 'take no note'):
+            brief.check(page)
+
+    def test_a_new_page_starts_with_a_header_that_takes_a_note(self):
+        source = self.root / 'fresh.src.html'
+        brief.scaffold(source, 'fresh', 'decision', 'Fresh')
+        self.assertIn('<div class="opening" id="top" data-brief-anchor="top"><h1>Fresh</h1>', brief.read(source))
+        self.assertTrue(brief.Page(brief.read(source)).opening)
+
+    def test_a_card_stops_at_forty_words_and_a_figure_is_not_counted(self):
+        def card(words, inside=''):
+            return (f'<div class="grill"><div class="ask" id="q-a" data-brief-anchor="q-a"><h3>Which?</h3><p>{" ".join(["word"] * words)}</p>'
+                    f'{inside}</div></div>')
+        self.assertTrue(brief.check(self.page('fits', card(39)))['revision'])
+        drawing = '<figure id="fig-a" data-brief-anchor="fig-a"><span class="lbl">a</span><p>' + 'word ' * 60 + '</p></figure>'
+        self.assertTrue(brief.check(self.page('drawn', card(39, drawing)))['revision'])
+        with self.assertRaisesRegex(brief.Refusal, r'decisions over 40 words: q-a \(41\)'):
+            brief.check(self.page('long', card(40)))
+
+    def test_a_generated_call_row_is_held_to_its_fields_and_not_to_the_card_limit(self):
+        brief.record_call(self.ledger, 'word ' * brief.CALL_WORDS['title'], 'word ' * brief.CALL_WORDS['chose'],
+                          'word ' * brief.CALL_WORDS['because'], 'low', 'low', call_id='call-at-every-limit')
+        section = brief.render_calls(self.ledger)
+        self.assertGreater(brief.Decisions(section).decisions()[0]['words'], brief.DECISION_WORDS)
+        self.assertTrue(brief.check(self.page('closing', section, {'calls': 'work.calls.json'}))['revision'])
+
+    def test_a_call_says_it_short_or_is_refused(self):
+        for field, limit in brief.CALL_WORDS.items():
+            words = {'title': 'A title', 'chose': 'one', 'because': 'two', field: ' '.join(['word'] * (limit + 1))}
+            with self.assertRaisesRegex(brief.Refusal, rf'--{field} runs to {limit + 1} words'):
+                brief.record_call(self.ledger, words['title'], words['chose'], words['because'], 'low', 'low')
+            words[field] = ' '.join(['word'] * limit)
+            brief.record_call(self.ledger, words['title'], words['chose'], words['because'], 'low', 'low', call_id=f'call-{field}')
+
+    def test_a_row_links_back_to_the_section_holding_the_reasoning(self):
+        self.call('Footer at 28 px', see='sec-result')
+        section = brief.render_calls(self.ledger)
+        self.assertIn('<a href="#sec-result">The reasoning</a>', section)
+        self.assertTrue(brief.check(self.page('closing', section, {'calls': 'work.calls.json'}))['revision'])
+        with self.assertRaisesRegex(brief.Refusal, 'lowercase id'):
+            self.call('Another', see='Bad Id')
+
+    def test_a_row_printed_by_the_longer_renderer_still_matches_its_ledger(self):
+        self.call('Footer at 28 px', taste='medium', context='left open', undo='one constant', passed_over=['40 px'])
+        data = brief.load_ledger(self.ledger)
+        call = data['calls'][0]
+        old = brief.render_row(call, self.root, self.root, full=True)
+        self.assertIn('Judged', old)
+        self.assertIsNone(brief.row_problem(call, old, self.root, self.root))
+        self.assertIsNone(brief.row_problem(call, brief.render_row(call, self.root, self.root), self.root, self.root))
+        self.assertTrue(brief.row_problem(call, old.replace('one constant', 'two constants'), self.root, self.root))
+
+
+class ImageryTests(WorkLoopFixture):
+    def drawn(self, words, figures=''):
+        return '<p>' + 'word ' * words + '</p>' + figures
+
+    def test_a_brief_owes_a_drawing_for_each_stretch_of_prose(self):
+        picture = '<figure id="fig-{n}" data-brief-anchor="fig-{n}"><span class="lbl">{n}</span><svg viewBox="0 0 9 9"></svg></figure>'
+        result = brief.check(self.page('one', self.drawn(200, picture.format(n=1))))
+        self.assertEqual(result['drawings'], 1)
+        self.assertGreaterEqual(result['prose_words'], 200)
+        with self.assertRaisesRegex(brief.Refusal, 'draw at least 2'):
+            brief.check(self.page('two', self.drawn(300, picture.format(n=1))))
+
+    def test_a_table_is_not_a_drawing_and_its_words_are_prose(self):
+        table = '<figure id="fig-t" data-brief-anchor="fig-t"><span class="lbl">t</span><table><tr><td>' + 'word ' * 160 + '</td></tr></table></figure>'
+        with self.assertRaisesRegex(brief.Refusal, 'not a drawing'):
+            brief.check(self.page('table', table))
+
+    def test_a_short_brief_owes_nothing_and_a_mockup_counts(self):
+        self.assertEqual(brief.check(self.page('short', self.drawn(100)))['drawings'], 0)
+        mock = '<figure id="fig-m" data-brief-anchor="fig-m"><span class="lbl">m</span><div class="mock">a drawn surface</div></figure>'
+        self.assertEqual(brief.check(self.page('mock', self.drawn(200, mock)))['drawings'], 1)
+
+    def test_words_behind_a_closed_dialog_are_not_prose_to_read(self):
+        sheet = '<dialog id="d-x"><div class="dlg-body"><p>' + 'word ' * 400 + '</p></div></dialog>'
+        self.assertEqual(brief.check(self.page('sheet', sheet))['drawings'], 0)
 
 
 class ReviewRoundFourTests(WorkLoopFixture):
