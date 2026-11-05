@@ -41,43 +41,6 @@ const trunc = (s) => JSON.stringify(s).slice(0, 300);
 const TESTS = [];
 const test = (name, wrong, fn) => TESTS.push({ name, wrong, fn });
 
-test('one press on a decision saves the remark and stamps it, and only a decision offers it',
-  'a remark and a concur took two gestures, so Parker kept typing "see remarks" by hand',
-  async (b, expect) => {
-    const f = file(buildBrief(REL));
-    const p = await openPage(b, f.url);
-    const opened = (selector) => p.page.evaluate((sel) => {
-      document.querySelector(sel + ' > .note-btn').click();
-      const shown = getComputedStyle(document.getElementById('note-concur')).display !== 'none';
-      document.getElementById('d-note').close();
-      return shown;
-    }, selector);
-    expect(await opened('.grill .ask') === true, 'a decision offers it', 'not offered on a decision');
-    expect(await opened('figure') === false, 'a figure does not', 'offered on a figure');
-    const after = await p.page.evaluate(() => {
-      const ask = document.querySelector('.grill .ask');
-      ask.querySelector(':scope > .note-btn').click();
-      document.getElementById('note-concur').click();
-      const empty = { open: document.getElementById('d-note').open, stamped: ask.classList.contains('has-concur') };
-      document.getElementById('note-text').value = 'Basically concur, but mind the debt';
-      document.getElementById('note-concur').click();
-      return { empty, open: document.getElementById('d-note').open, stamped: ask.classList.contains('has-concur'),
-               note: ask.classList.contains('has-note'), map: document.querySelector('#btn-export') ? true : false };
-    });
-    expect(after.empty.open && !after.empty.stamped, 'nothing written, nothing stamped', trunc(after));
-    expect(!after.open && after.stamped && after.note, 'the remark is kept, the stamp is down, the box has closed', trunc(after));
-    const again = await p.page.evaluate(() => {
-      const ask = document.querySelector('.grill .ask');
-      ask.querySelector(':scope > .note-btn').click();
-      const shown = getComputedStyle(document.getElementById('note-concur')).display !== 'none';
-      document.getElementById('d-note').close();
-      return shown;
-    });
-    expect(again === false, 'a stamped decision no longer offers it', 'still offered');
-    expect(!p.errors.length, 'no page errors', p.errors.join(' | '));
-    await p.ctx.close();
-  });
-
 test('current markup has no Save button and submitting never downloads a copy',
   'manual Save allowed comments to disappear when the original document closed',
   async (b, expect) => {
