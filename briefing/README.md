@@ -83,7 +83,7 @@ The second command prints the closing brief's section of calls, one row each wit
 
 Markdown and HTML share one handoff format, not one renderer. A map names the brief, the revision the reader saw, the passage, and the reader's words; see the [feedback contract](reference/feedback.md).
 
-In an HTML brief opened in an ordinary browser, notes are kept in that browser's storage, and **Copy map** is how they leave. Paste the text to the agent; `resolve` reads it as it is. An HTML brief opened in Terminal Delight can have its notes saved into the file itself, and `feedback` exports them. A Markdown brief takes comments in an adjacent `name.feedback.json`, which `feedback` creates blank.
+In an HTML brief opened in an ordinary browser, notes are kept in that browser's storage, and **Copy map** is how they leave. Paste the text to the agent; `resolve` reads it as it is. An HTML brief opened in Terminal Delight can have its notes saved into the file itself, and `feedback` exports them, along with any picture the reader pasted onto a passage. A Markdown brief takes comments in an adjacent `name.feedback.json`, which `feedback` creates blank.
 
 A comment whose passage was removed stays in the results, marked unresolved. A comment written on an older version is marked for review, never quietly applied to the new wording. An empty comment is never read as agreement.
 

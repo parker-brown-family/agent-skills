@@ -384,6 +384,87 @@ class BriefTests(unittest.TestCase):
         self.assertEqual(comments[2]['reasons'], ['revision_unknown', 'target_missing'])
         self.assertEqual(comments[3]['stance'], 'agree')
 
+    def picture_map(self, *lines):
+        _, meta, revision, _, _ = brief.inspect(self.out)
+        return '\n'.join([f"NOTES — {meta['id']}-{revision[7:19]}", '1 notes on 1 elements · 1 picture.',
+                          'Each [anchor] is an element id in that file — search it to find the passage.',
+                          'Each [doc-image #n] is a picture pasted onto that element — open its path to see it.', '',
+                          '[sec-result] Result', '  · The red one is the crash', *lines, ''])
+
+    def keep_pictures(self, file='doc-image-1.png'):
+        """Lay down what Terminal Delight keeps for a document, in a state folder of this test's own."""
+        state = self.root / 'state'
+        folder = state / 'terminal-delight/notes/pictures/brief-html-0'
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / 'doc-image-1.png').write_bytes(b'\x89PNG')
+        (folder / 'images.json').write_text(json.dumps({'format': 1, 'file': str(self.out.resolve()), 'next': 2, 'on': {
+            'sec-result': [{'n': 1, 'file': file, 'ts': '2026-11-04 06:12', 'hash': 'fa77fa412a29da44'}]}}))
+        environment = patch.dict(os.environ, {'XDG_STATE_HOME': str(state)})
+        environment.start()
+        self.addCleanup(environment.stop)
+        return folder / 'doc-image-1.png'
+
+    def test_a_picture_comes_back_on_its_section_and_not_as_a_comment(self):
+        self.build()
+        pasted = self.root / 'pasted.txt'
+        for line, here in (('  · [doc-image #1] (/s/doc-image-1.png)', True), ('  · [doc-image #1] /s/doc-image-1.png', True),
+                           ('  · [doc-image #1] (/s/doc-image-1.png) (not on this machine)', False)):
+            pasted.write_text(self.picture_map(line))
+            data = brief.resolve(self.out, pasted)
+            self.assertEqual([c['text'] for c in data['comments']], ['The red one is the crash'])
+            picture = data['pictures'][0]
+            self.assertEqual((picture['target'], picture['title'], picture['label'], picture['path'], picture['here'], picture['status']),
+                             ('sec-result', 'Result', '[doc-image #1]', '/s/doc-image-1.png', here, 'resolved'))
+
+    def test_a_note_that_only_names_a_picture_stays_a_comment(self):
+        self.build()
+        pasted = self.root / 'pasted.txt'
+        pasted.write_text(self.picture_map('  · [doc-image #1] is the one to look at', '  · [doc-image #1] /tmp/x is wrong'))
+        data = brief.resolve(self.out, pasted)
+        self.assertEqual(len(data['comments']), 3)
+        self.assertNotIn('pictures', data)
+
+    def test_a_path_a_paste_handler_lifted_out_is_found_again_or_said_unknown(self):
+        self.build()
+        pasted = self.root / 'pasted.txt'
+        pasted.write_text('[Image #3]\n\n' + self.picture_map('  · [doc-image #1]').replace('\n\n[sec-result]', '\n[sec-result]'))
+        with patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'nothing-kept')}):
+            picture = brief.resolve(self.out, pasted)['pictures'][0]
+        self.assertEqual((picture['path'], picture['here'], picture['status'], picture['reasons']),
+                         (None, None, 'needs_review', ['picture_path_unknown']))
+        file = self.keep_pictures()
+        picture = brief.resolve(self.out, pasted)['pictures'][0]
+        self.assertEqual((picture['path'], picture['here'], picture['status']), (str(file), True, 'resolved'))
+
+    def test_a_picture_on_a_section_since_removed_needs_review(self):
+        self.build()
+        pasted = self.root / 'pasted.txt'
+        pasted.write_text(self.picture_map('  · [doc-image #1] (/s/doc-image-1.png)', '', 'On elements no longer in the page:', '',
+                                           '[sec-gone]', '  · [doc-image #2] (/s/doc-image-2.png)'))
+        with patch.object(brief.sys, 'argv', ['brief.py', 'resolve', str(self.out), str(pasted)]), \
+                patch.object(brief.sys, 'stdout', io.StringIO()):
+            self.assertEqual(brief.main(), 2)
+        data = brief.resolve(self.out, pasted)
+        self.assertEqual([(p['target'], p['status'], p['reasons']) for p in data['pictures']],
+                         [('sec-result', 'resolved', []), ('sec-gone', 'needs_review', ['target_missing'])])
+
+    def test_feedback_and_orient_carry_the_pictures_a_saved_brief_cannot_hold(self):
+        self.build()
+        with patch.dict(os.environ, {'XDG_STATE_HOME': str(self.root / 'nothing-kept')}):
+            self.assertNotIn('pictures', brief.feedback(self.out))  # nothing kept says nothing, rather than none
+            self.assertNotIn('PICTURES', brief.orient_text(brief.orient(self.out)))
+        file = self.keep_pictures()
+        self.assertEqual(brief.feedback(self.out)['pictures'],
+                         [{'target': 'sec-result', 'label': '[doc-image #1]', 'path': str(file), 'here': True}])
+        self.assertIn(f'[sec-result]  [doc-image #1]  {file}\n', brief.orient_text(brief.orient(self.out)))
+        file.unlink()
+        self.assertIn('not on this machine', brief.orient_text(brief.orient(self.out)))
+
+    def test_a_kept_list_naming_a_file_outside_its_folder_is_not_believed(self):
+        self.build()
+        self.keep_pictures(file='../../secret.png')
+        self.assertNotIn('pictures', brief.feedback(self.out))
+
     def test_copy_map_arrives_on_stdin_and_nonsense_refuses(self):
         self.build()
         with patch.object(brief.sys, 'stdin', io.StringIO(self.copy_text(brief.inspect(self.out)[2]))):
