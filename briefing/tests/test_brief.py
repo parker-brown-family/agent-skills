@@ -1117,6 +1117,8 @@ class NextRoundTests(WorkLoopFixture):
                   'sec-gone': [{'text': 'said of a removed passage', 'title': 'Gone', 'ts': '2026-11-05 08:01'}]}
         text = re.sub(r'(<script type="application/json" id="report-notes"[^>]*>).*?(</script>)',
                       lambda m: m[1] + json.dumps(island) + m[2], text, count=1, flags=re.S)
+        text = re.sub(r'(<script type="application/json" id="report-concurs"[^>]*>).*?(</script>)',
+                      lambda m: m[1] + json.dumps({'sec-result': '2026-11-05 08:02'}) + m[2], text, count=1, flags=re.S)
         page.write_text(text)
         return page
 
@@ -1129,7 +1131,8 @@ class NextRoundTests(WorkLoopFixture):
         page = self.stamped()
         text = brief.read(self.next_round(page))
         self.assertLess(text.index('id="last-time"'), text.index('<h1>'))  # above the title
-        self.assertIn('<b>Last time</b> 2 notes', text)
+        self.assertIn('<b>Last time</b> 2 notes', text)  # the stamp is listed and not counted as a note
+        self.assertIn('<td>Concurred</td>', text)
         self.assertIn('data-dlg="d-last-time"', text)
         self.assertIn('<dialog id="d-last-time">', text)  # closed until it is pressed, in a browser and in Terminal Delight
         self.assertNotIn('<details', text)  # Terminal Delight cannot open one
