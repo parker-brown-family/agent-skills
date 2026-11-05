@@ -43,7 +43,7 @@ KIT_FILES = [KIT / 'assets/base.css', KIT / 'assets/notes.css', KIT / 'assets/no
 UNWRITTEN = 'TODO(brief)'
 # A card holds the question and the recommendation; anything longer belongs in a section it links to.
 DECISION_WORDS = 40
-# Past this much prose a brief owes the reader another drawing. The brief that set the standard runs at 40.
+# Past this much prose a brief owes the reader another drawing. The brief that set the standard runs at 54.
 PROSE_PER_DRAWING = 150
 CALL_WORDS = {'title': 12, 'chose': 15, 'because': 25}
 # What notes.js gives a CONCUR stamp: `.ask`, `.grill-q`, and `.q` inside a `.grill` but not inside an `.ask`.
