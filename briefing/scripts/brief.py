@@ -1739,7 +1739,7 @@ def last_time(path, previous):
         rows.append(f'<tr><td>{place}</td><td>{e(words)}</td><td>{UNWRITTEN}: what came of it</td></tr>')
     rows.append(f'<tr><td>Outside the notes</td><td>{UNWRITTEN}: anything said in the prompt, or delete this row</td>'
                 f'<td>{UNWRITTEN}: what came of it</td></tr>')
-    count = len(data['comments'])
+    count = sum(bool(c['text']) for c in data['comments'])  # a stamp is not a note
     return (f'<div class="last-time-strip" id="last-time" data-brief-anchor="last-time"><button class="last-time" type="button" '
             f'data-dlg="d-last-time"><b>Last time</b> {count} note{"" if count == 1 else "s"} · {UNWRITTEN}: what came of them, in a few words'
             f'</button></div>\n<dialog id="d-last-time"><div class="dlg-head"><h3>Last time</h3><button class="x" type="button" '
