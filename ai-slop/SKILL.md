@@ -101,6 +101,10 @@ text (or the file and element it was on), his words verbatim, what the thing did
 that landed, and the date and place. Same rules as a flag: quote, never
 paraphrase; one entry per thing he praised; his words are the reason.
 
+A reaction to a picture, praise or complaint, also goes in `~/.claude/writing/pictures.md`, the
+labelled ledger an agent reads before drawing: what the figure was, what kind of picture it is,
+his words, and what it did or failed to do.
+
 ## Prevent — the read
 
 **Before drafting** any article, brief, post, letter or client copy: read the

@@ -710,7 +710,9 @@ class WorkLoopTests(WorkLoopFixture):
         section = brief.render_calls(self.ledger)
         self.assertIn('data:image/png;base64,', section)
         self.assertNotIn(brief.SLOT, section)  # the ledger holds the reading; the row is what a person stamps
-        self.assertIn('Stopped:', section)
+        self.assertIn('Recommendation:</b> the chosen option. Waiting on your answer', section)
+        self.assertIn('Meanwhile:', section)
+        self.assertNotIn('Stopped:', section)
         page = self.page('closing', section, {'calls': 'work.calls.json'})
         found = {d['anchor']: d['title'] for d in brief.Decisions(brief.read(page)).decisions()}
         self.assertEqual(found, {'call-footer-at-28-px': 'Footer at 28 px', 'call-accent-colour': 'Accent colour'})
@@ -1170,21 +1172,21 @@ class NextRoundTests(WorkLoopFixture):
         self.assertIn('<div class="opening" id="top" data-brief-anchor="top"><h1>Fresh</h1>', brief.read(source))
         self.assertTrue(brief.Page(brief.read(source)).opening)
 
-    def test_a_card_stops_at_forty_words_and_a_figure_is_not_counted(self):
+    def test_a_card_stops_at_eighty_words_and_a_figure_is_not_counted(self):
         def card(words, inside=''):
             return (f'<div class="grill"><div class="ask" id="q-a" data-brief-anchor="q-a"><h3>Which?</h3><p>{" ".join(["word"] * words)}</p>'
                     f'{inside}</div></div>')
-        self.assertTrue(brief.check(self.page('fits', card(39)))['revision'])
+        self.assertTrue(brief.check(self.page('fits', card(79)))['revision'])
         drawing = '<figure id="fig-a" data-brief-anchor="fig-a"><span class="lbl">a</span><p>' + 'word ' * 60 + '</p></figure>'
-        self.assertTrue(brief.check(self.page('drawn', card(39, drawing)))['revision'])
-        with self.assertRaisesRegex(brief.Refusal, r'decisions over 40 words: q-a \(41\)'):
-            brief.check(self.page('long', card(40)))
+        self.assertTrue(brief.check(self.page('drawn', card(79, drawing)))['revision'])
+        with self.assertRaisesRegex(brief.Refusal, r'decisions over 80 words: q-a \(81\)'):
+            brief.check(self.page('long', card(80)))
 
     def test_a_generated_call_row_is_held_to_its_fields_and_not_to_the_card_limit(self):
         brief.record_call(self.ledger, 'word ' * brief.CALL_WORDS['title'], 'word ' * brief.CALL_WORDS['chose'],
                           'word ' * brief.CALL_WORDS['because'], 'low', 'low', call_id='call-at-every-limit')
         section = brief.render_calls(self.ledger)
-        self.assertGreater(brief.Decisions(section).decisions()[0]['words'], brief.DECISION_WORDS)
+        self.assertTrue(brief.Decisions(section).decisions()[0]['generated'])
         self.assertTrue(brief.check(self.page('closing', section, {'calls': 'work.calls.json'}))['revision'])
 
     def test_a_call_says_it_short_or_is_refused(self):
@@ -1213,32 +1215,36 @@ class NextRoundTests(WorkLoopFixture):
         self.assertIsNone(brief.row_problem(call, brief.render_row(call, self.root, self.root), self.root, self.root))
         self.assertTrue(brief.row_problem(call, old.replace('one constant', 'two constants'), self.root, self.root))
 
+    def test_a_call_waiting_on_the_reader_recommends_and_chooses_nothing(self):
+        self.call('Accent colour', taste='high')
+        call = brief.load_ledger(self.ledger)['calls'][0]
+        row = brief.render_row(call, self.root, self.root)
+        self.assertIn('<b>Recommendation:</b> the chosen option.', row)
+        self.assertNotIn('<dt>Chose</dt>', row)
+        self.assertIn('<dt>Because</dt>', row)
+        old = brief.render_row(call, self.root, self.root, full=True)
+        self.assertIn('<b>Stopped:</b>', old)
+        self.assertIsNone(brief.row_problem(call, old, self.root, self.root))
+
 
 class ImageryTests(WorkLoopFixture):
-    def drawn(self, words, figures=''):
-        return '<p>' + 'word ' * words + '</p>' + figures
+    """The check reports what a page carries. Nothing counts drawings against a target: a quota breeds filler."""
+    def test_a_page_of_prose_is_reported_and_never_refused(self):
+        result = brief.check(self.page('prose', '<p>' + 'word ' * 900 + '</p>'))
+        self.assertEqual(result['drawings'], 0)
+        self.assertGreaterEqual(result['prose_words'], 900)
 
-    def test_a_brief_owes_a_drawing_for_each_stretch_of_prose(self):
-        picture = '<figure id="fig-{n}" data-brief-anchor="fig-{n}"><span class="lbl">{n}</span><svg viewBox="0 0 9 9"></svg></figure>'
-        result = brief.check(self.page('one', self.drawn(200, picture.format(n=1))))
-        self.assertEqual(result['drawings'], 1)
-        self.assertGreaterEqual(result['prose_words'], 200)
-        with self.assertRaisesRegex(brief.Refusal, 'draw at least 2'):
-            brief.check(self.page('two', self.drawn(300, picture.format(n=1))))
-
-    def test_a_table_is_not_a_drawing_and_its_words_are_prose(self):
+    def test_a_table_is_prose_in_a_box_and_a_mockup_is_a_drawing(self):
         table = '<figure id="fig-t" data-brief-anchor="fig-t"><span class="lbl">t</span><table><tr><td>' + 'word ' * 160 + '</td></tr></table></figure>'
-        with self.assertRaisesRegex(brief.Refusal, 'not a drawing'):
-            brief.check(self.page('table', table))
-
-    def test_a_short_brief_owes_nothing_and_a_mockup_counts(self):
-        self.assertEqual(brief.check(self.page('short', self.drawn(100)))['drawings'], 0)
+        result = brief.check(self.page('table', table))
+        self.assertEqual(result['drawings'], 0)
+        self.assertGreaterEqual(result['prose_words'], 160)
         mock = '<figure id="fig-m" data-brief-anchor="fig-m"><span class="lbl">m</span><div class="mock">a drawn surface</div></figure>'
-        self.assertEqual(brief.check(self.page('mock', self.drawn(200, mock)))['drawings'], 1)
+        self.assertEqual(brief.check(self.page('mock', mock))['drawings'], 1)
 
     def test_words_behind_a_closed_dialog_are_not_prose_to_read(self):
         sheet = '<dialog id="d-x"><div class="dlg-body"><p>' + 'word ' * 400 + '</p></div></dialog>'
-        self.assertEqual(brief.check(self.page('sheet', sheet))['drawings'], 0)
+        self.assertLess(brief.check(self.page('sheet', sheet))['prose_words'], 400)
 
 
 class ReviewRoundFourTests(WorkLoopFixture):
