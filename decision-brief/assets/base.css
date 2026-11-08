@@ -485,6 +485,11 @@ video { display: block; width: 100%; height: auto; border-radius: 12px; backgrou
 
 @media (max-width: 900px) {
   .pair { grid-template-columns: minmax(0, 1fr); }
+  /* A narrow rail that wraps grows one row per section, and held at the top it covers the
+     page it indexes: a twenty-section board in T3's side panel showed nothing but its rail.
+     Narrow, the rail is one row that scrolls sideways. */
+  nav.sections { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; }
+  nav.sections a { flex: none; }
 }
 @media (max-width: 640px) {
   .wrap { padding: 0 16px 80px; }
