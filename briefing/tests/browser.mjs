@@ -112,6 +112,15 @@ try {
     document.getElementById('d-note').close();`);
   await navigate(file);
   assert.equal(await evaluate("document.getElementById('note-count').textContent"), '1');
+  // A person's click carries user activation, which the clipboard requires; a scripted click does not.
+  await call('Browser.grantPermissions', { permissions: ['clipboardReadWrite', 'clipboardSanitizedWrite'] }).catch(e => console.error('grantPermissions:', e.message));
+  const at = await evaluate("(()=>{const r=document.getElementById('btn-export').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2};})()");
+  for (const type of ['mousePressed', 'mouseReleased']) await call('Input.dispatchMouseEvent', { type, x: at.x, y: at.y, button: 'left', clickCount: 1 });
+  await new Promise(r => setTimeout(r, 300));
+  await new Promise(r => setTimeout(r, 300));
+  const oneClick = await evaluate("({why:document.getElementById('export-est').textContent,toast:!!document.querySelector('.notes-toast.on'),text:(document.querySelector('.notes-toast')||{}).textContent||'',dialog:document.getElementById('d-export').open})");
+  assert.ok(oneClick.toast && !oneClick.dialog, 'Copy map copies on one click and says so, without opening the dialog: ' + JSON.stringify(oneClick));
+  assert.match(oneClick.text, /Note map copied/);
   const map = await evaluate(`document.getElementById('btn-export').click();
     document.getElementById('export-out').value;`);
   assert.match(map, /\[sec-return\]/);

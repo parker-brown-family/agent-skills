@@ -105,7 +105,9 @@ test('the ordinary path: add and delete notes, concur and peel, reload, copy map
     await p.page.reload({ waitUntil: 'load' });
     expect(JSON.stringify(await p.page.evaluate(STATE)) === JSON.stringify(st), 'a reload shows the same notes and stamps');
     const plan = planWrite(original, edits, { anchors, label: LABEL, concurSupport: 'supported', rev: R('20:10') });
-    const map = await copyMap(p.page);
+    const copied = {};
+    const map = await copyMap(p.page, copied);
+    expect(copied.oneClick, 'one click copies the map and says so, with no dialog (Parker, 2026-11-10)');
     expect(map === buildMap(LABEL, plan.notes, anchors, plan.concurs), 'copy map equals the reference buildMap', trunc(map));
     const { bytes } = await saveIntoFile(p.page, R('20:10'));
     await p.ctx.close();
