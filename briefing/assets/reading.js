@@ -85,6 +85,8 @@
       });document.body.append(nav);document.documentElement.classList.add('has-reading-rail');
     }
     var status=document.querySelector('.notes-persistence');
+    // Counted over the same box the clock measures, as scripts/reading.py counts it; the native reader takes it from describe().
+    function words(t){var node=t.box.cloneNode(true);node.querySelectorAll('.note-btn,.concur-zone,[data-reader-ui],script,style,nav,dialog').forEach(function(n){n.remove();});return node.textContent.split(/\s+/).filter(Boolean).length;}
     function currentNotes(){return root.BriefNotes?root.BriefNotes.snapshot():clone(baseline);}
     function activity(){
       if(!enabled)return 'inactive';
@@ -149,10 +151,9 @@
     }
     function changed(){paint(sample());if(activity()!=='active'){enqueue();flush();}}
     root.BriefReading={enabled:enabled,record:combined,checkpoint:function(){enqueue();return flush();},
-      describe:function(){return list.map(function(t){var r=t.box.getBoundingClientRect();return {anchor:t.anchor,title:t.title,kind:t.kind,parent:t.parent,rect:r.width>0&&r.height>0?{x:r.x+scrollX,y:r.y+scrollY,w:r.width,h:r.height}:null};});},
+      describe:function(){return list.map(function(t){var r=t.box.getBoundingClientRect();return {anchor:t.anchor,title:t.title,kind:t.kind,parent:t.parent,words:words(t),rect:r.width>0&&r.height>0?{x:r.x+scrollX,y:r.y+scrollY,w:r.width,h:r.height}:null};});},
       summary:function(){
         var map=times();if(!map.size)return '';
-        function words(t){var node=t.box.cloneNode(true);node.querySelectorAll('.note-btn,.concur-zone,[data-reader-ui],script,style,nav,dialog').forEach(function(n){n.remove();});return node.textContent.split(/\s+/).filter(Boolean).length;}
         var rows=list.map(function(t){var ms=map.has(t.anchor)?map.get(t.anchor):null,w=words(t),need=Math.max(READING.floorMs,Math.round(w*60000/READING.wordsPerMinute));
           return {t:t,v:verdict(ms,w),line:'['+t.anchor+'] '+t.title+' · '+(ms===null?'not measured':formatted(ms)+' of ~'+formatted(need))+' · '+verdict(ms,w)};});
         var passed=rows.filter(function(r){return r.v==='PASSED'||r.v==='UNSEEN';}).map(function(r){return r.t.anchor;});
