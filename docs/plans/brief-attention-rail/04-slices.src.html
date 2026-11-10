@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><title>Build Order</title><!-- briefing: {"id": "brief-attention-rail-build", "purpose": "decision", "derives_from": ["03-program-design.html"]} --><!--BRIEF:head-->
+<style>
+svg{display:block;width:100%;height:auto}.small{font-size:13px;color:var(--dim)}.choice{padding:18px 22px;border:1px solid var(--line2);border-radius:16px;background:color-mix(in srgb,var(--bg0) 38%,transparent)}
+@media(min-width:1200px){.wrap{max-width:1360px;padding-left:270px}header.top nav.sections{position:fixed;left:max(16px,calc((100vw - 1360px)/2 + 24px));top:24px;width:210px;max-height:calc(100vh - 48px);overflow-y:auto;display:flex;flex-direction:column;align-items:stretch;margin:0;z-index:30}header.top nav.sections a{width:100%;justify-content:flex-start}}
+</style></head><body>
+<!--brief-content-->
+<header class="top"><div class="wrap"><div class="last-time-strip" id="last-time" data-brief-anchor="last-time"><button class="last-time" type="button" data-dlg="d-last-time"><b>Last time</b> Clock behavior approved</button></div>
+<dialog id="d-last-time"><div class="dlg-head"><h3>Last time</h3><button class="x" type="button" data-close aria-label="Close">✕</button></div><div class="dlg-body"><p>You <a href="03-program-design.html#ask-active">concurred with the clock behavior</a>: still active time counts; switching away pauses it. The program design is approved. This page settles build order.</p></div></dialog>
+<div class="eyebrow">Slice plan · brief reading</div><div class="opening" id="top" data-brief-anchor="top"><h1>Build Order</h1><p class="lede">Each agent-written HTML brief will record how long its sections stay visible and active. The clock behavior is approved. First I’ll prove that its record survives saving and reopening the same file. Then I’ll finish the browser and Terminal Delight readers.</p></div><nav class="sections"></nav></div></header>
+<main class="wrap">
+<section class="pane"><h2 id="sec-first" data-brief-anchor="sec-first"><span class="n">01</span> First proof</h2>
+<p>The first demo uses a clearly labelled test value in a temporary brief. It proves the complete save path before a real clock is attached. Reader notes and the explanation must survive unchanged.</p></section>
+<section class="pane"><h2 id="sec-order" data-brief-anchor="sec-order"><span class="n">02</span> Working steps</h2>
+<figure id="fig-build-order" data-brief-anchor="fig-build-order"><span class="lbl">01 · What each increment proves</span>
+<svg viewBox="0 0 780 416" role="img" aria-label="Five working increments: save and reopen a test counter, browser reading clock, one native section, complete native reader, and combined recovery and rebuilds">
+<rect x="12" y="12" width="756" height="392" rx="12" fill="var(--bg2)" stroke="var(--line2)"/>
+<text x="34" y="47" fill="var(--dim)" font-size="13">BUILD</text><text x="346" y="47" fill="var(--dim)" font-size="13">VISIBLE PROOF</text>
+<path d="M30 65H750M30 131H750M30 197H750M30 263H750M30 329H750" stroke="var(--line2)"/>
+<text x="34" y="105" fill="var(--fgb)" font-size="17">1 · Save and reopen</text><text x="346" y="105" fill="var(--fg)" font-size="16">Test counter stays in the original file</text>
+<text x="34" y="171" fill="var(--fgb)" font-size="17">2 · Browser reading</text><text x="346" y="171" fill="var(--fg)" font-size="16">Real time, following rail, saved notes</text>
+<text x="34" y="237" fill="var(--fgb)" font-size="17">3 · One section in TD</text><text x="346" y="237" fill="var(--fg)" font-size="16">TD measures its actual visible surface</text>
+<text x="34" y="303" fill="var(--fgb)" font-size="17">4 · Complete TD reader</text><text x="346" y="303" fill="var(--fg)" font-size="16">All entries, switching, zoom and replies</text>
+<text x="34" y="369" fill="var(--fgb)" font-size="17">5 · Combined use</text><text x="346" y="369" fill="var(--fg)" font-size="16">Concurrent saves, recovery and rebuilds</text>
+</svg>
+<figcaption><b>Saving is proved before the real clock; both readers work before combined recovery is signed off.</b></figcaption><p class="small">Proposed build order. No increment is implemented yet. File restrictions and checked writes apply from the first save.</p></figure>
+<p>Every step gets a working demonstration and focused checks. The last also updates the skills for brief, contextual sections and evidence behind links. <a href="04-slices.md">Full slice acceptance criteria</a>.</p></section>
+<section class="pane"><h2 id="sec-choice" data-brief-anchor="sec-choice"><span class="n">03</span> The choice</h2><div class="choice ask" id="ask-build" data-brief-anchor="ask-build"><h3>Build the browser reader first, then Terminal Delight?</h3><p>Recommend starting with the same-file save/reopen proof and completing the five steps above.</p></div></section>
+</main>
+<!--/brief-content-->
+<!--BRIEF:notes--></body></html>

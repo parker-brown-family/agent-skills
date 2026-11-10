@@ -101,10 +101,12 @@ restyled with `background: var(--surface-1)` loses its glass and becomes a flat 
 - **`.glass`**, the milky card with bright glass and dark ink. Put the headline in it, and use
   one or two per page. A page full of them has no headline.
 - **Gel.** `.gel` makes a button or a link look wet on top and glow underneath; a row of them goes in
-  `.gels`. `nav.sections` is a rail of gel buttons that stays at the top as the reader scrolls.
+  `.gels`. In new briefing builds, `nav.sections` follows on the left at desktop widths and becomes a compact fixed rail on narrow screens, with visible time beside sections and entries.
   Leave it empty and `assets/sections.js` fills it from the page's `h2`s. A page with three or
   more `h2`s and no rail gets one after its masthead. `section.pane` draws one part of the page as
   its own pane, so the parts separate.
+
+Keep sections short and give each enough context to stand alone. A reader may be opening hundreds of agent briefs in a day: name the subject, make the claim, and put deeper evidence behind a link. A short view is a reason to inspect the passage, not proof that it was irrelevant or poorly presented. Visible time counts still foreground periods and pauses when the document is no longer active.
 - **The masthead**: `header.top` with `.eyebrow`, `h1`, `.lede` and `.stamps`. Below it come
   `h2` with a `.n` number, `h2.sec`, `.cards` with one `.card.rec`, `.tiles`, `.pair` with
   `.facts`, `figure` with `.lbl` and `figcaption`, `video`, `pre`, `.tag`, `.linkbtn` and

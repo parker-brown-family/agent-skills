@@ -12,11 +12,13 @@ from collections import Counter
 from contextlib import contextmanager
 from datetime import datetime, timezone
 import hashlib
+import importlib.util
 from html import escape as html_escape, unescape as html_unescape
 from html.parser import HTMLParser
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 import re
 import shutil
 import subprocess
@@ -65,6 +67,21 @@ SCOPE_BOUNDARY = set('applet button caption html marquee object table td templat
 
 class Refusal(ValueError):
     pass
+
+
+def reading_support():
+    """Load the sibling without depending on the caller's working directory or sys.path."""
+    name = '_brief_reading'
+    if name not in sys.modules:
+        spec = importlib.util.spec_from_file_location(name, Path(__file__).with_name('reading.py'))
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        sys.modules[name] = module
+    return sys.modules[name]
+
+
+def reading_api():
+    return SimpleNamespace(Scripts=Scripts, island=island, content_revision=content_revision, Page=Page, encode=encode)
 
 
 def read(path):
@@ -210,15 +227,21 @@ class Content(HTMLParser):
     def __init__(self, text, keep_nav=False):
         super().__init__()
         self.parts, self.skip, self.keep_nav, self.duplicated = [], 0, keep_nav, False
+        self.skip_tag = None
         self.feed(text)
 
     def handle_starttag(self, tag, attrs):
         if len({key for key, _ in attrs}) != len(attrs):
             self.duplicated = True  # a browser shows the first of two same-named attributes; this parser keeps the last
         attrs = {key: '' if value is None else value for key, value in attrs}
-        if tag == 'nav' and 'sections' in attrs.get('class', '').split() and not self.keep_nav:
-            self.skip += 1
         if self.skip:
+            if tag == self.skip_tag:
+                self.skip += 1
+            return
+        if ('data-reader-ui' in attrs or
+                tag == 'nav' and 'sections' in attrs.get('class', '').split() and not self.keep_nav):
+            if tag not in VOID_TAGS:
+                self.skip, self.skip_tag = 1, tag
             return
         for name in ('data-nid', 'data-ntitle'):
             attrs.pop(name, None)
@@ -242,7 +265,7 @@ class Content(HTMLParser):
 
     def handle_endtag(self, tag):
         if self.skip:
-            if tag == 'nav':
+            if tag == self.skip_tag:
                 self.skip -= 1
             return
         if tag != 'tbody':
@@ -384,6 +407,8 @@ def check(path):
             raise Refusal('the title and first line take no note: wrap them in <div class="opening" id="top" '
                           'data-brief-anchor="top">, because that line is where a reader says whether this is on track')
         notes(text)
+        if any(b[0].get('id') == 'report-reading' for b in Scripts(text).blocks):
+            result['reading_sessions'] = len(reading_support().read_record(text, reading_api())['sessions'])
         # Only a built page has a recorded revision to compare; Markdown leaves this undeclared.
         result['edited_since_build'] = revision != meta['revision']
         result['wallpaper'] = wall_label(text)
@@ -462,6 +487,8 @@ def atomic(path, text, expected=None):
     try:
         with os.fdopen(fd, 'wb') as stream:
             stream.write(text.encode())
+            stream.flush()
+            os.fsync(stream.fileno())
         # mkstemp makes 0600; a page is for readers, so keep its old mode or honour the umask.
         if path.exists():
             os.chmod(temporary, path.stat().st_mode & 0o777)
@@ -474,6 +501,12 @@ def atomic(path, text, expected=None):
         if actual != expected:
             raise Refusal('output changed during build; retry from the latest file')
         os.replace(temporary, path)
+        if os.name == 'posix':
+            directory = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
     finally:
         if os.path.exists(temporary):
             os.unlink(temporary)
@@ -553,6 +586,15 @@ def source_extras(text):
 
 
 def build(source, output, identity=None, purpose=None, no_wall=False, discard_edits=False, wall_from=None):
+    output.parent.mkdir(parents=True, exist_ok=True)
+    if fcntl is None:
+        # Retain the existing build-only compare-before-replace fallback on non-POSIX hosts.
+        return _build(source, output, identity, purpose, no_wall, discard_edits, wall_from)
+    with reading_support().review_lock(output):
+        return _build(source, output, identity, purpose, no_wall, discard_edits, wall_from)
+
+
+def _build(source, output, identity=None, purpose=None, no_wall=False, discard_edits=False, wall_from=None):
     if output.suffix != '.html':
         raise Refusal('HTML output needs an .html suffix')
     if source.resolve() == output.resolve():
@@ -640,6 +682,11 @@ def build(source, output, identity=None, purpose=None, no_wall=False, discard_ed
         mirrors = list(MIRROR.finditer(old))
         if mirrors:
             markup += mirrors[-1][0]
+    reading_block = '<script type="application/json" id="report-reading" data-format="1">' + encode({'format': 1, 'sessions': []}) + '</script>'
+    if old is not None and any(b[0].get('id') == 'report-reading' for b in Scripts(old).blocks):
+        reading_support().read_record(old, reading_api())
+        reading_block, _ = island(old, 'report-reading')
+    markup += reading_block
     head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark">'
     head += '<style>' + base + '</style>' + wall + '<style>' + note_css + '</style>'
     config = '<script>window.NOTES_TARGETS=[[\'[data-brief-anchor]\',\'brief\']];window.NOTES_FILE=' + encode(identity + '-' + revision[7:19]) + ';</script>'
@@ -647,7 +694,10 @@ def build(source, output, identity=None, purpose=None, no_wall=False, discard_ed
     bridge = read(HERE / 'assets/feedback-bridge.js')
     if '</script' in bridge.lower():
         raise Refusal('feedback bridge contains a closing script tag')
-    payload += '<script>' + read(LOOK / 'assets/sections.js') + '</script><script>' + note_js + '</script><script>' + bridge + '</script>'
+    reading_js = read(HERE / 'assets/reading.js')
+    if '</script' in reading_js.lower():
+        raise Refusal('reading script contains a closing script tag')
+    payload += '<script>' + read(LOOK / 'assets/sections.js') + '</script><script>' + note_js + '</script><script>' + bridge + '</script><script>' + reading_js + '</script>'
     text = text.replace('<!--BRIEF:head-->', head).replace('<!--BRIEF:notes-->', payload)
     # Validate all islands, and that the page fingerprints as its source did, before touching the previous file.
     notes(text)
@@ -1807,6 +1857,11 @@ def doctor():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
+    p = commands.add_parser('serve', help='serve one built HTML brief locally, saving review data to that exact file')
+    p.add_argument('document', type=Path)
+    p.add_argument('--port', type=int, default=0, help='loopback port; default chooses a free port')
+    p = commands.add_parser('reading', help='extract all embedded visible-time sessions, including historical versions')
+    p.add_argument('document', type=Path)
     p = commands.add_parser('new', help='write a starting .md or .src.html source; never overwrites')
     p.add_argument('source', type=Path)
     p.add_argument('--id', required=True)
@@ -1876,6 +1931,14 @@ def main():
     p.add_argument('--superseded-by', metavar='CALL')
     args = parser.parse_args()
     try:
+        if args.command == 'serve':
+            from review_server import serve_review
+            serve_review(args.document, port=args.port, api=sys.modules[__name__])
+            return 0
+        if args.command == 'reading':
+            result = reading_support().read_record(read(args.document), reading_api())
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
         if args.command == 'orient':
             tree = orient(args.document, args.calls)
             if args.json:

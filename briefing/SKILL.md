@@ -52,7 +52,7 @@ Choosing a brief is your judgement, not a step the person sits through. Read the
 | Purpose | The job the reader needs done: **summary** (what happened, what matters, what follows), **engineering** (how it works, why this shape, what proves it), **decision** (what is mine to choose, what you recommend, what follows). Any other purpose is valid once its outcome is stated. [Purposes](reference/purposes.md) |
 | Medium | HTML when a picture helps the reader judge; Markdown when asked for, or when text and linked notes suit the work. [HTML](reference/html.md) · [Markdown](reference/markdown.md) |
 | Reader | Name what they already know. Introduce everything else where it first appears. |
-| Length | Minutes, not pages. Cut prose before adding sections. |
+| Length | Minutes, not pages. Cut prose before adding sections. Each short section names its subject so someone opening hundreds of briefs a day can understand it without reconstructing the session. |
 | Evidence | Deep by default: primary sources, and for code, the test and the source. Keep that chain behind links. [Evidence](reference/evidence.md) |
 
 When a person states a lasting preference, record it in the canonical project or personal instructions file, once. Keep a one-off preference with its task.
@@ -102,6 +102,8 @@ python3 scripts/brief.py new next.src.html --id cache-eviction-ttl --purpose dec
 `--follows` starts a page that feels new. A closed **Last time** strip sits above the title, one line that opens a sheet listing what the reader said and what came of each note, so they can look back without scrolling past it. It names the old brief in `derives_from`, and refuses to reuse its title or id, because this round's title names this round's issue. Fill in what came of each note, then write only what is new. Leave everything unchanged behind on the old page.
 
 ## Check and Deliver
+
+New HTML builds include a following section rail and a browser visible-time record, kept separately from comments in `report-reading`. Still time counts while the document is visible and focused; switching away or opening a covering modal pauses it. Time is a clue for the next writer to inspect, never an automatic judgement of relevance or attention. Use `scripts/brief.py serve PAGE.html` for the local original-file save path, or `scripts/brief.py reading PAGE.html` to extract every recorded revision. Plain file opening retains browser-local pending data. The native Terminal Delight timing integration must be verified separately. See [HTML](reference/html.md) for persistence and QA limits.
 
 Run `check` on the finished brief and the [verification list](reference/verification.md). For HTML, `node tests/browser.mjs path/to/brief.html` adds your page to the browser check: a note control on every heading and figure, and no overflow or clipped figure text at pane and phone widths. `check` reports which `wallpaper` a page wears, and `edited_since_build: true` when someone edited a built page by hand; port that edit into the source, because `html` will not rebuild over it unless told to discard it. If your host has the `fancy-pants-brief` glass gate, run it on HTML. It fails a page with no reader notes, as well as a page out of the look. Run browser checks in an isolated headless browser, never on the person's live desktop.
 

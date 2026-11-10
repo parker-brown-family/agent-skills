@@ -470,6 +470,23 @@ nav.sections {
   border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow);
 }
 nav.sections:empty { display: none; }
+/* JS moves the rail outside the masthead so it follows the actual browser viewport. */
+html.has-reading-rail nav.sections {
+  position:fixed;top:12px;left:16px;right:16px;margin:0;max-height:72px;overflow:auto;flex-wrap:nowrap;
+}
+html.has-reading-rail header.top { padding-top:110px; }
+nav.sections a[aria-current] { outline:2px solid var(--acc);outline-offset:1px; }
+nav.sections .reading-label { overflow:hidden;text-overflow:ellipsis;min-width:0;white-space:nowrap; }
+nav.sections .reading-time { margin-left:auto;white-space:nowrap;color:var(--dim);font-variant-numeric:tabular-nums; }
+nav.sections .reading-child { font-size:11px; }
+@media(min-width:1100px) {
+  html.has-reading-rail .wrap { margin-left:248px;margin-right:auto;max-width:min(1180px,calc(100% - 248px)); }
+  html.has-reading-rail header.top { padding-top:48px; }
+  html.has-reading-rail nav.sections { left:16px;right:auto;top:24px;width:216px;max-height:calc(100vh - 48px);flex-direction:column;align-items:stretch; }
+  html.has-reading-rail nav.sections a { border-radius:13px;padding:10px;flex-shrink:0; }
+  html.has-reading-rail nav.sections .reading-label { white-space:normal;overflow-wrap:anywhere; }
+  html.has-reading-rail nav.sections .reading-child { margin-left:12px; }
+}
 :is(h2, section, figure)[id] { scroll-margin-top: 96px; }
 
 section.pane {

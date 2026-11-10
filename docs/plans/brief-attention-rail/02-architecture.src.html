@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><title>Saved Reading</title><!-- briefing: {"id": "brief-attention-rail-saving", "purpose": "decision", "derives_from": ["01-product.html"]} --><!--BRIEF:head-->
+<style>
+svg{display:block;width:100%;height:auto}.small{font-size:13px;color:var(--dim)}
+.choice{margin:20px 0;padding:18px 22px;border:1px solid var(--line2);border-radius:16px;background:color-mix(in srgb,var(--bg0) 38%,transparent)}
+@media(min-width:1200px){.wrap{max-width:1360px;padding-left:270px}header.top nav.sections{position:fixed;left:max(16px,calc((100vw - 1360px)/2 + 24px));top:24px;width:210px;max-height:calc(100vh - 48px);overflow-y:auto;display:flex;flex-direction:column;align-items:stretch;margin:0;z-index:30}header.top nav.sections a{width:100%;justify-content:flex-start}}
+</style></head><body>
+<!--brief-content-->
+<header class="top"><div class="wrap"><div class="last-time-strip" id="last-time" data-brief-anchor="last-time"><button class="last-time" type="button" data-dlg="d-last-time"><b>Last time</b> Reading surface approved</button></div>
+<dialog id="d-last-time"><div class="dlg-head"><h3>Last time</h3><button class="x" type="button" data-close aria-label="Close">✕</button></div><div class="dlg-body"><table><thead><tr><th>Where</th><th>You said</th><th>What followed</th></tr></thead><tbody><tr><td><a href="01-product.html#ask-reading-rail">Reading surface</a></td><td>Concurred</td><td>Approved. This round settles saving.</td></tr><tr><td>In chat</td><td>JavaScript-enabled HTML or a local server could be simple.</td><td>Keep HTML with JavaScript; provide a local save path for each reader.</td></tr></tbody></table></div></dialog>
+<div class="eyebrow">Architecture review · brief reading</div><div class="opening" id="top" data-brief-anchor="top"><h1>Saved Reading</h1><p class="lede">You want each brief to remember how long its sections were on screen. I recommend keeping it as HTML with JavaScript. Terminal Delight can save those times beside your notes; a browser needs a small local server to update the same file.</p></div><nav class="sections"></nav></div></header>
+<main class="wrap">
+<section class="pane"><h2 id="sec-original" data-brief-anchor="sec-original"><span class="n">01</span> The original file</h2>
+<p>Terminal Delight already saves notes into the original HTML. A browser review session would get the same ability through a local server limited to the file you opened. The agent can then read that file for both comments and visible time.</p>
+<figure id="fig-same-file" data-brief-anchor="fig-same-file"><span class="lbl">01 · Two readers, one saved document</span>
+<svg viewBox="0 0 780 350" role="img" aria-label="A browser uses a local server and Terminal Delight uses its native writer; both update notes and reading data in the same original HTML file">
+<rect x="15" y="22" width="290" height="120" rx="12" fill="var(--bg2)" stroke="var(--line2)"/>
+<text x="35" y="52" fill="var(--fgb)" font-size="18">Browser</text><text x="35" y="79" fill="var(--fg)" font-size="15">JavaScript sees the viewport</text><text x="35" y="111" fill="var(--acc)" font-size="15">Local server saves this file</text>
+<rect x="15" y="202" width="290" height="120" rx="12" fill="var(--bg2)" stroke="var(--line2)"/>
+<text x="35" y="232" fill="var(--fgb)" font-size="18">Terminal Delight</text><text x="35" y="259" fill="var(--fg)" font-size="15">Native reader sees the viewport</text><text x="35" y="291" fill="var(--acc)" font-size="15">Existing writer saves this file</text>
+<path d="M310 82H351V172H411M310 262H351V172" fill="none" stroke="var(--acc)" stroke-width="3"/><path d="m401 164 12 8-12 8" fill="none" stroke="var(--acc)" stroke-width="3"/>
+<rect x="423" y="12" width="341" height="321" rx="12" fill="var(--bg0)" stroke="var(--line2)"/>
+<text x="446" y="48" fill="var(--fgb)" font-size="20">brief.html</text><path d="M441 63H745" stroke="var(--line2)"/>
+<text x="446" y="94" fill="var(--dim)" font-size="13">THE EXPLANATION</text><text x="446" y="119" fill="var(--fg)" font-size="15">Sections · figures · evidence</text><path d="M441 141H745" stroke="var(--line2)"/>
+<text x="446" y="171" fill="var(--dim)" font-size="13">YOUR NOTES</text><text x="446" y="196" fill="var(--fg)" font-size="15">“This needs an example.”</text><path d="M441 219H745" stroke="var(--line2)"/>
+<text x="446" y="249" fill="var(--dim)" font-size="13">READING RECORD</text><text x="446" y="274" fill="var(--fg)" font-size="15">The route</text><text x="734" y="274" fill="var(--acc)" text-anchor="end" font-size="15">0:12</text><text x="446" y="300" fill="var(--fg)" font-size="15">Next steps</text><text x="734" y="300" fill="var(--dim)" text-anchor="end" font-size="15">0:00</text>
+</svg>
+<figcaption><b>Both readers save into the original document; no separate remarks file is required.</b></figcaption><p class="small">Proposed architecture. The TD writer exists; the browser save path and reading record are new. Times are illustrative.</p></figure></section>
+<section class="pane"><h2 id="sec-visible" data-brief-anchor="sec-visible"><span class="n">02</span> The visible reader</h2>
+<p>Terminal Delight currently displays page snapshots. A timer running inside its hidden browser would miss your actual scrolling. It must measure its own visible surface; a browser measures the real page with JavaScript.</p>
+<p>Both pause when the document loses focus or a modal covers it. The file keeps times tied to the version you saw. Failed saves stay marked pending. Short views remain clues for the next writer to investigate.</p>
+<p class="small">Opening the file directly in a browser still works, but saves stay in browser storage. The local review session enables saving the original. <a href="02-architecture.md">Read the technical design and source evidence</a>.</p></section>
+<section class="pane"><h2 id="sec-choice" data-brief-anchor="sec-choice"><span class="n">03</span> The choice</h2>
+<div class="choice ask" id="ask-saving" data-brief-anchor="ask-saving"><h3>Save notes and visible time inside the HTML?</h3><p>Recommend yes. Terminal Delight writes directly; a browser uses a local server. <a href="#sec-visible">Why two paths</a>.</p></div></section>
+</main>
+<!--/brief-content-->
+<!--BRIEF:notes--></body></html>

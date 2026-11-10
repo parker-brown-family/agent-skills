@@ -6,6 +6,8 @@ Start with `scripts/brief.py new name.src.html --id STABLE-ID --purpose PURPOSE`
 
 Give each significant comment target an explicit stable id and matching `data-brief-anchor`. Every section heading and figure needs one, and so does every decision a reader can stamp: an `.ask`, a `.grill-q`, or a `.q` inside a `.grill`. The title and first line need one too, in `<div class="opening" id="top" data-brief-anchor="top">`, which `new` writes and `adopt` adds to the `h1`. Name decisions `q-…` and calls `call-…`, so `orient` can tell them apart at a glance. Use the same id after renaming the heading; never reuse a removed id for a different claim.
 
+Put stable ids on individual findings and table/list entries. Each explicit entry gets its own note and visible-time target in the rail.
+
 ```html
 <h2 id="sec-return" data-brief-anchor="sec-return">Returning a comment</h2>
 <figure id="fig-target" data-brief-anchor="fig-target">
@@ -27,10 +29,32 @@ Edit the source, never the built page. A rebuild replaces the page's content wit
 
 The wallpaper comes from `decision-brief/scripts/brief-wall`, which needs Omarchy themes and `vips`. Where those are missing, the refusal carries `brief-wall`'s own reason. `--no-wall` builds on the stylesheet's own dark ground instead. That page is complete and commentable but outside the Omarchy house look; use it where the house look is not available, not to skip it.
 
-On rebuilding an existing output, the tool preserves its wallpaper, both notes islands including revisions, and the last reader-notes mirror byte for byte. It validates the old islands before replacement and keeps the old bytes in a content-addressed `.bak` file. Detected concurrent writes cause refusal; editing and rebuilding simultaneously still needs host-level coordination. Never claim an atomic replace is a full multi-writer transaction.
+On rebuilding an existing output, the tool preserves its wallpaper, both notes islands including revisions, and the last reader-notes mirror byte for byte. It validates the old islands before replacement and keeps the old bytes in a content-addressed `.bak` file. On POSIX, rebuilding uses the same stable lock as the local review server and compatible native readers. Fresh-byte comparisons still detect writers that do not cooperate; atomic replacement alone does not supply a transaction.
 
 If a canonical source hook changes, assembly stops for review. Do not silently remove the guard or mutate the older skill to make this one pass. Review and update the small adaptation alongside its tests.
 
 Verify with the sibling glass gate, this skill's local-link checker and an isolated headless browser. Check at a narrow pane width and a phone width. A figure's text must fit its own viewBox, not merely avoid page overflow. Every important target needs an actual note control; a total count cannot establish coverage.
 
 In Terminal Delight, the native reader can submit comments into the original HTML. A standalone browser stores live edits in localStorage and exports a map. Test the host's persistence path before reporting a disk save. The existing notes engine can restore a browser-held comment deleted by another writer; this skill does not claim to solve that conflict.
+
+## Visible-time record saves
+
+New HTML builds contain a separate `report-reading` JSON island. It preserves recording sessions and their content revisions across rebuilds; an unknown time is `null`, distinct from a monitored zero. Extract it with:
+
+```bash
+python3 scripts/brief.py reading name.html
+```
+
+The POSIX local review server enables original-file saves in a standalone browser:
+
+```bash
+python3 scripts/brief.py serve name.html
+```
+
+It prints the private loopback URL for that session and serves only the selected file. The CLI remembers one port per file under the user’s state directory, preserving the browser origin across restarts, while the route token changes. A busy remembered port is an explicit error; silently choosing a new origin would strand pending browser checkpoints. A page's adapter can submit cumulative reading checkpoints, which update the original HTML after validation, locking and read-back. Repeated checkpoints take the maximum for a session rather than adding the same elapsed time twice. Eight rolling backups live under the user's state directory. The stable adjacent `.brief-review.lock` is coordination metadata; it contains no feedback and must not be deleted while writers use it.
+
+New builds include the browser clock and following rail. The clock records while the page is visible and focused, pauses behind modal dialogs or when switched away, and counts still periods without an input-idle cutoff. It samples each second and saves changed counters every five seconds or on deactivation. Monitoring gaps over three seconds are retained as gaps. Notes are submitted as exact add/delete/concur changes alongside reading checkpoints, preserving other writers' entries. Copy map and snapshot export include visible-time data.
+
+The exact-file server does not serve sibling source files. Local evidence references remain usable in the original HTML; in the live review they explain that the local copy is needed. External links remain normal deliberate navigation. A source rebuild and this server use the same lock. Writers that do not share it are guarded by fresh-byte comparisons. A compatible native Terminal Delight reader measures the real document viewport, selected pane, active tab and foreground window; the hidden Chromium rasterizer never supplies human time. It shares this record and lock, subtracts measured native chrome, preserves its session through FOCUS lending/zoom/resize, and journals pending writes for retry. Native Copy map/send-back includes the anchored summary. This needs the native reading-record integration; older TD builds remain annotation-only. Verify the build before claiming native timing is installed.
+
+Browser QA and native render probes must set `window.BRIEF_READING_HOST={recording:false}` before page scripts run. Automated browsers also default to recording disabled when WebDriver is reported. Do not populate a person's reading record while verifying an artifact; use temporary fixtures for recording tests.

@@ -1,0 +1,790 @@
+{
+  "initial": {
+    "active": true,
+    "session": {
+      "session": "td-f454d2b0be6173f2eac62a11ff5a3a3b",
+      "document": "synthetic-native-clock",
+      "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+      "host": "terminal-delight",
+      "method": 1,
+      "targets": [
+        {
+          "anchor": "top",
+          "title": "Synthetic browser clock fixture",
+          "kind": "opening",
+          "parent": null,
+          "visible_ms": 337
+        },
+        {
+          "anchor": "sec-one",
+          "title": "One visible section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 337
+        },
+        {
+          "anchor": "entry-one",
+          "title": "The first section is tall enough to test scrolling.",
+          "kind": "entry",
+          "parent": "sec-one",
+          "visible_ms": 337
+        },
+        {
+          "anchor": "fig-one",
+          "title": "A test picture",
+          "kind": "figure",
+          "parent": "sec-one",
+          "visible_ms": 337
+        },
+        {
+          "anchor": "sec-two",
+          "title": "The next section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        },
+        {
+          "anchor": "sec-three",
+          "title": "The last section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        }
+      ],
+      "gaps": [
+        {
+          "sequence": 1,
+          "reason": "activity_unknown",
+          "elapsed_ms": 320
+        }
+      ]
+    },
+    "saved": {
+      "format": 1,
+      "sessions": []
+    },
+    "saving": true,
+    "pending_error": null,
+    "rail_targets": 2
+  },
+  "timeOnlyMap": true,
+  "paused": {
+    "active": false,
+    "session": {
+      "session": "td-f454d2b0be6173f2eac62a11ff5a3a3b",
+      "document": "synthetic-native-clock",
+      "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+      "host": "terminal-delight",
+      "method": 1,
+      "targets": [
+        {
+          "anchor": "top",
+          "title": "Synthetic browser clock fixture",
+          "kind": "opening",
+          "parent": null,
+          "visible_ms": 9502
+        },
+        {
+          "anchor": "sec-one",
+          "title": "One visible section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 9502
+        },
+        {
+          "anchor": "entry-one",
+          "title": "The first section is tall enough to test scrolling.",
+          "kind": "entry",
+          "parent": "sec-one",
+          "visible_ms": 9502
+        },
+        {
+          "anchor": "fig-one",
+          "title": "A test picture",
+          "kind": "figure",
+          "parent": "sec-one",
+          "visible_ms": 9502
+        },
+        {
+          "anchor": "sec-two",
+          "title": "The next section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        },
+        {
+          "anchor": "sec-three",
+          "title": "The last section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        }
+      ],
+      "gaps": [
+        {
+          "sequence": 1,
+          "reason": "activity_unknown",
+          "elapsed_ms": 320
+        },
+        {
+          "sequence": 2,
+          "reason": "activity_unknown",
+          "elapsed_ms": 861
+        }
+      ]
+    },
+    "saved": {
+      "format": 1,
+      "sessions": [
+        {
+          "session": "td-f454d2b0be6173f2eac62a11ff5a3a3b",
+          "document": "synthetic-native-clock",
+          "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+          "host": "terminal-delight",
+          "method": 1,
+          "targets": [
+            {
+              "anchor": "top",
+              "title": "Synthetic browser clock fixture",
+              "kind": "opening",
+              "parent": null,
+              "visible_ms": 7739
+            },
+            {
+              "anchor": "sec-one",
+              "title": "One visible section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 7739
+            },
+            {
+              "anchor": "entry-one",
+              "title": "The first section is tall enough to test scrolling.",
+              "kind": "entry",
+              "parent": "sec-one",
+              "visible_ms": 7739
+            },
+            {
+              "anchor": "fig-one",
+              "title": "A test picture",
+              "kind": "figure",
+              "parent": "sec-one",
+              "visible_ms": 7739
+            },
+            {
+              "anchor": "sec-two",
+              "title": "The next section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            },
+            {
+              "anchor": "sec-three",
+              "title": "The last section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            }
+          ],
+          "gaps": [
+            {
+              "sequence": 1,
+              "reason": "activity_unknown",
+              "elapsed_ms": 320
+            },
+            {
+              "sequence": 2,
+              "reason": "activity_unknown",
+              "elapsed_ms": 861
+            }
+          ]
+        }
+      ]
+    },
+    "saving": true,
+    "pending_error": null,
+    "rail_targets": 2
+  },
+  "scrolled": {
+    "active": true,
+    "session": {
+      "session": "td-f454d2b0be6173f2eac62a11ff5a3a3b",
+      "document": "synthetic-native-clock",
+      "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+      "host": "terminal-delight",
+      "method": 1,
+      "targets": [
+        {
+          "anchor": "top",
+          "title": "Synthetic browser clock fixture",
+          "kind": "opening",
+          "parent": null,
+          "visible_ms": 10190
+        },
+        {
+          "anchor": "sec-one",
+          "title": "One visible section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 12857
+        },
+        {
+          "anchor": "entry-one",
+          "title": "The first section is tall enough to test scrolling.",
+          "kind": "entry",
+          "parent": "sec-one",
+          "visible_ms": 10190
+        },
+        {
+          "anchor": "fig-one",
+          "title": "A test picture",
+          "kind": "figure",
+          "parent": "sec-one",
+          "visible_ms": 10190
+        },
+        {
+          "anchor": "sec-two",
+          "title": "The next section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        },
+        {
+          "anchor": "sec-three",
+          "title": "The last section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        }
+      ],
+      "gaps": [
+        {
+          "sequence": 1,
+          "reason": "activity_unknown",
+          "elapsed_ms": 320
+        },
+        {
+          "sequence": 2,
+          "reason": "activity_unknown",
+          "elapsed_ms": 861
+        }
+      ]
+    },
+    "saved": {
+      "format": 1,
+      "sessions": [
+        {
+          "session": "td-f454d2b0be6173f2eac62a11ff5a3a3b",
+          "document": "synthetic-native-clock",
+          "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+          "host": "terminal-delight",
+          "method": 1,
+          "targets": [
+            {
+              "anchor": "top",
+              "title": "Synthetic browser clock fixture",
+              "kind": "opening",
+              "parent": null,
+              "visible_ms": 10190
+            },
+            {
+              "anchor": "sec-one",
+              "title": "One visible section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 11857
+            },
+            {
+              "anchor": "entry-one",
+              "title": "The first section is tall enough to test scrolling.",
+              "kind": "entry",
+              "parent": "sec-one",
+              "visible_ms": 10190
+            },
+            {
+              "anchor": "fig-one",
+              "title": "A test picture",
+              "kind": "figure",
+              "parent": "sec-one",
+              "visible_ms": 10190
+            },
+            {
+              "anchor": "sec-two",
+              "title": "The next section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            },
+            {
+              "anchor": "sec-three",
+              "title": "The last section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            }
+          ],
+          "gaps": [
+            {
+              "sequence": 1,
+              "reason": "activity_unknown",
+              "elapsed_ms": 320
+            },
+            {
+              "sequence": 2,
+              "reason": "activity_unknown",
+              "elapsed_ms": 861
+            }
+          ]
+        }
+      ]
+    },
+    "saving": false,
+    "pending_error": null,
+    "rail_targets": 2
+  },
+  "noteModalPauses": true,
+  "paneAndTabPause": true,
+  "focusZoomResizeOneOwner": true,
+  "nativeNoteAndMap": true,
+  "reopened": {
+    "active": true,
+    "session": {
+      "session": "td-f5beb35ccae9abf892980e0c8f6a064f",
+      "document": "synthetic-native-clock",
+      "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+      "host": "terminal-delight",
+      "method": 1,
+      "targets": [
+        {
+          "anchor": "top",
+          "title": "Synthetic browser clock fixture",
+          "kind": "opening",
+          "parent": null,
+          "visible_ms": 4
+        },
+        {
+          "anchor": "sec-one",
+          "title": "One visible section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 4
+        },
+        {
+          "anchor": "entry-one",
+          "title": "The first section is tall enough to test scrolling.",
+          "kind": "entry",
+          "parent": "sec-one",
+          "visible_ms": 0
+        },
+        {
+          "anchor": "fig-one",
+          "title": "A test picture",
+          "kind": "figure",
+          "parent": "sec-one",
+          "visible_ms": 0
+        },
+        {
+          "anchor": "sec-two",
+          "title": "The next section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        },
+        {
+          "anchor": "sec-three",
+          "title": "The last section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        }
+      ],
+      "gaps": [
+        {
+          "sequence": 1,
+          "reason": "activity_unknown",
+          "elapsed_ms": 192
+        }
+      ]
+    },
+    "saved": {
+      "format": 1,
+      "sessions": [
+        {
+          "session": "td-f454d2b0be6173f2eac62a11ff5a3a3b",
+          "document": "synthetic-native-clock",
+          "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+          "host": "terminal-delight",
+          "method": 1,
+          "targets": [
+            {
+              "anchor": "top",
+              "title": "Synthetic browser clock fixture",
+              "kind": "opening",
+              "parent": null,
+              "visible_ms": 12259
+            },
+            {
+              "anchor": "sec-one",
+              "title": "One visible section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 24824
+            },
+            {
+              "anchor": "entry-one",
+              "title": "The first section is tall enough to test scrolling.",
+              "kind": "entry",
+              "parent": "sec-one",
+              "visible_ms": 12259
+            },
+            {
+              "anchor": "fig-one",
+              "title": "A test picture",
+              "kind": "figure",
+              "parent": "sec-one",
+              "visible_ms": 13143
+            },
+            {
+              "anchor": "sec-two",
+              "title": "The next section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 7962
+            },
+            {
+              "anchor": "sec-three",
+              "title": "The last section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            }
+          ],
+          "gaps": [
+            {
+              "sequence": 1,
+              "reason": "activity_unknown",
+              "elapsed_ms": 320
+            },
+            {
+              "sequence": 2,
+              "reason": "activity_unknown",
+              "elapsed_ms": 861
+            },
+            {
+              "sequence": 3,
+              "reason": "activity_unknown",
+              "elapsed_ms": 896
+            },
+            {
+              "sequence": 4,
+              "reason": "activity_unknown",
+              "elapsed_ms": 419
+            },
+            {
+              "sequence": 5,
+              "reason": "activity_unknown",
+              "elapsed_ms": 1264
+            },
+            {
+              "sequence": 6,
+              "reason": "activity_unknown",
+              "elapsed_ms": 448
+            },
+            {
+              "sequence": 7,
+              "reason": "activity_unknown",
+              "elapsed_ms": 860
+            },
+            {
+              "sequence": 8,
+              "reason": "activity_unknown",
+              "elapsed_ms": 208
+            }
+          ]
+        }
+      ]
+    },
+    "saving": true,
+    "pending_error": null,
+    "rail_targets": 2
+  },
+  "wideLeftRail": {
+    "active": true,
+    "session": {
+      "session": "td-5999b743b9d731a325b2de34decffbcb",
+      "document": "synthetic-native-clock",
+      "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+      "host": "terminal-delight",
+      "method": 1,
+      "targets": [
+        {
+          "anchor": "top",
+          "title": "Synthetic browser clock fixture",
+          "kind": "opening",
+          "parent": null,
+          "visible_ms": 2339
+        },
+        {
+          "anchor": "sec-one",
+          "title": "One visible section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 2339
+        },
+        {
+          "anchor": "entry-one",
+          "title": "The first section is tall enough to test scrolling.",
+          "kind": "entry",
+          "parent": "sec-one",
+          "visible_ms": 2339
+        },
+        {
+          "anchor": "fig-one",
+          "title": "A test picture",
+          "kind": "figure",
+          "parent": "sec-one",
+          "visible_ms": 2339
+        },
+        {
+          "anchor": "sec-two",
+          "title": "The next section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        },
+        {
+          "anchor": "sec-three",
+          "title": "The last section",
+          "kind": "section",
+          "parent": null,
+          "visible_ms": 0
+        }
+      ],
+      "gaps": [
+        {
+          "sequence": 1,
+          "reason": "activity_unknown",
+          "elapsed_ms": 499
+        }
+      ]
+    },
+    "saved": {
+      "format": 1,
+      "sessions": [
+        {
+          "session": "td-f454d2b0be6173f2eac62a11ff5a3a3b",
+          "document": "synthetic-native-clock",
+          "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+          "host": "terminal-delight",
+          "method": 1,
+          "targets": [
+            {
+              "anchor": "top",
+              "title": "Synthetic browser clock fixture",
+              "kind": "opening",
+              "parent": null,
+              "visible_ms": 12259
+            },
+            {
+              "anchor": "sec-one",
+              "title": "One visible section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 24824
+            },
+            {
+              "anchor": "entry-one",
+              "title": "The first section is tall enough to test scrolling.",
+              "kind": "entry",
+              "parent": "sec-one",
+              "visible_ms": 12259
+            },
+            {
+              "anchor": "fig-one",
+              "title": "A test picture",
+              "kind": "figure",
+              "parent": "sec-one",
+              "visible_ms": 13143
+            },
+            {
+              "anchor": "sec-two",
+              "title": "The next section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 7962
+            },
+            {
+              "anchor": "sec-three",
+              "title": "The last section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            }
+          ],
+          "gaps": [
+            {
+              "sequence": 1,
+              "reason": "activity_unknown",
+              "elapsed_ms": 320
+            },
+            {
+              "sequence": 2,
+              "reason": "activity_unknown",
+              "elapsed_ms": 861
+            },
+            {
+              "sequence": 3,
+              "reason": "activity_unknown",
+              "elapsed_ms": 896
+            },
+            {
+              "sequence": 4,
+              "reason": "activity_unknown",
+              "elapsed_ms": 419
+            },
+            {
+              "sequence": 5,
+              "reason": "activity_unknown",
+              "elapsed_ms": 1264
+            },
+            {
+              "sequence": 6,
+              "reason": "activity_unknown",
+              "elapsed_ms": 448
+            },
+            {
+              "sequence": 7,
+              "reason": "activity_unknown",
+              "elapsed_ms": 860
+            },
+            {
+              "sequence": 8,
+              "reason": "activity_unknown",
+              "elapsed_ms": 208
+            }
+          ]
+        },
+        {
+          "session": "td-f5beb35ccae9abf892980e0c8f6a064f",
+          "document": "synthetic-native-clock",
+          "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+          "host": "terminal-delight",
+          "method": 1,
+          "targets": [
+            {
+              "anchor": "top",
+              "title": "Synthetic browser clock fixture",
+              "kind": "opening",
+              "parent": null,
+              "visible_ms": 376
+            },
+            {
+              "anchor": "sec-one",
+              "title": "One visible section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 376
+            },
+            {
+              "anchor": "entry-one",
+              "title": "The first section is tall enough to test scrolling.",
+              "kind": "entry",
+              "parent": "sec-one",
+              "visible_ms": 0
+            },
+            {
+              "anchor": "fig-one",
+              "title": "A test picture",
+              "kind": "figure",
+              "parent": "sec-one",
+              "visible_ms": 0
+            },
+            {
+              "anchor": "sec-two",
+              "title": "The next section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            },
+            {
+              "anchor": "sec-three",
+              "title": "The last section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            }
+          ],
+          "gaps": [
+            {
+              "sequence": 1,
+              "reason": "activity_unknown",
+              "elapsed_ms": 192
+            }
+          ]
+        },
+        {
+          "session": "td-5999b743b9d731a325b2de34decffbcb",
+          "document": "synthetic-native-clock",
+          "revision": "sha256:228e24a7411c3dbf52f46134f353d4960e62fb01816ed77aeaba4df61d6078ab",
+          "host": "terminal-delight",
+          "method": 1,
+          "targets": [
+            {
+              "anchor": "top",
+              "title": "Synthetic browser clock fixture",
+              "kind": "opening",
+              "parent": null,
+              "visible_ms": 0
+            },
+            {
+              "anchor": "sec-one",
+              "title": "One visible section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            },
+            {
+              "anchor": "entry-one",
+              "title": "The first section is tall enough to test scrolling.",
+              "kind": "entry",
+              "parent": "sec-one",
+              "visible_ms": 0
+            },
+            {
+              "anchor": "fig-one",
+              "title": "A test picture",
+              "kind": "figure",
+              "parent": "sec-one",
+              "visible_ms": 0
+            },
+            {
+              "anchor": "sec-two",
+              "title": "The next section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            },
+            {
+              "anchor": "sec-three",
+              "title": "The last section",
+              "kind": "section",
+              "parent": null,
+              "visible_ms": 0
+            }
+          ],
+          "gaps": [
+            {
+              "sequence": 1,
+              "reason": "activity_unknown",
+              "elapsed_ms": 499
+            }
+          ]
+        }
+      ]
+    },
+    "saving": false,
+    "pending_error": null,
+    "rail_targets": 6
+  },
+  "result": "passed"
+}
