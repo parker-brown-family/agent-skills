@@ -66,11 +66,14 @@
     var nav=document.querySelector('nav.sections'),labels=new Map();
     if(nav){
       nav.dataset.readerUi='';nav.replaceChildren();
+      nav.setAttribute('aria-label','Sections and total visible time; a lit dot means counting now');
+      var key=document.createElement('div');key.className='reading-key';nav.append(key);
       list.filter(function(t){return t.kind==='section'||t.kind==='figure'||t.kind==='entry';}).forEach(function(t){
         var a=document.createElement('a');a.href='#'+t.anchor;a.dataset.readingAnchor=t.anchor;
         if(t.parent)a.className='reading-child';
         var name=document.createElement('span');name.className='reading-label';name.textContent=t.title.length>45?t.title.slice(0,43)+'…':t.title;
-        var time=document.createElement('span');time.className='reading-time';time.textContent='—';time.setAttribute('aria-label','Visible time');a.append(name,time);nav.append(a);labels.set(t.anchor,{link:a,time:time});
+        var dot=document.createElement('span');dot.className='reading-live';dot.textContent='●';dot.setAttribute('aria-hidden','true');
+        var time=document.createElement('span');time.className='reading-time';time.textContent='—';time.setAttribute('aria-label','Total visible time');a.append(dot,name,time);nav.append(a);labels.set(t.anchor,{link:a,time:time});
       });document.body.append(nav);document.documentElement.classList.add('has-reading-rail');
     }
     var status=document.querySelector('.notes-persistence');
@@ -81,14 +84,15 @@
       return document.visibilityState==='visible'&&document.hasFocus()&&!document.querySelector('dialog[open]')?'active':'inactive';
     }
     function geometry(){
-      var visible=[],eligible=[],top=0,bottom=innerHeight;
+      var visible=[],eligible=[],areas={},top=0,bottom=innerHeight;
       if(nav&&innerWidth<1100)top=nav.getBoundingClientRect().bottom;
       var bar=document.getElementById('notebar');if(bar)bottom=Math.min(bottom,bar.getBoundingClientRect().top);
       list.forEach(function(t){
         if(t.box.closest('[hidden],dialog:not([open])'))return;
         var r=t.box.getBoundingClientRect();if(r.width<=0||r.height<=0)return;eligible.push(t.anchor);
-        if(r.bottom>top&&r.top<bottom&&r.right>0&&r.left<innerWidth)visible.push(t.anchor);
-      });return {visible:visible,eligible:eligible};
+        var area=Math.max(0,Math.min(r.bottom,bottom)-Math.max(r.top,top))*Math.max(0,Math.min(r.right,innerWidth)-Math.max(r.left,0));
+        if(area>0){visible.push(t.anchor);areas[t.anchor]=area;}
+      });return {visible:visible,eligible:eligible,areas:areas};
     }
     function sample(){var g=geometry();clock.sample(performance.now(),activity(),g.visible,g.eligible);return g;}
     function combined(){
@@ -103,8 +107,9 @@
     function formatted(ms){var seconds=Math.floor(ms/1000);return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');}
     var lastActive=null;
     function paint(){
-      var map=times(),visible=geometry().visible,active=list.find(function(t){return t.kind==='section'&&visible.includes(t.anchor);});
-      labels.forEach(function(v,key){v.time.textContent=map.has(key)?formatted(map.get(key)):'—';if(active&&key===active.anchor)v.link.setAttribute('aria-current','location');else v.link.removeAttribute('aria-current');});
+      var map=times(),g=geometry(),counting=activity()==='active',active=list.filter(function(t){return t.kind==='section'&&g.visible.includes(t.anchor);}).sort(function(a,b){return g.areas[b.anchor]-g.areas[a.anchor];})[0];
+      if(nav){nav.dataset.readingState=counting?'counting':'paused';nav.querySelector('.reading-key').textContent=counting?'● counting now · totals':'Paused · total visible time';}
+      labels.forEach(function(v,key){var running=counting&&g.visible.includes(key);v.time.textContent=map.has(key)?formatted(map.get(key)):'—';v.link.classList.toggle('reading-now',running);v.link.title=(running?'Counting now':'Not counting now')+' · total visible time '+v.time.textContent;if(active&&key===active.anchor)v.link.setAttribute('aria-current','location');else v.link.removeAttribute('aria-current');});
       if(active&&active.anchor!==lastActive&&nav){var item=labels.get(active.anchor);if(item&&innerWidth>=1100){var link=item.link;if(link.offsetTop<nav.scrollTop)nav.scrollTop=link.offsetTop;else if(link.offsetTop+link.offsetHeight>nav.scrollTop+nav.clientHeight)nav.scrollTop=link.offsetTop+link.offsetHeight-nav.clientHeight;}lastActive=active.anchor;}
       if(status)status.textContent=statusText;
       var exportButton=document.getElementById('btn-export');if(exportButton&&combined().sessions.some(function(s){return s.revision===meta.revision;}))exportButton.disabled=false;

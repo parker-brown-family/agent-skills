@@ -58,3 +58,9 @@ Parker's Chrome screenshot showed “Browser storage only · original HTML not s
 `brief.py review PAGE.html` now starts or reuses a per-file systemd user service, validates the current connection and opens the default browser there. Repeating it recovers a stopped service or restarts for rebuilt content. The browser origin stays the same; the private route rotates on restart. The launcher checks a saved loopback URL without redirects or proxy use. Browser handoffs include the full recovery command and a line-initial URL. The foreground `serve` command remains available.
 
 The Python suite now passes 138 tests, including verified reuse, remote/mismatched-session refusal, stale content, service restart and startup failures. `briefing/tests/launcher_smoke.py` checks the real service lifecycle and Chromium saves on a temporary synthetic file. Its captured result is `/tmp/brief-launcher-smoke.log`; user documents are never the recording fixture.
+
+## Which counters are running?
+
+The rail previously displayed totals without distinguishing live counters. The section highlight chose the first intersecting section, so a sliver of the previous section could remain selected. Numbers now remain cumulative, a lit dot marks each target counting now, and the highlight follows the largest exposed section. A section and its visible child can advance together; their times are not additive.
+
+An isolated copy of this actual review page was measured at 1530px, 968px and 390px. With the second section on screen, the fully offscreen first section and its figure added zero time; the second section advanced about 1.4 seconds. [Per-target deltas and live indicators](09-browser-exposure-proof.json) retain the observations. Geometry tests hold the host active explicitly; separate browser-clock checks exercise real focus/tab/modal pauses and saving. The live page was rebuilt with the same authored revision and preserved its existing notes and reading sessions.

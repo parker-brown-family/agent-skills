@@ -180,9 +180,39 @@ try {
   const result = { copyMapResolves: true, copyMapOrphanNeedsReview: true, passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, evidenceDepthSnapshot: true, literalScriptComment: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
   if (process.argv[2]) {
     const extraPage = process.env.BRIEF_REVIEW_URL || resolve(process.argv[2]);
-    if (process.env.BRIEF_CLOCK_QA) await call('Page.addScriptToEvaluateOnNewDocument', {source:'window.BRIEF_READING_HOST={recording:true};'});
+    if (process.env.BRIEF_CLOCK_QA || process.env.BRIEF_EXPOSURE_QA) await call('Page.addScriptToEvaluateOnNewDocument', {source:'window.BRIEF_READING_HOST={recording:true};'});
     await navigate(extraPage);
-    if (process.env.BRIEF_CLOCK_QA) {
+    if (process.env.BRIEF_EXPOSURE_QA) {
+      const observations=[];
+      await call('Page.bringToFront');
+      // This branch measures geometry with a controlled active host. The separate
+      // clock branch tests real focus/tab transitions without focus emulation.
+      await call('Emulation.setFocusEmulationEnabled',{enabled:true});
+      for(const width of [1530,968,390]) {
+        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+        await call('Page.bringToFront');
+        await evaluate(`(()=>{const nav=document.querySelector('nav.sections'),box=document.getElementById('sec-file').closest('section');scrollTo({top:box.getBoundingClientRect().top+scrollY-(innerWidth<1100?nav.getBoundingClientRect().bottom+12:0),behavior:'instant'});})()`);
+        await new Promise(done=>setTimeout(done,150));
+        assert.equal(await evaluate("document.hasFocus()&&document.visibilityState==='visible'"),true,'geometry measurement requires an active host');
+        const before=await evaluate(`(()=>{window.BriefReading.checkpoint();return window.BriefReading.record().sessions.at(-1).targets;})()`);
+        await new Promise(done=>setTimeout(done,1400));
+        const after=await evaluate(`(()=>{window.BriefReading.checkpoint();return window.BriefReading.record().sessions.at(-1).targets;})()`);
+        const delta=Object.fromEntries(after.map(t=>[t.anchor,t.visible_ms-before.find(b=>b.anchor===t.anchor).visible_ms]));
+        assert.equal(delta['sec-native'],0,'previous section is fully offscreen and must stop');
+        assert.equal(delta['fig-native'],0,'previous figure is offscreen and must stop');
+        assert.ok(delta['sec-file']>=1000,'the onscreen section continues: '+JSON.stringify({width,delta}));
+        const ticking=await evaluate("[...document.querySelectorAll('nav.sections .reading-now')].map(a=>a.dataset.readingAnchor)");
+        assert.ok(ticking.includes('sec-file'),'onscreen section is marked as counting');
+        assert.ok(!ticking.includes('sec-native')&&!ticking.includes('fig-native'),'offscreen saved totals are not marked as counting');
+        assert.equal(await evaluate("document.querySelector('nav.sections [aria-current]').dataset.readingAnchor"),'sec-file','rail follows the main exposed section instead of a previous sliver');
+        observations.push({width,delta,ticking});
+      }
+      await call('Emulation.setDeviceMetricsOverride',{width:1530,height:900,deviceScaleFactor:1,mobile:false});
+      await evaluate("scrollTo({top:document.getElementById('sec-file').closest('section').getBoundingClientRect().top+scrollY-100,behavior:'instant'})");
+      await new Promise(done=>setTimeout(done,100));
+      assert.equal(await evaluate("document.querySelector('nav.sections [aria-current]').dataset.readingAnchor"),'sec-file','a previous section sliver does not take the current highlight');
+      result.actualBriefExposure=observations;
+    } else if (process.env.BRIEF_CLOCK_QA) {
       await call('Page.bringToFront');
       await call('Emulation.setDeviceMetricsOverride', {width:1280,height:900,deviceScaleFactor:1,mobile:false});
       assert.equal(await evaluate('window.BriefReading.enabled'),true);
@@ -198,6 +228,7 @@ try {
       await send('Page.bringToFront',{},otherSession.sessionId);
       await new Promise(done=>setTimeout(done,100));
       assert.equal(await evaluate('document.hasFocus()'),false);
+      assert.equal(await evaluate("document.querySelectorAll('nav.sections .reading-now').length"),0,'inactive tab has no counting indicators');
       const away=await evaluate("window.BriefReading.record().sessions.at(-1).targets.find(t=>t.anchor==='top').visible_ms");
       await new Promise(done=>setTimeout(done,1300));
       assert.equal(await evaluate("window.BriefReading.record().sessions.at(-1).targets.find(t=>t.anchor==='top').visible_ms"),away,'another active tab pauses recording');
