@@ -458,13 +458,56 @@
   function exportNotes() {
     var txt = buildMap();
     document.getElementById('export-out').value = txt;
+    var tokens = Math.ceil(txt.length / 4);
     var est = document.getElementById('export-est');
     if (est) {
-      est.textContent = txt.length + ' characters ≈ ' + Math.ceil(txt.length / 4) +
+      est.textContent = txt.length + ' characters ≈ ' + tokens +
         ' tokens — versus ~' + Math.ceil(document.body.innerText.length / 4) +
         ' for the whole document.';
     }
-    document.getElementById('d-export').showModal();
+    /* One click copies (Parker, 2026-11-10: "copy map should always be just a single click").
+       The dialog opens only when the browser refuses the clipboard, so the map is never lost. */
+    copyText(txt).then(function () {
+      toast('Note map copied · ≈' + tokens + ' tokens — paste it into the agent\'s prompt');
+    }, function (err) {
+      if (est) est.textContent += ' This browser would not let the page copy (' +
+        ((err && (err.name || err.message)) || 'refused') + '): select the map and copy it here.';
+      document.getElementById('d-export').showModal();
+    });
+  }
+
+  function copyText(txt) {
+    function legacy() {
+      var ta = document.createElement('textarea');
+      ta.value = txt; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none';
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      ta.remove();
+      return ok ? Promise.resolve() : Promise.reject(new Error('clipboard refused'));
+    }
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(txt).catch(function (first) {
+        return legacy().catch(function () { throw first; });
+      });
+    }
+    return legacy();
+  }
+
+  function toast(text) {
+    var t = document.querySelector('.notes-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.className = 'notes-toast';
+      t.setAttribute('role', 'status');
+      t.setAttribute('aria-live', 'polite');
+      document.body.appendChild(t);
+    }
+    t.textContent = text;
+    t.classList.add('on');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(function () { t.classList.remove('on'); }, 3200);
   }
 
   function copyExport(btn) {
@@ -511,7 +554,7 @@
   function snapshotNotes() {
     var rev = new Date().toISOString();
     var doc = document.documentElement.cloneNode(true);
-    Array.prototype.forEach.call(doc.querySelectorAll('.note-btn, .notes-persistence, [data-review-connection]'), function (n) { n.remove(); });
+    Array.prototype.forEach.call(doc.querySelectorAll('.note-btn, .notes-persistence, .notes-toast, [data-review-connection]'), function (n) { n.remove(); });
     Array.prototype.forEach.call(doc.querySelectorAll('.notable'), function (n) {
       n.classList.remove('notable', 'has-note');
     });

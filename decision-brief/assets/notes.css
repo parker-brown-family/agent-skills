@@ -176,3 +176,14 @@ dialog#d-export { max-width: 780px; }
   .concurrable { --concur-size: 96px; }
   .concur-q { font-size: 38px; }
 }
+
+/* Copy map's confirmation: it says the map is on the clipboard, then gets out of the way. */
+.notes-toast {
+  position: fixed; left: 50%; bottom: 76px; z-index: 950; max-width: min(560px, calc(100vw - 32px));
+  transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
+  padding: 10px 16px; border-radius: 12px; font: 13px/1.4 var(--mono, ui-monospace, monospace);
+  color: var(--surface-1, #111); background: var(--warning, #e8b04a);
+  box-shadow: 0 8px 24px rgb(0 0 0 / .35); transition: opacity .18s ease, transform .18s ease;
+}
+.notes-toast.on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .notes-toast { transition: none; } }
