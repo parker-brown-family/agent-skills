@@ -185,9 +185,11 @@
   /* The sync record goes with every write, so what it says was seen is always stored. */
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(N)); localStorage.setItem(SKEY, JSON.stringify(SYNC)); } catch (e) {}
+    document.dispatchEvent(new CustomEvent('brief:notes-changed'));
   }
   function saveConcurs() {
     try { localStorage.setItem(CKEY, JSON.stringify(C)); localStorage.setItem(SKEY, JSON.stringify(SYNC)); } catch (e) {}
+    document.dispatchEvent(new CustomEvent('brief:notes-changed'));
   }
   function stamp() { return new Date().toISOString().slice(0, 16).replace('T', ' '); }
   function concurCount() {
@@ -449,7 +451,8 @@
       list.forEach(function (n) { out.push('  · ' + n.text.replace(/\n+/g, ' ')); });
       out.push('');
     });
-    return out.join('\n');
+    var map = out.join('\n');
+    return map + (window.BriefReading ? window.BriefReading.summary() : '');
   }
 
   function exportNotes() {
@@ -508,7 +511,7 @@
   function snapshotNotes() {
     var rev = new Date().toISOString();
     var doc = document.documentElement.cloneNode(true);
-    Array.prototype.forEach.call(doc.querySelectorAll('.note-btn, .notes-persistence'), function (n) { n.remove(); });
+    Array.prototype.forEach.call(doc.querySelectorAll('.note-btn, .notes-persistence, [data-review-connection]'), function (n) { n.remove(); });
     Array.prototype.forEach.call(doc.querySelectorAll('.notable'), function (n) {
       n.classList.remove('notable', 'has-note');
     });
@@ -532,6 +535,8 @@
       else if (doc.querySelector('body')) doc.querySelector('body').appendChild(cisl);
     }
     if (cisl) { cisl.textContent = islandJson(C); stampIsland(cisl, rev); }
+    var readingIsland = doc.querySelector('#report-reading');
+    if (readingIsland && window.BriefReading) readingIsland.textContent = islandJson(window.BriefReading.record());
 
     /* A plain-text mirror as well, so grep and ctx_read find the notes without anyone
        having to parse JSON out of a script tag. A save replaces the last one rather than
@@ -553,6 +558,11 @@
     if (!confirm('Delete every note in this brief?')) return;
     N = {}; save(); badges();
   }
+
+  // The local review adapter diffs exact entries; it never sends replacement note maps.
+  window.BriefNotes = { snapshot: function () {
+    return JSON.parse(JSON.stringify({ notes: N, concurs: C }));
+  }};
 
   /* ---- wiring ---- */
   function init() {

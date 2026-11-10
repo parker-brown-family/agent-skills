@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><title>Active Reading</title><!-- briefing: {"id": "brief-attention-rail-active", "purpose": "decision", "derives_from": ["02-architecture.html"]} --><!--BRIEF:head-->
+<style>
+svg{display:block;width:100%;height:auto}.small{font-size:13px;color:var(--dim)}.choice{padding:18px 22px;border:1px solid var(--line2);border-radius:16px;background:color-mix(in srgb,var(--bg0) 38%,transparent)}
+@media(min-width:1200px){.wrap{max-width:1360px;padding-left:270px}header.top nav.sections{position:fixed;left:max(16px,calc((100vw - 1360px)/2 + 24px));top:24px;width:210px;max-height:calc(100vh - 48px);overflow-y:auto;display:flex;flex-direction:column;align-items:stretch;margin:0;z-index:30}header.top nav.sections a{width:100%;justify-content:flex-start}}
+</style></head><body>
+<!--brief-content-->
+<header class="top"><div class="wrap"><div class="last-time-strip" id="last-time" data-brief-anchor="last-time"><button class="last-time" type="button" data-dlg="d-last-time"><b>Last time</b> Saving approved · active time clarified</button></div>
+<dialog id="d-last-time"><div class="dlg-head"><h3>Last time</h3><button class="x" type="button" data-close aria-label="Close">✕</button></div><div class="dlg-body"><table><thead><tr><th>Passage</th><th>Your response</th><th>What follows</th></tr></thead><tbody><tr><td><a href="02-architecture.html#fig-same-file">Saved document</a></td><td>Count still periods, but only while on screen and active.</td><td>No input-idle cutoff. Pause on loss of active visibility.</td></tr><tr><td><a href="02-architecture.html#ask-saving">Saving inside HTML</a></td><td>Concurred</td><td>Approved. This round fixes the clock behavior.</td></tr></tbody></table></div></dialog>
+<div class="eyebrow">Program design · brief reading</div><div class="opening" id="top" data-brief-anchor="top"><h1>Active Reading</h1><p class="lede">A brief left still for an hour will count that hour while it stays on screen and active. Switching away pauses the clock. The design uses the reader’s focus and visibility signals, with no mouse or keyboard inactivity cutoff.</p></div><nav class="sections"></nav></div></header>
+<main class="wrap">
+<section class="pane"><h2 id="sec-active" data-brief-anchor="sec-active"><span class="n">01</span> The clock</h2>
+<figure id="fig-active-cases" data-brief-anchor="fig-active-cases"><span class="lbl">01 · Expected clock behavior</span>
+<svg viewBox="0 0 780 310" role="img" aria-label="A still active document counts sixty minutes; another tab or pane, a covering dialog, and a suspended monitor pause recording">
+<rect x="12" y="12" width="756" height="286" rx="12" fill="var(--bg2)" stroke="var(--line2)"/>
+<text x="34" y="47" fill="var(--dim)" font-size="13">WHAT HAPPENS</text><text x="741" y="47" fill="var(--dim)" font-size="13" text-anchor="end">WHAT IS RECORDED</text>
+<path d="M30 64H749M30 122H749M30 180H749M30 238H749" stroke="var(--line2)"/>
+<text x="34" y="100" fill="var(--fg)" font-size="17">Still and active for an hour</text><text x="741" y="100" fill="var(--acc)" font-size="20" text-anchor="end">60:00</text>
+<text x="34" y="158" fill="var(--fg)" font-size="17">Another tab, pane or window is active</text><text x="741" y="158" fill="var(--dim)" font-size="17" text-anchor="end">Paused</text>
+<text x="34" y="216" fill="var(--fg)" font-size="17">A dialog covers the document</text><text x="741" y="216" fill="var(--dim)" font-size="17" text-anchor="end">Paused</text>
+<text x="34" y="274" fill="var(--fg)" font-size="17">Computer sleeps or monitoring stops</text><text x="741" y="274" fill="var(--dim)" font-size="17" text-anchor="end">Gap recorded</text>
+</svg>
+<figcaption><b>Still time counts; time spent away from this reading surface does not.</b></figcaption><p class="small">Proposed behavior, not measured results. “Active” uses the host’s window and document signals. It cannot establish whether someone is looking.</p></figure>
+<p>A brief’s visible sections and figures each keep their own time. A covering modal pauses the background document. When monitoring resumes after sleep or a stall, the missing interval stays a gap.</p></section>
+<section class="pane"><h2 id="sec-saved" data-brief-anchor="sec-saved"><span class="n">02</span> The saved record</h2>
+<p>I propose checking visibility each second and saving changed times every five seconds, plus when you switch away. A save failure stays marked pending. Repeated saves cannot add the same time twice.</p>
+<p>The verification will include an hour with no input, a page left open all day in the background, and a note saved during a timer update. <a href="03-program-design.md">Types, file changes and test plan</a>.</p></section>
+<section class="pane"><h2 id="sec-choice" data-brief-anchor="sec-choice"><span class="n">03</span> The choice</h2><div class="choice ask" id="ask-active" data-brief-anchor="ask-active"><h3>Use this clock behavior?</h3><p>Recommend counting all active visible time, checking each second and saving every five seconds. <a href="#sec-saved">Save behavior</a>.</p></div></section>
+</main>
+<!--/brief-content-->
+<!--BRIEF:notes--></body></html>

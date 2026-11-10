@@ -1,0 +1,132 @@
+{
+  "copyMapResolves": true,
+  "copyMapOrphanNeedsReview": true,
+  "passed": true,
+  "coverage": {
+    "headings": [
+      [
+        "sec-target",
+        "sec-target",
+        true
+      ],
+      [
+        "sec-return",
+        "sec-return",
+        true
+      ],
+      [
+        "sec-evidence",
+        "sec-evidence",
+        true
+      ],
+      [
+        "sec-use",
+        "sec-use",
+        true
+      ]
+    ],
+    "figures": [
+      [
+        "fig-identity",
+        "fig-identity",
+        true
+      ],
+      [
+        "fig-resolution",
+        "fig-resolution",
+        true
+      ],
+      [
+        "fig-evidence",
+        "fig-evidence",
+        true
+      ]
+    ],
+    "opening": true,
+    "openingTitle": "A Comment's Return You leave a comment on an explanation, then the ag…",
+    "duplicates": []
+  },
+  "layout": [
+    {
+      "width": 968,
+      "overflow": false,
+      "clipped": []
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "clipped": []
+    }
+  ],
+  "commentReloadExport": true,
+  "snapshotRevision": true,
+  "evidenceDepthSnapshot": true,
+  "literalScriptComment": true,
+  "rebuildAfterRename": true,
+  "missingTargetVisibleAndExported": true,
+  "isolation": "separate headless Chromium with temporary profile",
+  "additionalPage": {
+    "targets": [
+      {
+        "id": "sec-film",
+        "target": "sec-film",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "fig-film",
+        "target": "fig-film",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "sec-glass",
+        "target": "sec-glass",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "fig-glass",
+        "target": "fig-glass",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "sec-sound",
+        "target": "sec-sound",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "sec-asks",
+        "target": "sec-asks",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "q-seal",
+        "target": "q-seal",
+        "button": true,
+        "concur": true
+      },
+      {
+        "id": "sec-next",
+        "target": "sec-next",
+        "button": true,
+        "concur": null
+      }
+    ],
+    "layout": [
+      {
+        "width": 968,
+        "overflow": false,
+        "clipped": []
+      },
+      {
+        "width": 390,
+        "overflow": false,
+        "clipped": []
+      }
+    ]
+  }
+}

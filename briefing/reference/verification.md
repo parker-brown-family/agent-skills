@@ -8,6 +8,7 @@ Check what a reader will rely on. A large passing count is not evidence that eve
 | Brief | The main explanation is readable without opening the evidence. Material uncertainty remains visible. No `TODO(brief)` remains. |
 | Evidence | Local links and fragments resolve. A code claim reaches a real symbol/test/revision, or says the missing part is unavailable. |
 | Feedback | A comment names its intended target and survives the verified persistence route. Export retains its words and location. Pasted Copy map text resolves against the page it came from. |
+| Browser delivery | Original-file saving opens the checked live review URL, not the local file. The recovery command starts/reuses its service; a stopped server is not handed over as a working link. |
 | Revision | Renaming a heading preserves its explicit target but flags the old content revision. Missing targets and unknown revisions remain unresolved. |
 | Rebuild | Embedded HTML notes, concurs and mirror survive byte for byte. Malformed or unsupported islands refuse before replacement. |
 | Artifact boundary | Only the brief is declared primary. Supporting evidence and maps do not become competing deliverables. |

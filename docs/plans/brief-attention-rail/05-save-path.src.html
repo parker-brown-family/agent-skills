@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><title>Save Path</title><!-- briefing: {"id":"brief-attention-rail-save-demo","purpose":"engineering","derives_from":["04-slices.html"]} --><!--BRIEF:head-->
+<style>svg{display:block;width:100%;height:auto}.demo{padding:22px;border:1px solid var(--line2);border-radius:16px;background:color-mix(in srgb,var(--bg0) 40%,transparent)}.demo output{display:block;font-size:24px;margin:18px 0;color:var(--fgb)}.small{font-size:13px;color:var(--dim)}</style>
+</head><body>
+<!--brief-content-->
+<header class="top"><div class="wrap"><div class="last-time-strip" id="last-time" data-brief-anchor="last-time"><button class="last-time" type="button" data-dlg="d-last-time"><b>Last time</b> Build order approved</button></div><dialog id="d-last-time"><div class="dlg-head"><h3>Last time</h3><button class="x" type="button" data-close aria-label="Close">✕</button></div><div class="dlg-body"><p>You <a href="04-slices.html#ask-build">approved browser first, then Terminal Delight</a>. The first working increment now saves a test counter into this exact HTML file.</p></div></dialog><div class="eyebrow">Working increment · save and reopen</div><div class="opening" id="top" data-brief-anchor="top"><h1>Save Path</h1><p class="lede">This HTML can now save a section’s test time into itself through a local review server. Reloading reads the value from the original file. The value is synthetic; the real visible-time clock is next.</p></div><nav class="sections"></nav></div></header>
+<main class="wrap">
+<section class="pane"><h2 id="sec-test" data-brief-anchor="sec-test"><span class="n">01</span> Try the save</h2>
+<div class="demo"><b>Synthetic test counter</b><output id="demo-value">No saved test value</output><button class="gel" id="demo-save" type="button" disabled>Save 0:12 test value</button><p id="demo-status" role="status">Open this page through its local review URL to run the save. Direct file opening remains readable.</p></div>
+<figure id="fig-round-trip" data-brief-anchor="fig-round-trip"><span class="lbl">01 · The working round trip</span><svg viewBox="0 0 760 150" role="img" aria-label="The browser submits a twelve-second test value, the server updates this original HTML, and reloading reads the same value"><rect x="12" y="22" width="210" height="100" rx="12" fill="var(--bg2)" stroke="var(--line2)"/><text x="117" y="62" text-anchor="middle" fill="var(--fg)" font-size="17">Submit test value</text><text x="117" y="95" text-anchor="middle" fill="var(--acc)" font-size="24">0:12</text><path d="M232 72H269m-10-7 10 7-10 7" fill="none" stroke="var(--acc)" stroke-width="3"/><rect x="280" y="22" width="200" height="100" rx="12" fill="var(--bg2)" stroke="var(--line2)"/><text x="380" y="62" text-anchor="middle" fill="var(--fg)" font-size="17">Save this HTML</text><text x="380" y="95" text-anchor="middle" fill="var(--dim)" font-size="15">Only its reading data</text><path d="M490 72H527m-10-7 10 7-10 7" fill="none" stroke="var(--acc)" stroke-width="3"/><rect x="538" y="22" width="210" height="100" rx="12" fill="var(--bg2)" stroke="var(--line2)"/><text x="643" y="62" text-anchor="middle" fill="var(--fg)" font-size="17">Reload original</text><text x="643" y="95" text-anchor="middle" fill="var(--acc)" font-size="24">0:12</text></svg><figcaption><b>The repeated checkpoint keeps twelve seconds; it does not add another twelve.</b></figcaption><p class="small">Implemented path, exercised with synthetic data. This is not a reader measurement.</p></figure></section>
+<section class="pane"><h2 id="sec-proof" data-brief-anchor="sec-proof"><span class="n">02</span> What is proved</h2><p>Automated checks save and reopen the original, preserve its notes and authored bytes, refuse stale or unauthorized writes, and retain both sessions during concurrent saves and a rebuild. A failed write stays pending.</p><p>The server currently accepts reading updates only. Browser note saving, the following rail, real visibility timing and native Terminal Delight recording remain in the approved next increments.</p><p class="small"><a href="../../../briefing/tests/test_reading.py">Round-trip and refusal tests</a> · <a href="../../../briefing/scripts/review_server.py">Local save server</a> · <a href="../../../briefing/scripts/reading.py">Reading record and merge</a></p></section>
+</main>
+<!--/brief-content-->
+<!--BRIEF:notes-->
+<script>
+(function(){
+  function init(){
+    var cfg=window.BRIEF_REVIEW, button=document.getElementById('demo-save'), status=document.getElementById('demo-status'), value=document.getElementById('demo-value');
+    var session='synthetic-save-tracer';
+    try{var record=JSON.parse(document.getElementById('report-reading').textContent), saved=record.sessions.find(function(s){return s.session===session;});if(saved){var target=saved.targets.find(function(t){return t.anchor==='sec-test';});if(target&&target.visible_ms===12000)value.textContent='0:12 · saved in this HTML';}}catch(e){status.textContent='Reading record could not be read: '+e.message;return;}
+    if(!cfg)return;
+    button.disabled=false;status.textContent='Local review connected. Save the test value, then reload this page.';
+    button.addEventListener('click',async function(){
+      button.disabled=true;status.textContent='Pending · saving the test value…';
+      try{
+        var response=await fetch(cfg.save,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({format:1,note_edits:[],reading:{session:session,document:cfg.document,revision:cfg.revision,host:'browser',method:1,gaps:[],targets:[{anchor:'sec-test',title:'Try the save',kind:'section',parent:null,visible_ms:12000}]}})});
+        var result=await response.json();if(!response.ok||result.state!=='saved')throw new Error(result.reason||'Save not acknowledged');
+        value.textContent='0:12 · saved in this HTML';status.textContent='Saved. Reload to read the value from the original file.';status.dataset.saved='true';
+      }catch(e){status.textContent='Pending · '+e.message;status.dataset.saved='false';}finally{button.disabled=false;}
+    });
+  }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
+</script></body></html>

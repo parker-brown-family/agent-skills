@@ -1,0 +1,2 @@
+# Stable coordination markers; they contain no document or reader data.
+.*.brief-review.lock

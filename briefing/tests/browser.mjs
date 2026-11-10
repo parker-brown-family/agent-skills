@@ -74,13 +74,14 @@ try {
   const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
   const call = (method, params) => send(method, params, sessionId);
   await call('Page.enable');
+  await call('Page.addScriptToEvaluateOnNewDocument', { source: 'window.BRIEF_READING_HOST={recording:false};' });
   async function evaluate(expression) {
     const out = await call('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
     if (out.exceptionDetails) throw new Error(JSON.stringify(out.exceptionDetails));
     return out.result.value;
   }
   async function navigate(path) {
-    await call('Page.navigate', { url: pathToFileURL(path).href });
+    await call('Page.navigate', { url: /^https?:\/\//.test(path) ? path : pathToFileURL(path).href });
     const until = Date.now() + 10000;
     while (Date.now() < until) {
       if (await evaluate("document.readyState==='complete' && !!document.querySelector('h2.notable')")) return;
@@ -174,9 +175,104 @@ try {
   const kept = JSON.parse(orphaned.stdout).comments.find(c => c.target === 'sec-return');
   assert.deepEqual(kept.reasons, ['revision_unknown', 'target_missing']);
   assert.match(kept.text, /Keep this comment on the return section\./);
+  assert.equal(await evaluate('window.BriefReading.enabled'),false,'automated document probes disable human recording');
+  assert.equal(await evaluate('window.BriefReading.record().sessions.length'),0,'automated probe creates no human session');
   const result = { copyMapResolves: true, copyMapOrphanNeedsReview: true, passed: true, coverage, layout, commentReloadExport: true, snapshotRevision: true, evidenceDepthSnapshot: true, literalScriptComment: true, rebuildAfterRename: true, missingTargetVisibleAndExported: true, isolation: 'separate headless Chromium with temporary profile' };
   if (process.argv[2]) {
-    await navigate(resolve(process.argv[2]));
+    const extraPage = process.env.BRIEF_REVIEW_URL || resolve(process.argv[2]);
+    if (process.env.BRIEF_CLOCK_QA || process.env.BRIEF_EXPOSURE_QA) await call('Page.addScriptToEvaluateOnNewDocument', {source:'window.BRIEF_READING_HOST={recording:true};'});
+    await navigate(extraPage);
+    if (process.env.BRIEF_EXPOSURE_QA) {
+      const observations=[];
+      await call('Page.bringToFront');
+      // This branch measures geometry with a controlled active host. The separate
+      // clock branch tests real focus/tab transitions without focus emulation.
+      await call('Emulation.setFocusEmulationEnabled',{enabled:true});
+      for(const width of [1530,968,390]) {
+        await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
+        await call('Page.bringToFront');
+        await evaluate(`(()=>{const nav=document.querySelector('nav.sections'),box=document.getElementById('sec-file').closest('section');scrollTo({top:box.getBoundingClientRect().top+scrollY-(innerWidth<1100?nav.getBoundingClientRect().bottom+12:0),behavior:'instant'});})()`);
+        await new Promise(done=>setTimeout(done,150));
+        assert.equal(await evaluate("document.hasFocus()&&document.visibilityState==='visible'"),true,'geometry measurement requires an active host');
+        const before=await evaluate(`(()=>{window.BriefReading.checkpoint();return window.BriefReading.record().sessions.at(-1).targets;})()`);
+        await new Promise(done=>setTimeout(done,1400));
+        const after=await evaluate(`(()=>{window.BriefReading.checkpoint();return window.BriefReading.record().sessions.at(-1).targets;})()`);
+        const delta=Object.fromEntries(after.map(t=>[t.anchor,t.visible_ms-before.find(b=>b.anchor===t.anchor).visible_ms]));
+        assert.equal(delta['sec-native'],0,'previous section is fully offscreen and must stop');
+        assert.equal(delta['fig-native'],0,'previous figure is offscreen and must stop');
+        assert.ok(delta['sec-file']>=1000,'the onscreen section continues: '+JSON.stringify({width,delta}));
+        const ticking=await evaluate("[...document.querySelectorAll('nav.sections .reading-now')].map(a=>a.dataset.readingAnchor)");
+        assert.ok(ticking.includes('sec-file'),'onscreen section is marked as counting');
+        assert.ok(!ticking.includes('sec-native')&&!ticking.includes('fig-native'),'offscreen saved totals are not marked as counting');
+        assert.equal(await evaluate("document.querySelector('nav.sections [aria-current]').dataset.readingAnchor"),'sec-file','rail follows the main exposed section instead of a previous sliver');
+        observations.push({width,delta,ticking});
+      }
+      await call('Emulation.setDeviceMetricsOverride',{width:1530,height:900,deviceScaleFactor:1,mobile:false});
+      await evaluate("scrollTo({top:document.getElementById('sec-file').closest('section').getBoundingClientRect().top+scrollY-100,behavior:'instant'})");
+      await new Promise(done=>setTimeout(done,100));
+      assert.equal(await evaluate("document.querySelector('nav.sections [aria-current]').dataset.readingAnchor"),'sec-file','a previous section sliver does not take the current highlight');
+      result.actualBriefExposure=observations;
+    } else if (process.env.BRIEF_CLOCK_QA) {
+      await call('Page.bringToFront');
+      await call('Emulation.setDeviceMetricsOverride', {width:1280,height:900,deviceScaleFactor:1,mobile:false});
+      assert.equal(await evaluate('window.BriefReading.enabled'),true);
+      assert.equal(await evaluate('document.hasFocus()'),true);
+      assert.equal(await evaluate('document.visibilityState'),'visible');
+      await evaluate("scrollTo({top:0,behavior:'instant'})");
+      await new Promise(done=>setTimeout(done,1300));
+      await evaluate('window.BriefReading.checkpoint()');
+      const beforeModal=await evaluate("window.BriefReading.record().sessions.at(-1).targets.find(t=>t.anchor==='top').visible_ms");
+      assert.ok(beforeModal>=1000,'foreground exposure is actually timed');
+      const otherTarget=await send('Target.createTarget',{url:'about:blank'});
+      const otherSession=await send('Target.attachToTarget',{targetId:otherTarget.targetId,flatten:true});
+      await send('Page.bringToFront',{},otherSession.sessionId);
+      await new Promise(done=>setTimeout(done,100));
+      assert.equal(await evaluate('document.hasFocus()'),false);
+      assert.equal(await evaluate("document.querySelectorAll('nav.sections .reading-now').length"),0,'inactive tab has no counting indicators');
+      const away=await evaluate("window.BriefReading.record().sessions.at(-1).targets.find(t=>t.anchor==='top').visible_ms");
+      await new Promise(done=>setTimeout(done,1300));
+      assert.equal(await evaluate("window.BriefReading.record().sessions.at(-1).targets.find(t=>t.anchor==='top').visible_ms"),away,'another active tab pauses recording');
+      await call('Page.bringToFront');
+      await send('Target.closeTarget',{targetId:otherTarget.targetId});
+      await evaluate("document.querySelector('#sec-one > .note-btn').click()");
+      await new Promise(done=>setTimeout(done,50));
+      const paused=await evaluate("window.BriefReading.record().sessions.at(-1).targets.find(t=>t.anchor==='top').visible_ms");
+      await new Promise(done=>setTimeout(done,1200));
+      assert.equal(await evaluate("window.BriefReading.record().sessions.at(-1).targets.find(t=>t.anchor==='top').visible_ms"),paused,'covering dialog pauses background exposure');
+      await evaluate("document.getElementById('note-text').value='Browser clock test note.';document.querySelector('#d-note [data-note-action=add]').click();document.getElementById('d-note').close();");
+      await new Promise(done=>setTimeout(done,150));
+      await evaluate('window.BriefReading.checkpoint()');
+      const deadline=Date.now()+10000;
+      while(Date.now()<deadline&&!await evaluate("document.querySelector('.notes-persistence').textContent==='Saved to original HTML'"))await new Promise(done=>setTimeout(done,50));
+      assert.equal(await evaluate("document.querySelector('.notes-persistence').textContent"),'Saved to original HTML');
+      await navigate(extraPage);
+      assert.equal(await evaluate("JSON.parse(document.getElementById('report-notes').textContent)['sec-one'][0].text"),'Browser clock test note.');
+      assert.ok(await evaluate("JSON.parse(document.getElementById('report-reading').textContent).sessions.some(s=>s.targets.some(t=>t.visible_ms>0))"));
+      const rail=await evaluate("(()=>{const n=document.querySelector('nav.sections'),y=n.getBoundingClientRect().top;scrollTo({top:800,behavior:'instant'});return {position:getComputedStyle(n).position,before:y,after:n.getBoundingClientRect().top};})()");
+      assert.equal(rail.position,'fixed');assert.equal(rail.before,rail.after,'left rail follows viewport');
+      const map=await evaluate("document.getElementById('btn-export').click();document.getElementById('export-out').value");
+      assert.match(map,/VISIBLE TIME/);assert.match(map,/(Scrolled past: |Nothing scrolled past)/,'Copy map names what was scrolled past');assert.match(map,/\[top\] .* (had time|PASSED|UNSEEN|not measured)/,'each passage carries its verdict');assert.match(map,/Browser clock test note/);
+      await evaluate("document.getElementById('d-export').close()");
+      const portable = await evaluate(`(()=>{const detail={};document.dispatchEvent(new CustomEvent('decision-brief:snapshot',{detail}));return detail.html;})()`);
+      assert.doesNotMatch(portable, /<script[^>]*data-review-connection/);
+      assert.doesNotMatch(portable, /window\.BRIEF_REVIEW=Object\.freeze/);
+      assert.ok(!portable.includes(new URL(extraPage).pathname),'export removes the temporary connection token');
+      const portableFile=join(report,'portable-export.html');
+      writeFileSync(portableFile,portable);
+      await navigate(portableFile);
+      assert.equal(await evaluate('typeof window.BRIEF_REVIEW'),'undefined','export opens without a stale server connection');
+      result.realBrowserClock={foregroundTime:true,inactiveTabPauses:true,modalPauses:true,noteAndTimeReopen:true,railFollows:true,copyMap:true};
+    } else if (process.env.BRIEF_REVIEW_URL) {
+      assert.equal(await evaluate("document.getElementById('demo-save').disabled"), false);
+      await evaluate("document.getElementById('demo-save').click()");
+      const deadline = Date.now() + 10000;
+      while (Date.now() < deadline && !await evaluate("document.getElementById('demo-status').dataset.saved==='true'"))
+        await new Promise(done => setTimeout(done, 50));
+      assert.equal(await evaluate("document.getElementById('demo-status').dataset.saved"), 'true', await evaluate("document.getElementById('demo-status').textContent"));
+      await navigate(extraPage);
+      assert.equal(await evaluate("document.getElementById('demo-value').textContent"), '0:12 · saved in this HTML');
+      result.reviewOriginalSaveReopen = true;
+    }
     // Decisions as well as headings and figures: a grill that cannot carry a note has failed at its one job.
     const targets = await evaluate("[...document.querySelectorAll('h2,figure,.grill .ask,.grill-q,.grill .q:not(.ask .q)')].map(e=>({id:e.id,target:e.dataset.nid,button:!!e.querySelector(':scope > .note-btn'),concur:e.matches('.ask,.grill-q,.grill .q')?e.classList.contains('concurrable'):null}))");
     assert.ok(targets.length > 0);

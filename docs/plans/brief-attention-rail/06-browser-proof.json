@@ -1,0 +1,116 @@
+{
+  "copyMapResolves": true,
+  "copyMapOrphanNeedsReview": true,
+  "passed": true,
+  "coverage": {
+    "headings": [
+      [
+        "sec-target",
+        "sec-target",
+        true
+      ],
+      [
+        "sec-return",
+        "sec-return",
+        true
+      ],
+      [
+        "sec-evidence",
+        "sec-evidence",
+        true
+      ],
+      [
+        "sec-use",
+        "sec-use",
+        true
+      ]
+    ],
+    "figures": [
+      [
+        "fig-identity",
+        "fig-identity",
+        true
+      ],
+      [
+        "fig-resolution",
+        "fig-resolution",
+        true
+      ],
+      [
+        "fig-evidence",
+        "fig-evidence",
+        true
+      ]
+    ],
+    "opening": true,
+    "openingTitle": "A Comment's Return You leave a comment on an explanation, then the ag…",
+    "duplicates": []
+  },
+  "layout": [
+    {
+      "width": 968,
+      "overflow": false,
+      "clipped": []
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "clipped": []
+    }
+  ],
+  "commentReloadExport": true,
+  "snapshotRevision": true,
+  "evidenceDepthSnapshot": true,
+  "literalScriptComment": true,
+  "rebuildAfterRename": true,
+  "missingTargetVisibleAndExported": true,
+  "isolation": "separate headless Chromium with temporary profile",
+  "realBrowserClock": {
+    "foregroundTime": true,
+    "inactiveTabPauses": true,
+    "modalPauses": true,
+    "noteAndTimeReopen": true,
+    "railFollows": true,
+    "copyMap": true
+  },
+  "additionalPage": {
+    "targets": [
+      {
+        "id": "sec-one",
+        "target": "sec-one",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "fig-one",
+        "target": "fig-one",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "sec-two",
+        "target": "sec-two",
+        "button": true,
+        "concur": null
+      },
+      {
+        "id": "sec-three",
+        "target": "sec-three",
+        "button": true,
+        "concur": null
+      }
+    ],
+    "layout": [
+      {
+        "width": 968,
+        "overflow": false,
+        "clipped": []
+      },
+      {
+        "width": 390,
+        "overflow": false,
+        "clipped": []
+      }
+    ]
+  }
+}

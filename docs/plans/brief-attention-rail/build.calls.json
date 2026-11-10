@@ -1,0 +1,66 @@
+{
+  "format": 1,
+  "kind": "briefing-calls",
+  "calls": [
+    {
+      "id": "call-keep-the-browser-origin-stable",
+      "at": "2026-11-10T08:19Z",
+      "title": "Keep the browser origin stable",
+      "context": null,
+      "chose": "Remember one loopback port per file; rotate the access token on restart.",
+      "because": "Pending browser checkpoints live under their origin. A new port would leave them unreachable after restarting the review server.",
+      "passed_over": [],
+      "undo": "Remove the remembered port file and choose an explicit port.",
+      "door": null,
+      "evidence": [],
+      "conflicts": [],
+      "under": {
+        "href": "04-slices.html",
+        "id": "brief-attention-rail-build",
+        "revision": "sha256:325c2125dd105b95f80064c2d97736b6fa0f60a4b686751d284f6bb58e8ae339"
+      },
+      "judgement": {
+        "slot": "{System 1 JUDGEMENT Surface Placeholder}",
+        "filled_by": "agent",
+        "uncertainty": "low",
+        "taste": "low",
+        "posture": "relaxed",
+        "posture_declared": true,
+        "outcome": "carry-on",
+        "reasons": []
+      },
+      "status": "open",
+      "verdict": null
+    },
+    {
+      "id": "call-build-the-native-reader-on-the-current-preview",
+      "at": "2026-11-10T08:40Z",
+      "title": "Build the native reader on the current preview",
+      "context": null,
+      "chose": "Use an isolated feature branch from the current T3 preview, with its matching private renderer.",
+      "because": "The current preview contains the newer HTML open path; starting from the older integration branch would omit that working code. Release assignment remains unassigned.",
+      "passed_over": [],
+      "undo": "Move the feature commits to the selected integration branch after its base catches up.",
+      "door": null,
+      "evidence": [],
+      "conflicts": [],
+      "under": {
+        "href": "04-slices.html",
+        "id": "brief-attention-rail-build",
+        "revision": "sha256:325c2125dd105b95f80064c2d97736b6fa0f60a4b686751d284f6bb58e8ae339"
+      },
+      "judgement": {
+        "slot": "{System 1 JUDGEMENT Surface Placeholder}",
+        "filled_by": "agent",
+        "uncertainty": "low",
+        "taste": "low",
+        "posture": "standard",
+        "posture_declared": true,
+        "outcome": "carry-on",
+        "reasons": []
+      },
+      "status": "open",
+      "verdict": null
+    }
+  ]
+}

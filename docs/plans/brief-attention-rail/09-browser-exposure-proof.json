@@ -1,0 +1,53 @@
+{
+  "note": "Isolated copy of actual brief; controlled active host for geometry. Separate browser_clock.py tests real focus transitions.",
+  "observations": [
+    {
+      "width": 1530,
+      "delta": {
+        "top": 0,
+        "sec-native": 0,
+        "fig-native": 0,
+        "sec-file": 1404,
+        "fig-shared-file": 1404,
+        "sec-use": 1404
+      },
+      "ticking": [
+        "sec-file",
+        "fig-shared-file",
+        "sec-use"
+      ]
+    },
+    {
+      "width": 968,
+      "delta": {
+        "top": 0,
+        "sec-native": 0,
+        "fig-native": 0,
+        "sec-file": 1404,
+        "fig-shared-file": 1404,
+        "sec-use": 1404
+      },
+      "ticking": [
+        "sec-file",
+        "fig-shared-file",
+        "sec-use"
+      ]
+    },
+    {
+      "width": 390,
+      "delta": {
+        "top": 0,
+        "sec-native": 0,
+        "fig-native": 0,
+        "sec-file": 1403,
+        "fig-shared-file": 1403,
+        "sec-use": 1403
+      },
+      "ticking": [
+        "sec-file",
+        "fig-shared-file",
+        "sec-use"
+      ]
+    }
+  ]
+}
