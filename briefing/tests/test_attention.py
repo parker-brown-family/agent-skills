@@ -69,7 +69,7 @@ class AttentionTests(unittest.TestCase):
     def test_verdicts_keep_unknown_apart_from_zero(self):
         self.save({'top': 9000, 'sec-short': 6000, 'fig-one': 1000, 'sec-long': 3000, 'sec-seen-none': 0})
         rows = self.report()
-        self.assertEqual(rows['sec-short']['verdict'], 'had_time')   # 16 words needs the 4 s floor; 6 s is room
+        self.assertEqual(rows['sec-short']['verdict'], 'had_time')   # 16 words need ~4.2 s; 6 s is room
         self.assertEqual(rows['fig-one']['verdict'], 'passed')       # 1 s of a 4 s floor
         self.assertEqual(rows['sec-long']['verdict'], 'passed')      # 3 s of ~42 s
         self.assertEqual(rows['sec-seen-none']['verdict'], 'unseen')
