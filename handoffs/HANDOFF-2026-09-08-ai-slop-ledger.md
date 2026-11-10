@@ -2,11 +2,9 @@
 
 ## Status
 
-**One thing needs Parker:** `agent-skills` PR #17 is OPEN and MERGEABLE, unmerged
-since 2026-09-04. `main` is a protected branch, so the skill cannot land without
-it.
-
-Everything else is done. `parkerbrown-dev` at `f27af2e`, pushed and deployed —
+**Landed.** `agent-skills` `main` at `09698b7` — PR #17 squash-merged
+2026-09-08, so `/ai-slop` is in the repo and resolving through
+`~/.claude/skills/ai-slop`. `parkerbrown-dev` at `f27af2e`, pushed and deployed —
 the rewritten article is live and returns 200. The global writing files
 (`~/.claude/writing/`) are not under version control anywhere, so they exist only
 on this machine.
@@ -31,6 +29,18 @@ specimens and 6 innocent sentences, and both previously published articles pass.
 turn → resolution, 149 words. Three flagged constructions removed from it, one
 more from ELI5, one from technical.
 
+**It fires on his phrasing, not on a command.** The first description was written
+around `/ai-slop` with a slash, which Parker was never going to type — and for a
+ledger whose value is accumulation, a skill that waits to be called by name
+captures nothing and fails invisibly. The description now lists his real wordings
+(`"AI slop:"`, `"adds nothing"`, `"nobody talks like that"`, a quoted line plus
+any complaint), says that several arrive per message, and the body carries his
+three verbatim flags as the shape to recognise. Startup coverage, which does not
+depend on a description match, is in `~/.claude/CLAUDE.md` (layer 4 of the writing
+stack, record-on-sight, and build-the-gate-in-the-same-sitting) and in
+`~/.config/agents/AGENTS.md` for Codex and Gemini, which cannot see a Claude
+skill.
+
 ## How to run/verify
 
 ```bash
@@ -49,8 +59,6 @@ the web root.
 
 ## Not done / next
 
-- **Merge PR #17.** Nothing else is blocked on it, but the skill is not in the
-  repo until it lands.
 - **The article's LinkedIn credit is still unnamed.** Parker chose *name and
   link*; the author and URL were never supplied and would not be invented. One
   line in `lib/writing/unearned-zero.ts`, then `./deploy.sh`.
