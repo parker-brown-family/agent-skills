@@ -45,7 +45,15 @@ New HTML builds contain a separate `report-reading` JSON island. It preserves re
 python3 scripts/brief.py reading name.html
 ```
 
-The POSIX local review server enables original-file saves in a standalone browser:
+On Linux with a systemd user manager, open the autosaving browser review with:
+
+```bash
+python3 scripts/brief.py review name.html
+```
+
+This starts or reuses a per-file user service, checks its live connection and opens the default browser at that URL. It restarts a stopped service or one serving an older version. The service outlives the launching terminal and restarts on failure; after logout/reboot, rerun `review`. `--no-open` checks the connection and prints the URL without opening a browser. In Terminal Delight, print that URL on its own line and give the complete `review` command as the recovery route. A plain file opened in Chrome cannot write its original HTML; its “Browser storage only” status means export is still required. Do not describe that handoff as autosaving.
+
+The underlying POSIX foreground server remains available:
 
 ```bash
 python3 scripts/brief.py serve name.html

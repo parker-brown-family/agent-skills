@@ -1857,6 +1857,9 @@ def doctor():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
+    p = commands.add_parser('review', help='start/reuse original-file saving and open the connected page in your browser')
+    p.add_argument('document', type=Path)
+    p.add_argument('--no-open', action='store_true', help='print the live URL without opening the browser')
     p = commands.add_parser('serve', help='serve one built HTML brief locally, saving review data to that exact file')
     p.add_argument('document', type=Path)
     p.add_argument('--port', type=int, default=0, help='loopback port; default chooses a free port')
@@ -1931,6 +1934,12 @@ def main():
     p.add_argument('--superseded-by', metavar='CALL')
     args = parser.parse_args()
     try:
+        if args.command == 'review':
+            from review_server import review
+            info = review(args.document, open_browser=not args.no_open, api=sys.modules[__name__])
+            print('Browser review · saves notes and visible time into the original HTML')
+            print(info['url'])
+            return 0
         if args.command == 'serve':
             from review_server import serve_review
             serve_review(args.document, port=args.port, api=sys.modules[__name__])

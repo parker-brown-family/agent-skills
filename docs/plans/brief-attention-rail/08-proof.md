@@ -50,3 +50,11 @@ The native feature uses the current T3 preview as its base, preserving the newer
 The Python, JavaScript and Rust checks use byte-identical portable record fixtures. The final native display run is `/tmp/brief-native-smoke-12`; the complete proof is linked above. Native source is committed as `465fc306` on `feat/brief-reading-time`. The tested debug binary reports base `e3990e0c8d8f270b3f8a19009b1d425b978c52f4`, dirty=true, version 0.5.2, Rio 0.5.29, opt-level 0, wire `b92c55624bb8636e`, protocol `7acbf1ac2d1d9d11`. Its tested changes are the native source commit. The final HTML passes the glass gate (mean luminance 39/255), brief validation (10 comment targets, no recording sessions from probes) and isolated browser layout/comment checks at 968px and 390px. The narrative diagnostic reads as an argument; cold-reader grasp 0.50.
 
 Tested binary SHA-256: `3331395c24255bfec178ed1e03df707c5c2e9af3577254d5c3a425de64110e66`. [Saved native source](https://github.com/parker-brown-family/terminal-delight/commit/465fc306) is awaiting integration; it is not an installation.
+
+## Browser delivery repair
+
+Parker's Chrome screenshot showed “Browser storage only · original HTML not saved”: the local file was open without the save adapter, and the separate live-review service had stopped. A link to that stopped service was not a usable saving route.
+
+`brief.py review PAGE.html` now starts or reuses a per-file systemd user service, validates the current connection and opens the default browser there. Repeating it recovers a stopped service or restarts for rebuilt content. The browser origin stays the same; the private route rotates on restart. The launcher checks a saved loopback URL without redirects or proxy use. Browser handoffs include the full recovery command and a line-initial URL. The foreground `serve` command remains available.
+
+The Python suite now passes 138 tests, including verified reuse, remote/mismatched-session refusal, stale content, service restart and startup failures. `briefing/tests/launcher_smoke.py` checks the real service lifecycle and Chromium saves on a temporary synthetic file. Its captured result is `/tmp/brief-launcher-smoke.log`; user documents are never the recording fixture.

@@ -13,7 +13,8 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'scripts'))
 import brief
 import reading
-from review_server import ReviewServer, LIMIT, persistent_server
+from review_server import ReviewServer, LIMIT, persistent_server, live_session, session_file, review
+from subprocess import CompletedProcess
 
 SOURCE = '''<!doctype html><html><head><title>Synthetic save fixture</title><!--BRIEF:head--></head><body>
 <!--brief-content--><header><h1 id="top" data-brief-anchor="top">Synthetic save fixture</h1></header>
@@ -22,6 +23,53 @@ SOURCE = '''<!doctype html><html><head><title>Synthetic save fixture</title><!--
 
 
 class ReadingTests(unittest.TestCase):
+    def connection(self, server):
+        info = {'path': str(self.page), 'url': server.url, 'document': server.document, 'revision': server.revision}
+        session_file(self.page).write_text(json.dumps(info))
+        return info
+
+    def test_browser_launcher_reuses_a_verified_connection(self):
+        info = self.connection(self.start())
+        self.assertEqual(live_session(self.page, brief), info)
+        with patch('review_server.subprocess.run', return_value=CompletedProcess([], 0)) as run:
+            self.assertEqual(review(self.page, api=brief), info)
+            run.assert_called_once_with(['xdg-open', info['url']], capture_output=True, text=True)
+
+    def test_browser_launcher_refuses_remote_or_mismatched_session(self):
+        info = self.connection(self.start())
+        for changes in ({'url': 'https://example.com/review/' + 'a' * 43},
+                        {'path': '/some/other/file.html'}, {'revision': 'sha256:' + '0' * 64},
+                        {'url': info['url'] + '?redirect=1'}):
+            session_file(self.page).write_text(json.dumps({**info, **changes}))
+            with patch('review_server.urllib.request.build_opener') as opener:
+                self.assertIsNone(live_session(self.page, brief))
+                opener.assert_not_called()
+
+    def test_browser_launcher_detects_changed_content_and_dead_connection(self):
+        server = self.start()
+        self.connection(server)
+        with patch('review_server.urllib.request.build_opener', side_effect=OSError('server stopped')):
+            self.assertIsNone(live_session(self.page, brief))
+        self.source.write_text(SOURCE.replace('One counter', 'Changed counter'))
+        brief.build(self.source, self.page, 'test-reading', 'engineering', no_wall=True)
+        self.assertIsNone(live_session(self.page, brief))
+
+    def test_browser_launcher_restarts_a_loaded_service_and_waits_for_live_url(self):
+        info = self.connection(self.start())
+        with patch('review_server.live_session', side_effect=[None, info]), \
+                patch('review_server.subprocess.run', side_effect=[CompletedProcess([], 0, 'loaded\n'), CompletedProcess([], 0)]) as run:
+            self.assertEqual(review(self.page, api=brief, open_browser=False), info)
+            self.assertEqual(run.call_args_list[1].args[0][:3], ['systemctl', '--user', 'restart'])
+
+    def test_browser_launcher_reports_service_start_failure(self):
+        with patch('review_server.live_session', return_value=None), \
+                patch('review_server.subprocess.run', side_effect=[CompletedProcess([], 0, 'not-found\n'), CompletedProcess([], 1, '', 'no user manager')]) as run:
+            with self.assertRaisesRegex(reading.ReadingError, 'no user manager'):
+                review(self.page, api=brief, open_browser=False)
+            command = run.call_args_list[1].args[0]
+            self.assertEqual(command[0], 'systemd-run')
+            self.assertEqual(command[-2:], ['serve', str(self.page)])
+
     def test_note_mirror_uses_the_body_tag_not_the_instruction_comment(self):
         before = self.page.read_text()
         changed = reading.plan_note_edits(before, [{'op': 'add', 'anchor': 'sec-test',

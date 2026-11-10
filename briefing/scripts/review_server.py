@@ -6,7 +6,12 @@ import os
 from pathlib import Path
 import re
 import secrets
+import subprocess
+import sys
 import time
+import urllib.request
+import urllib.error
+from urllib.parse import urlsplit
 
 import reading
 
@@ -190,10 +195,96 @@ def persistent_server(path, api, port=0):
     return server
 
 
+def session_file(path):
+    state = Path(os.environ.get('XDG_STATE_HOME', Path.home() / '.local/state'))
+    if not state.is_absolute():
+        state = Path.home() / '.local/state'
+    directory = state / 'briefing/review-sessions'
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    return directory / (hashlib.sha256(os.fsencode(Path(os.path.abspath(path)))).hexdigest() + '.json')
+
+
+def live_session(path, api):
+    """Return a verified current connection, never a stale or non-loopback URL."""
+    try:
+        target = session_file(path)
+        reading.checked_file(target)
+        info = json.loads(target.read_bytes())
+        _, meta, revision, _, _ = api.inspect(path)
+        if (set(info) != {'path', 'url', 'document', 'revision'} or
+                info['path'] != str(Path(os.path.abspath(path))) or
+                info['document'] != meta['id'] or info['revision'] != revision or revision != meta['revision']):
+            return None
+        url = urlsplit(info['url'])
+        if (url.scheme != 'http' or url.hostname != '127.0.0.1' or not url.port or
+                url.netloc != '127.0.0.1:' + str(url.port) or url.query or url.fragment or
+                not re.fullmatch(r'/review/[A-Za-z0-9_-]{43}', url.path)):
+            return None
+        # No redirects or environment proxy: this checks only the remembered local server.
+        class NoRedirect(urllib.request.HTTPRedirectHandler):
+            def redirect_request(self, *_args, **_kwargs):
+                return None
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect())
+        with opener.open(info['url'], timeout=1) as response:
+            text = response.read(32 * 1024 * 1024 + 1).decode('utf-8')
+            if len(text) > 32 * 1024 * 1024 or response.status != 200:
+                return None
+            _, served = api.island(text, 'brief-meta')
+            if served['id'] != meta['id'] or served['revision'] != revision or 'data-review-connection' not in text:
+                return None
+        return info
+    except (OSError, ValueError, KeyError, TypeError, urllib.error.URLError):
+        return None
+
+
+def review(path, *, open_browser=True, api=None):
+    """Start/reuse a per-file user service, then open its connected browser page."""
+    if api is None:
+        import brief as api
+    path = Path(os.path.abspath(path))
+    reading.checked_file(path)
+    target = session_file(path)
+    unit = 'brief-review-' + target.stem[:24] + '.service'
+    with reading.review_lock(target):
+        info = live_session(path, api)
+        if info is None:
+            loaded = subprocess.run(['systemctl', '--user', 'show', '--property=LoadState', '--value', unit],
+                                    capture_output=True, text=True)
+            if loaded.returncode == 0 and loaded.stdout.strip() == 'loaded':
+                command = ['systemctl', '--user', 'restart', unit]
+            else:
+                command = ['systemd-run', '--user', '--unit=' + unit, '--collect',
+                           '--property=Restart=on-failure', '--property=MemoryMax=256M',
+                           '--property=CPUWeight=20', sys.executable,
+                           str(Path(__file__).with_name('brief.py').resolve()), 'serve', str(path)]
+            result = subprocess.run(command, capture_output=True, text=True)
+            if result.returncode:
+                raise reading.ReadingError('Could not start browser saving: ' + result.stderr.strip())
+            deadline = time.monotonic() + 10
+            while time.monotonic() < deadline:
+                info = live_session(path, api)
+                if info is not None:
+                    break
+                time.sleep(0.1)
+            if info is None:
+                raise reading.ReadingError('Browser saving did not start; inspect journalctl --user -u ' + unit)
+    if open_browser:
+        opened = subprocess.run(['xdg-open', info['url']], capture_output=True, text=True)
+        if opened.returncode:
+            raise reading.ReadingError('Browser could not open; copy this URL into Chrome: ' + info['url'])
+    return info
+
+
 def serve_review(path, *, port=0, api=None):
     if api is None:
         import brief as api
     server = persistent_server(path, api, port)
+    target = session_file(path)
+    target.touch(mode=0o600, exist_ok=True)
+    reading.checked_file(target)
+    os.chmod(target, 0o600)
+    api.atomic(target, json.dumps({'path': str(server.path), 'url': server.url,
+                                  'document': server.document, 'revision': server.revision}), target.read_bytes())
     print(json.dumps({'url': server.url, 'document': server.document, 'revision': server.revision}), flush=True)
     try:
         server.serve_forever()
