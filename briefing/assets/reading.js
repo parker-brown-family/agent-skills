@@ -30,7 +30,15 @@
     this.last={at:now,activity:activity,visible:new Set(visible)};
   };
   Clock.prototype.checkpoint=function(){return this.started?clone(this.value):null;};
-  root.BriefReadingClock=Clock;
+  // Same estimate as scripts/reading.py (tests/test_reading.py keeps them equal). Time can only prove a
+  // negative: under PASSED_SHARE of reading time on screen means scrolled past, never that it was read.
+  var READING={wordsPerMinute:230,floorMs:4000,passedShare:0.4};
+  function verdict(ms,words){
+    if(ms===null||ms===undefined)return 'not measured';if(ms===0)return 'UNSEEN';
+    var need=Math.max(READING.floorMs,Math.round(words*60000/READING.wordsPerMinute));
+    return ms<READING.passedShare*need?'PASSED':'had time';
+  }
+  root.BriefReadingClock=Clock;root.BriefReadingVerdict={thresholds:READING,verdict:verdict};
   if(typeof document==='undefined')return;
 
   function title(el){var node=el.cloneNode(true);node.querySelectorAll('.note-btn,.concur-zone,[data-reader-ui]').forEach(function(n){n.remove();});var label=node.querySelector(':scope > .lbl,h1,h3,h4');return (label||node).textContent.replace(/\s+/g,' ').trim().slice(0,500);}
@@ -95,24 +103,26 @@
       });return {visible:visible,eligible:eligible,areas:areas};
     }
     function sample(){var g=geometry();clock.sample(performance.now(),activity(),g.visible,g.eligible);return g;}
+    // Scroll and resize fire many times a frame; measuring every target each time is wasted layout work.
+    var framed=false;function onFrame(){if(framed)return;framed=true;requestAnimationFrame(function(){framed=false;paint(sample());});}
     function combined(){
       var sessions=record.sessions.slice(),latest=new Map();pending.forEach(function(p){latest.set(p.reading.session,p.reading);});
       var now=clock.checkpoint();if(now)latest.set(now.session,now);
       latest.forEach(function(s,id){var index=sessions.findIndex(function(v){return v.session===id;});if(index<0)sessions.push(s);else sessions[index]=s;});
       return {format:1,sessions:sessions};
     }
-    function times(){
-      var result=new Map();combined().sessions.filter(function(s){return s.revision===meta.revision;}).forEach(function(s){s.targets.forEach(function(t){if(t.visible_ms!==null)result.set(t.anchor,(result.get(t.anchor)||0)+t.visible_ms);});});return result;
+    function times(all){
+      var result=new Map();(all||combined()).sessions.filter(function(s){return s.revision===meta.revision;}).forEach(function(s){s.targets.forEach(function(t){if(t.visible_ms!==null)result.set(t.anchor,(result.get(t.anchor)||0)+t.visible_ms);});});return result;
     }
     function formatted(ms){var seconds=Math.floor(ms/1000);return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');}
     var lastActive=null;
-    function paint(){
-      var map=times(),g=geometry(),counting=activity()==='active',active=list.filter(function(t){return t.kind==='section'&&g.visible.includes(t.anchor);}).sort(function(a,b){return g.areas[b.anchor]-g.areas[a.anchor];})[0];
+    function paint(g){
+      var all=combined(),map=times(all);g=g||geometry();varcounting=activity()==='active',active=list.filter(function(t){return t.kind==='section'&&g.visible.includes(t.anchor);}).sort(function(a,b){return g.areas[b.anchor]-g.areas[a.anchor];})[0];
       if(nav){nav.dataset.readingState=counting?'counting':'paused';nav.querySelector('.reading-key').textContent=counting?'● counting now · totals':'Paused · total visible time';}
       labels.forEach(function(v,key){var running=counting&&g.visible.includes(key);v.time.textContent=map.has(key)?formatted(map.get(key)):'—';v.link.classList.toggle('reading-now',running);v.link.title=(running?'Counting now':'Not counting now')+' · total visible time '+v.time.textContent;if(active&&key===active.anchor)v.link.setAttribute('aria-current','location');else v.link.removeAttribute('aria-current');});
       if(active&&active.anchor!==lastActive&&nav){var item=labels.get(active.anchor);if(item&&innerWidth>=1100){var link=item.link;if(link.offsetTop<nav.scrollTop)nav.scrollTop=link.offsetTop;else if(link.offsetTop+link.offsetHeight>nav.scrollTop+nav.clientHeight)nav.scrollTop=link.offsetTop+link.offsetHeight-nav.clientHeight;}lastActive=active.anchor;}
       if(status)status.textContent=statusText;
-      var exportButton=document.getElementById('btn-export');if(exportButton&&combined().sessions.some(function(s){return s.revision===meta.revision;}))exportButton.disabled=false;
+      var exportButton=document.getElementById('btn-export');if(exportButton&&all.sessions.some(function(s){return s.revision===meta.revision;}))exportButton.disabled=false;
     }
     function persist(){try{var own=pending.find(function(p){return p.reading.session===clock.value.session;});if(own)localStorage.setItem(storageKey+clock.value.session,JSON.stringify(own));}catch(e){statusText='Pending · browser recovery storage unavailable';}}
     function enqueue(){
@@ -137,20 +147,29 @@
         statusText=pending.length?'Pending · newer changes wait':'Saved to original HTML';persist();
       }catch(e){statusText='Pending · '+e.message;}finally{busy=false;paint();}
     }
-    function changed(){sample();paint();if(activity()!=='active'){enqueue();flush();}}
+    function changed(){paint(sample());if(activity()!=='active'){enqueue();flush();}}
     root.BriefReading={enabled:enabled,record:combined,checkpoint:function(){enqueue();return flush();},
       describe:function(){return list.map(function(t){var r=t.box.getBoundingClientRect();return {anchor:t.anchor,title:t.title,kind:t.kind,parent:t.parent,rect:r.width>0&&r.height>0?{x:r.x+scrollX,y:r.y+scrollY,w:r.width,h:r.height}:null};});},
-      summary:function(){var map=times();if(!map.size)return '';return '\nVISIBLE TIME — '+meta.id+' · '+meta.revision.slice(7,19)+'\nRecorded foreground exposure across sessions; overlapping targets are not additive.\n'+list.map(function(t){return '['+t.anchor+'] '+t.title+' · '+(map.has(t.anchor)?formatted(map.get(t.anchor)):'unknown')+' visible';}).join('\n')+'\n';}};
+      summary:function(){
+        var map=times();if(!map.size)return '';
+        function words(t){var node=t.box.cloneNode(true);node.querySelectorAll('.note-btn,.concur-zone,[data-reader-ui],script,style,nav,dialog').forEach(function(n){n.remove();});return node.textContent.split(/\s+/).filter(Boolean).length;}
+        var rows=list.map(function(t){var ms=map.has(t.anchor)?map.get(t.anchor):null,w=words(t),need=Math.max(READING.floorMs,Math.round(w*60000/READING.wordsPerMinute));
+          return {t:t,v:verdict(ms,w),line:'['+t.anchor+'] '+t.title+' · '+(ms===null?'not measured':formatted(ms)+' of ~'+formatted(need))+' · '+verdict(ms,w)};});
+        var passed=rows.filter(function(r){return r.v==='PASSED'||r.v==='UNSEEN';}).map(function(r){return r.t.anchor;});
+        return '\nVISIBLE TIME — '+meta.id+' · '+meta.revision.slice(7,19)+'\n'+
+          'On screen vs ~reading time ('+READING.wordsPerMinute+' words/min, at least '+READING.floorMs/1000+' s). PASSED = under '+Math.round(READING.passedShare*100)+'%: scrolled past, so either not needed here or needed and missed. Had time is room to read, not proof of reading.\n'+
+          (passed.length?'Scrolled past: '+passed.join(', ')+'\n':'Nothing scrolled past.\n')+
+          rows.map(function(r){return r.line;}).join('\n')+'\n';}};;
     ['focus','blur','pagehide','pageshow'].forEach(function(name){root.addEventListener(name,changed);});
     document.addEventListener('visibilitychange',changed);
-    document.addEventListener('scroll',function(){sample();paint();},true);root.addEventListener('resize',function(){sample();paint();});
+    document.addEventListener('scroll',onFrame,{capture:true,passive:true});root.addEventListener('resize',onFrame);
     new MutationObserver(changed).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open','hidden']});
     document.addEventListener('brief:notes-changed',function(){enqueue();flush();paint();});
     // The exact-file server has no sibling-file read API. Keep local references
     // usable in the portable file and explain that boundary instead of navigating to a 404.
     if(cfg)document.addEventListener('click',function(event){var a=event.target.closest('a[href]');if(!a)return;var raw=a.getAttribute('href');if(raw.startsWith('#')||/^[a-z][a-z0-9+.-]*:/i.test(raw)&&!raw.startsWith('file:'))return;event.preventDefault();statusText='Local reference · open the original HTML in Terminal Delight to follow this link';paint();});
-    sample();paint();
-    if(enabled){setInterval(function(){sample();paint();},1000);setInterval(function(){enqueue();flush();},5000);flush();}
+    paint(sample());
+    if(enabled){setInterval(function(){paint(sample());},1000);setInterval(function(){enqueue();flush();},5000);flush();}
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })(globalThis);

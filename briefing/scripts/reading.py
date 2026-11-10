@@ -280,3 +280,176 @@ def review_lock(path):
         yield
     finally:
         os.close(fd)
+
+
+# ---- Reading the record back: which passages were on screen too briefly to have been read ----
+#
+# Visible time can only prove a negative. A passage on screen for less time than reading it takes was
+# not read; one on screen long enough may or may not have been. So the verdict names the passages a
+# reader scrolled past, and leaves the reason (not needed here, or needed and missed) to the writer.
+# reading.js carries the same three numbers for the Copy map; tests/test_reading.py keeps them equal.
+WORDS_PER_MINUTE = 230   # an adult reading ordinary prose on screen; an estimate, stated as one
+FLOOR_MS = 4000          # even a heading-sized passage takes a few seconds to take in
+PASSED_SHARE = 0.4       # on screen for under 40% of its reading time = scrolled past
+LONG_SECTION_WORDS = 150 # prose words in one section (figures excluded) before check calls it long
+VOID_TAGS = set('area base br col embed hr img input link meta param source track wbr'.split())
+SKIPPED_SUBTREES = {'script', 'style', 'template', 'nav', 'dialog', 'noscript'}
+
+
+class Passages(HTMLParser):
+    """Words in every anchored passage of a built brief, counted the way reading.js measures its box:
+    a section heading's passage is its whole enclosing <section>; everything else is its own element."""
+
+    def __init__(self, text):
+        super().__init__(convert_charrefs=True)
+        self.stack, self.found, self.skip = [], {}, 0
+        self.feed(text)
+        self.close()
+
+    def handle_starttag(self, tag, attrs):
+        if tag in VOID_TAGS:
+            return
+        attrs = {k: v or '' for k, v in attrs}
+        classes = attrs.get('class', '').split()
+        skip = (tag in SKIPPED_SUBTREES or 'data-reader-ui' in attrs or attrs.get('id') == 'last-time'
+                or 'last-time-strip' in classes)
+        frame = {'tag': tag, 'skip': skip, 'anchor': None, 'section': tag == 'section', 'words': 0,
+                 'prose': 0, 'heading': None, 'figure': tag == 'figure', 'text': ''}
+        if not self.skip and not skip and attrs.get('data-brief-anchor'):
+            anchor = attrs['data-brief-anchor']
+            kind = ('opening' if tag == 'h1' or {'opening', 'lede'} & set(classes) else 'section' if tag == 'h2'
+                    else 'figure' if tag == 'figure' else 'entry')
+            if anchor not in self.found:
+                frame['anchor'] = anchor
+                self.found[anchor] = {'anchor': anchor, 'kind': kind, 'words': 0, 'prose_words': None,
+                                      'order': len(self.found), 'title': ''}
+                if kind == 'section':
+                    box = next((f for f in reversed(self.stack) if f['section']), None)
+                    if box is not None and box['heading'] is None:
+                        box['heading'] = anchor
+        self.skip += skip
+        self.stack.append(frame)
+
+    def handle_endtag(self, tag):
+        if not any(f['tag'] == tag for f in self.stack):
+            return
+        while self.stack:
+            frame = self.stack.pop()
+            self.skip -= frame['skip']
+            if frame['anchor']:
+                self.found[frame['anchor']].update(words=frame['words'], title=' '.join(frame['text'].split())[:80])
+            if frame['heading']:
+                self.found[frame['heading']].update(words=frame['words'], prose_words=frame['prose'])
+            if frame['tag'] == tag:
+                break
+
+    def handle_data(self, data):
+        if self.skip:
+            return
+        words = len(data.split())
+        if not words:
+            return
+        in_figure = any(f['figure'] for f in self.stack)
+        for frame in self.stack:
+            frame['words'] += words
+            if frame['anchor'] and len(frame['text']) < 80:
+                frame['text'] += ' ' + data
+            if not in_figure:
+                frame['prose'] += words
+
+
+def reading_ms(words):
+    return max(FLOOR_MS, round(words * 60000 / WORDS_PER_MINUTE))
+
+
+def clock(ms):
+    seconds = round(ms / 1000)
+    return f'{seconds // 60}:{seconds % 60:02d}'
+
+
+def brevity(text):
+    """Estimated reading time for the whole brief, and the sections whose prose runs long."""
+    passages = Passages(text).found
+    sections = [p for p in passages.values() if p['kind'] == 'section']
+    opening = sum(p['words'] for p in passages.values() if p['kind'] == 'opening')
+    total = opening + sum(p['words'] for p in sections)
+    long = [{'anchor': p['anchor'], 'prose_words': p['prose_words']} for p in sections
+            if (p['prose_words'] or 0) > LONG_SECTION_WORDS]
+    return {'reading_minutes': round(total / WORDS_PER_MINUTE, 1), 'long_sections': long}
+
+
+def attention(text, api):
+    """Per passage: words, total visible time on this revision, and whether it was scrolled past."""
+    _, meta = api.island(text, 'brief-meta')
+    record = read_record(text, api)
+    current = [s for s in record['sessions'] if s['revision'] == meta['revision']]
+    passages = Passages(text).found
+    seen, titles = {}, {}
+    for session in current:
+        for target in session['targets']:
+            titles.setdefault(target['anchor'], target['title'])
+            if target['visible_ms'] is not None:
+                seen[target['anchor']] = seen.get(target['anchor'], 0) + target['visible_ms']
+    rows = []
+    for anchor, passage in sorted(passages.items(), key=lambda pair: pair[1]['order']):
+        need = reading_ms(passage['words'])
+        visible = seen.get(anchor)  # None: never measured on this revision, which is not zero
+        verdict = ('unmeasured' if visible is None else 'unseen' if visible == 0
+                   else 'passed' if visible < PASSED_SHARE * need else 'had_time')
+        rows.append({'anchor': anchor, 'kind': passage['kind'], 'title': titles.get(anchor) or passage['title'] or anchor,
+                     'words': passage['words'], 'visible_ms': visible, 'reading_ms': need, 'verdict': verdict})
+    sections = [r for r in rows if r['kind'] == 'section']
+    for index, row in enumerate(sections):
+        row['third'] = ('first', 'middle', 'last')[min(2, index * 3 // max(1, len(sections)))]
+    return {'document': meta['id'], 'revision': meta['revision'], 'sessions': len(current),
+            'earlier_revision_sessions': len(record['sessions']) - len(current), 'passages': rows}
+
+
+def attention_text(report):
+    rows, out = report['passages'], []
+    out.append(f"ATTENTION — {report['document']} · {report['revision'][7:19]} · {report['sessions']} reading "
+               f"session{'s' if report['sessions'] != 1 else ''} on this version"
+               + (f" ({report['earlier_revision_sessions']} on earlier versions, not counted)"
+                  if report['earlier_revision_sessions'] else ''))
+    if not report['sessions']:
+        out.append('Nobody has read this version with the clock running. Unknown, not zero: draw no conclusion.')
+        return '\n'.join(out) + '\n'
+    out.append(f'Estimate: {WORDS_PER_MINUTE} words a minute, at least {FLOOR_MS // 1000} s a passage. '
+               f'Passed = on screen for under {round(PASSED_SHARE * 100)}% of that.')
+    groups = (('passed', 'PASSED — scrolled past. Either not needed here, or needed and missed: decide which.'),
+              ('unseen', 'UNSEEN — never on screen while the page was active.'),
+              ('had_time', 'HAD TIME — on screen long enough to read. That is room to read, not proof of it.'),
+              ('unmeasured', 'UNMEASURED — no record on this version.'))
+    for verdict, heading in groups:
+        chosen = [r for r in rows if r['verdict'] == verdict]
+        if not chosen:
+            continue
+        out.append('')
+        out.append(f'{heading} ({len(chosen)})')
+        for r in chosen:
+            time = '' if r['visible_ms'] is None else f" · {clock(r['visible_ms'])} of ~{clock(r['reading_ms'])}"
+            out.append(f"  [{r['anchor']}] {r['kind']} · {r['title'][:70]}{time} · {r['words']} words")
+    return '\n'.join(out) + '\n'
+
+
+def attention_across(reports):
+    """Where across many briefs readers scroll past: by kind of passage, and by place among the sections."""
+    tally = {}
+    for report in reports:
+        if not report['sessions']:
+            continue
+        for row in report['passages']:
+            if row['verdict'] == 'unmeasured':
+                continue
+            for key in (row['kind'], 'section · ' + row['third'] if 'third' in row else None):
+                if key:
+                    measured, passed = tally.get(key, (0, 0))
+                    tally[key] = (measured + 1, passed + (row['verdict'] in ('passed', 'unseen')))
+    read = sum(1 for r in reports if r['sessions'])
+    out = [f'ACROSS {len(reports)} BRIEFS · {read} with reading time · passed or unseen / measured']
+    for key in sorted(tally):
+        measured, passed = tally[key]
+        out.append(f'  {key:<18} {passed:>4} / {measured:<4} {round(100 * passed / measured):>3}%')
+    if not tally:
+        out.append('  No measured passages. Unknown, not zero.')
+    return '\n'.join(out) + '\n', tally

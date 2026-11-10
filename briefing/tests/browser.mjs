@@ -251,7 +251,7 @@ try {
       const rail=await evaluate("(()=>{const n=document.querySelector('nav.sections'),y=n.getBoundingClientRect().top;scrollTo({top:800,behavior:'instant'});return {position:getComputedStyle(n).position,before:y,after:n.getBoundingClientRect().top};})()");
       assert.equal(rail.position,'fixed');assert.equal(rail.before,rail.after,'left rail follows viewport');
       const map=await evaluate("document.getElementById('btn-export').click();document.getElementById('export-out').value");
-      assert.match(map,/VISIBLE TIME/);assert.match(map,/Browser clock test note/);
+      assert.match(map,/VISIBLE TIME/);assert.match(map,/(Scrolled past: |Nothing scrolled past)/,'Copy map names what was scrolled past');assert.match(map,/\[top\] .* (had time|PASSED|UNSEEN|not measured)/,'each passage carries its verdict');assert.match(map,/Browser clock test note/);
       await evaluate("document.getElementById('d-export').close()");
       const portable = await evaluate(`(()=>{const detail={};document.dispatchEvent(new CustomEvent('decision-brief:snapshot',{detail}));return detail.html;})()`);
       assert.doesNotMatch(portable, /<script[^>]*data-review-connection/);

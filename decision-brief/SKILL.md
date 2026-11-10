@@ -281,6 +281,11 @@ project on the same day.
 
 Hand the file back as a clickable `file://` link, then the served URL.
 
+A page assembled by hand from this skill has notes but no reading rail and no clock. To get the rail
+that follows the reader and the time it saves, build through `briefing` (`brief.py html`), or turn a
+finished page into one with `brief.py adopt`. Its `attention` command then names the passages the
+reader scrolled past.
+
 ## Reference
 
 - `reference/pictures.md` — **read this first**: the figure contract, the repertoire of

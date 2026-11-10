@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><head><title>What you scrolled past now comes back</title><!-- briefing: {"id": "brief-attention-read", "purpose": "summary"} --><!--BRIEF:head-->
+<style>
+/* This brief's own figures and notes. The house look arrives through BRIEF:head. */
+svg{display:block;width:100%;height:auto}.small{font-size:13px;color:var(--dim)}
+</style></head><body>
+<!--brief-content-->
+<header class="top"><div class="wrap"><div class="eyebrow">Briefing skills · reading rail, closed loop</div><div class="opening" id="top" data-brief-anchor="top"><h1>What you scrolled past now comes back</h1> <p class="lede">Briefs already timed every passage. Now the agent reads those times back, names what you scrolled past, and the skill says what to do with each one in the next brief.</p></div><nav class="sections"></nav></div></header>
+<main class="wrap">
+<section class="pane"><h2 id="sec-comes-back" data-brief-anchor="sec-comes-back"><span class="n">01</span> The agent gets a verdict, not a stopwatch</h2>
+<p>Raw seconds tell an agent nothing. A section of 160 words needs about 42 seconds; 3 seconds on screen means you scrolled past it. So each passage's time is now set against its reading time, and anything under 40% is marked <b>passed</b>. The verdict rides in Copy map with your notes, so one click carries it back.</p>
+<figure id="fig-copy-map" data-brief-anchor="fig-copy-map"><span class="lbl">01 · What Copy map now sends</span>
+<pre>VISIBLE TIME — cache-eviction · 3f9c21ab07de
+On screen vs ~reading time (230 words/min, at least 4 s). PASSED = under 40% …
+Scrolled past: fig-one, sec-long, sec-seen-none
+[top] Cache eviction · 0:09 of ~0:04 · had time
+[sec-short] Short · 0:06 of ~0:04 · had time
+[fig-one] Figure one · 0:01 of ~0:04 · PASSED
+[sec-long] Long · 0:03 of ~0:42 · PASSED
+[sec-seen-none] Never on screen · 0:00 of ~0:04 · UNSEEN
+[sec-unknown] No record · not measured</pre>
+<figcaption><b>One line per passage, and the scrolled-past list first, because that is the list the agent has to act on.</b></figcaption><p class="small">Drawn from the test fixture in <a href="../../../briefing/tests/test_attention.py">test_attention.py</a>, with synthetic times. The real headless-browser test asserts this format.</p></figure></section>
+<section class="pane"><h2 id="sec-two-things" data-brief-anchor="sec-two-things"><span class="n">02</span> Passed means one of two things, and the agent decides which</h2>
+<p>You put it this way: what gets scrolled past is either not relevant, or important but it did not get your attention. The skill now makes the writer pick one, every round, and say so in the next brief's <i>Last time</i> strip.</p>
+<figure id="fig-two-roads" data-brief-anchor="fig-two-roads"><span class="lbl">02 · What happens to a passed passage</span>
+<svg viewBox="0 0 680 230" role="img" aria-label="A passed passage either carried something you must know, so it leads the next brief, or was background, so it is cut and linked">
+<rect class="box mine" x="20" y="85" width="170" height="60" rx="10"/><text class="ink" x="105" y="112" text-anchor="middle" font-size="15">passed</text><text class="dim" x="105" y="132" text-anchor="middle" font-size="12">&lt; 40% of reading time</text>
+<path class="wire" d="M190 115 C 240 115 240 50 290 50"/><path class="wire" d="M190 115 C 240 115 240 180 290 180"/>
+<rect class="box crit" x="290" y="20" width="370" height="60" rx="10"/><text class="ink" x="475" y="46" text-anchor="middle" font-size="14">needed, and missed</text><text class="dim" x="475" y="66" text-anchor="middle" font-size="12">lead the next brief with it: title or first line, shorter</text>
+<rect class="box ready" x="290" y="150" width="370" height="60" rx="10"/><text class="ink" x="475" y="176" text-anchor="middle" font-size="14">not needed here</text><text class="dim" x="475" y="196" text-anchor="middle" font-size="12">cut it next time; keep it behind a link</text>
+</svg>
+<figcaption><b>Time alone cannot say which road. The writer can, because it knows whether the passage held a decision.</b></figcaption><p class="small">Amber is the judgement that is yours to argue with. Rule written into <a href="../../../briefing/SKILL.md">briefing/SKILL.md</a>, under Comments Come Back.</p></figure></section>
+<section class="pane"><h2 id="sec-honest" data-brief-anchor="sec-honest"><span class="n">03</span> The clock only proves the negative</h2>
+<p>A passage that was on screen long enough may still have gone unread, especially on a big screen where several sit side by side. So the verdicts claim only what time can show. <b>Had time</b> means there was room to read. <b>Unseen</b> is zero seconds while the page was active. <b>Unmeasured</b> means no record exists, which is not zero. A page nobody has read says so, and draws no conclusion.</p></section>
+<section class="pane"><h2 id="sec-brevity" data-brief-anchor="sec-brevity"><span class="n">04</span> Brevity is a number the agent sees before handing over</h2>
+<p>The lesson you took from Lavish was brevity. <code>check</code> now prints the estimated reading time and every section over 150 words of prose. It warns and does not refuse, so a long section stays the writer's call, made with the number in view. By that count this page reads in about three minutes and has no long section.</p></section>
+<section class="pane"><h2 id="sec-across" data-brief-anchor="sec-across"><span class="n">05</span> Across many briefs, it shows where readers drop off</h2>
+<p>Give <code>attention</code> a folder of briefs and it tallies what gets passed: by kind of passage (opening, section, figure, entry) and by first, middle or last third. If figures or last sections keep getting passed, that is a change to the skill, not to one page. Today only two of the seven pages in this plan folder have any reading time, so it is too early to read a pattern.</p></section>
+<section class="pane"><h2 id="sec-where" data-brief-anchor="sec-where"><span class="n">06</span> Where it stands</h2>
+<p>This sits on the sibling agent's pull request as one more commit, so the whole feature is still one review. The clock also does less work now: it measures the page once per frame on scroll instead of on every scroll event.</p>
+<p>The native Terminal Delight reader builds its own Copy map in Rust, on the sibling's unmerged branch. It still sends raw times without the verdict. Until it changes, <code>brief.py attention</code> on the saved page gives the same answer from either reader.</p>
+<div class="choice ask" id="ask-merge" data-brief-anchor="ask-merge"><h3>Merge the reading-rail pull request?</h3><p>Recommended. The browser path, the saved record and this read-back are tested, and the skills already run from that branch on this machine. Native timing stays marked as unverified until its Terminal Delight build ships.</p></div></section>
+<footer><p>Primary artifact: this brief. Source, tests and the earlier plan pages are supporting links.</p></footer></main>
+<!--/brief-content-->
+<!--BRIEF:notes--></body></html>

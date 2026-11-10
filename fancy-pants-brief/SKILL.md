@@ -106,7 +106,7 @@ restyled with `background: var(--surface-1)` loses its glass and becomes a flat 
   more `h2`s and no rail gets one after its masthead. `section.pane` draws one part of the page as
   its own pane, so the parts separate.
 
-Keep sections short and give each enough context to stand alone. A reader may be opening hundreds of agent briefs in a day: name the subject, make the claim, and put deeper evidence behind a link. A short view is a reason to inspect the passage, not proof that it was irrelevant or poorly presented. Visible time counts still foreground periods and pauses when the document is no longer active.
+Keep sections short, and give each enough context to stand alone: a reader may open hundreds of agent briefs in a day. Name the subject, make the claim, and put the evidence behind a link. The rail's times come back through `briefing`'s `attention`, which names the passages a reader scrolled past; what to do about each one is in that skill.
 - **The masthead**: `header.top` with `.eyebrow`, `h1`, `.lede` and `.stamps`. Below it come
   `h2` with a `.n` number, `h2.sec`, `.cards` with one `.card.rec`, `.tiles`, `.pair` with
   `.facts`, `figure` with `.lbl` and `figcaption`, `video`, `pre`, `.tag`, `.linkbtn` and

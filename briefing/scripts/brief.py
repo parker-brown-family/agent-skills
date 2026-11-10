@@ -413,6 +413,8 @@ def check(path):
         result['edited_since_build'] = revision != meta['revision']
         result['wallpaper'] = wall_label(text)
         result['comment_targets'] = len(page.targets)
+        # Brevity is reported, not enforced: a long section is the writer's call, made with the number in view.
+        result.update(reading_support().brevity(text))
         region = CONTENT.search(text)[1]
     else:
         region = markdown_prose(text)
@@ -1865,6 +1867,9 @@ def main():
     p.add_argument('--port', type=int, default=0, help='loopback port; default chooses a free port')
     p = commands.add_parser('reading', help='extract all embedded visible-time sessions, including historical versions')
     p.add_argument('document', type=Path)
+    p = commands.add_parser('attention', help='which passages readers scrolled past, from the visible time saved in each brief')
+    p.add_argument('documents', type=Path, nargs='+')
+    p.add_argument('--json', action='store_true')
     p = commands.add_parser('new', help='write a starting .md or .src.html source; never overwrites')
     p.add_argument('source', type=Path)
     p.add_argument('--id', required=True)
@@ -1947,6 +1952,20 @@ def main():
         if args.command == 'reading':
             result = reading_support().read_record(read(args.document), reading_api())
             print(json.dumps(result, ensure_ascii=False, indent=2))
+            return 0
+        if args.command == 'attention':
+            support = reading_support()
+            for d in args.documents:
+                if d.suffix != '.html' or d.name.endswith('.src.html'):
+                    raise Refusal(f'{d.name}: attention reads a built .html brief, not a source; its times live in the page')
+            reports = [support.attention(read(d), reading_api()) for d in args.documents]
+            if args.json:
+                print(json.dumps(reports[0] if len(reports) == 1 else reports, ensure_ascii=False, indent=2))
+                return 0
+            for report in reports:
+                print(support.attention_text(report))
+            if len(reports) > 1:
+                print(support.attention_across(reports)[0])
             return 0
         if args.command == 'orient':
             tree = orient(args.document, args.calls)
