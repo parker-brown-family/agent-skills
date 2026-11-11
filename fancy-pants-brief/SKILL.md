@@ -101,7 +101,7 @@ restyled with `background: var(--surface-1)` loses its glass and becomes a flat 
 - **`.glass`**, the milky card with bright glass and dark ink. Put the headline in it, and use
   one or two per page. A page full of them has no headline.
 - **Gel.** `.gel` makes a button or a link look wet on top and glow underneath; a row of them goes in
-  `.gels`. In new briefing builds, `nav.sections` follows on the left at desktop widths and becomes a compact fixed rail on narrow screens, with visible time beside sections and entries.
+  `.gels`. `nav.sections` is a glass panel docked on the right, 35% of the window tall: the reader drags it by its grip, resizes it from a bottom corner, folds it to its title bar (folded by default on a narrow screen) and double-clicks the grip to dock it again, and the wheel over it scrolls only the panel. In briefing builds it also shows visible time beside sections and entries, and stamped items show in green.
   Leave it empty and `assets/sections.js` fills it from the page's `h2`s. A page with three or
   more `h2`s and no rail gets one after its masthead. `section.pane` draws one part of the page as
   its own pane, so the parts separate.

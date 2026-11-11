@@ -200,7 +200,7 @@ try {
       for(const width of [1530,968,390]) {
         await call('Emulation.setDeviceMetricsOverride',{width,height:900,deviceScaleFactor:1,mobile:false});
         await call('Page.bringToFront');
-        await evaluate(`(()=>{const nav=document.querySelector('nav.sections'),box=document.getElementById('sec-file').closest('section');scrollTo({top:box.getBoundingClientRect().top+scrollY-(innerWidth<1100?nav.getBoundingClientRect().bottom+12:0),behavior:'instant'});})()`);
+        await evaluate(`(()=>{const nav=document.querySelector('nav.sections'),box=document.getElementById('sec-file').closest('section');scrollTo({top:box.getBoundingClientRect().top+scrollY,behavior:'instant'});})()`);
         await new Promise(done=>setTimeout(done,150));
         assert.equal(await evaluate("document.hasFocus()&&document.visibilityState==='visible'"),true,'geometry measurement requires an active host');
         const before=await evaluate(`(()=>{window.BriefReading.checkpoint();return window.BriefReading.record().sessions.at(-1).targets;})()`);
@@ -258,7 +258,37 @@ try {
       assert.equal(await evaluate("JSON.parse(document.getElementById('report-notes').textContent)['sec-one'][0].text"),'Browser clock test note.');
       assert.ok(await evaluate("JSON.parse(document.getElementById('report-reading').textContent).sessions.some(s=>s.targets.some(t=>t.visible_ms>0))"));
       const rail=await evaluate("(()=>{const n=document.querySelector('nav.sections'),y=n.getBoundingClientRect().top;scrollTo({top:800,behavior:'instant'});return {position:getComputedStyle(n).position,before:y,after:n.getBoundingClientRect().top};})()");
-      assert.equal(rail.position,'fixed');assert.equal(rail.before,rail.after,'left rail follows viewport');
+      assert.equal(rail.position,'fixed');assert.equal(rail.before,rail.after,'floating rail follows viewport');
+      // The floating rail, driven by real input events (Parker, 2026-11-11: right side, grip, drag,
+      // resize, 35% tall, one vertical scrollbar, the wheel over it never scrolls the page).
+      await evaluate("localStorage.removeItem('brief-rail-geometry');location.reload()");
+      await new Promise(done=>setTimeout(done,600));
+      const box=await evaluate(`(()=>{const n=document.querySelector('nav.sections'),r=n.getBoundingClientRect(),l=n.querySelector('.rail-list');
+        return {iw:innerWidth,float:n.classList.contains('rail-float'),grip:!!n.querySelector('.rail-grip svg'),right:innerWidth-r.right,top:r.top,left:r.left,h:r.height,vh:innerHeight,
+          xOverflow:l.scrollWidth>l.clientWidth,ox:getComputedStyle(l).overflowX,oy:getComputedStyle(l).overflowY};})()`);
+      assert.ok(box.float&&box.grip,'the rail is a floating panel with a grip icon');
+      assert.ok(box.right<40&&box.left>box.iw/2,'docked on the right');
+      assert.ok(Math.abs(box.h-0.35*box.vh)<4,'35% of the window tall by default');
+      assert.equal(box.ox,'hidden');assert.equal(box.oy,'auto');assert.equal(box.xOverflow,false,'no horizontal scrolling');
+      const wx=box.left+60,wy=box.top+box.h/2,page0=await evaluate('scrollY');
+      await call('Input.dispatchMouseEvent',{type:'mouseWheel',x:wx,y:wy,deltaX:0,deltaY:400});
+      await new Promise(done=>setTimeout(done,250));
+      assert.equal(await evaluate('scrollY'),page0,'the wheel over the rail leaves the page where it was');
+      const gx=box.left+40,gy=box.top+14;
+      await call('Input.dispatchMouseEvent',{type:'mousePressed',x:gx,y:gy,button:'left',buttons:1,clickCount:1});
+      await call('Input.dispatchMouseEvent',{type:'mouseMoved',x:gx-300,y:gy+120,button:'left',buttons:1});
+      await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:gx-300,y:gy+120,button:'left',buttons:0,clickCount:1});
+      const moved=await evaluate("(()=>{const r=document.querySelector('nav.sections').getBoundingClientRect();return {left:r.left,top:r.top,w:r.width,h:r.height,saved:!!localStorage.getItem('brief-rail-geometry')};})()");
+      assert.ok(Math.abs(moved.left-(box.left-300))<3&&Math.abs(moved.top-(box.top+120))<3&&moved.saved,'the grip drags the panel and the place is remembered');
+      const sx=moved.left+moved.w-10,sy=moved.top+moved.h-10;
+      await call('Input.dispatchMouseEvent',{type:'mousePressed',x:sx,y:sy,button:'left',buttons:1,clickCount:1});
+      await call('Input.dispatchMouseEvent',{type:'mouseMoved',x:sx+80,y:sy+60,button:'left',buttons:1});
+      await call('Input.dispatchMouseEvent',{type:'mouseReleased',x:sx+80,y:sy+60,button:'left',buttons:0,clickCount:1});
+      const sized=await evaluate("(()=>{const r=document.querySelector('nav.sections').getBoundingClientRect();return {w:r.width,h:r.height};})()");
+      assert.ok(Math.abs(sized.w-(moved.w+80))<3&&Math.abs(sized.h-(moved.h+60))<3,'the corner resizes the panel');
+      await evaluate("document.querySelector('.rail-grip').dispatchEvent(new MouseEvent('dblclick',{bubbles:true}))");
+      const docked=await evaluate("(()=>{const r=document.querySelector('nav.sections').getBoundingClientRect();return {right:innerWidth-r.right,saved:localStorage.getItem('brief-rail-geometry')};})()");
+      assert.ok(docked.right<40&&docked.saved===null,'a double-click on the grip docks it on the right again');
       const map=await evaluate("document.getElementById('btn-export').click();document.getElementById('export-out').value");
       assert.ok(await evaluate("window.BriefReading.describe().every(t=>Number.isInteger(t.words)&&t.words>=0)"),'describe() gives the native reader a word count per target');assert.match(map,/VISIBLE TIME/);assert.match(map,/(Scrolled past: |Nothing scrolled past)/,'Copy map names what was scrolled past');assert.match(map,/\[top\] .* (had time|PASSED|UNSEEN|not measured)/,'each passage carries its verdict');assert.match(map,/Browser clock test note/);
       await evaluate("document.getElementById('d-export').close()");
@@ -270,7 +300,7 @@ try {
       writeFileSync(portableFile,portable);
       await navigate(portableFile);
       assert.equal(await evaluate('typeof window.BRIEF_REVIEW'),'undefined','export opens without a stale server connection');
-      result.realBrowserClock={foregroundTime:true,inactiveTabPauses:true,modalPauses:true,noteAndTimeReopen:true,railFollows:true,copyMap:true};
+      result.realBrowserClock={foregroundTime:true,inactiveTabPauses:true,modalPauses:true,noteAndTimeReopen:true,railFollows:true,railFloats:true,copyMap:true};
     } else if (process.env.BRIEF_REVIEW_URL) {
       assert.equal(await evaluate("document.getElementById('demo-save').disabled"), false);
       await evaluate("document.getElementById('demo-save').click()");

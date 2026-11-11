@@ -109,7 +109,7 @@ body::after {
 
 .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px 120px; }
 header.top .wrap { padding-bottom: 0; }   /* the wrap's bottom padding is for the page, not the header */
-header.top, .wrap > header:first-child, body > header { padding: 64px 0 26px; }
+header.top, .wrap > header:first-child, body > header { padding: 88px 0 26px; }
 header.top .wrap > :last-child, .wrap > header > :last-child { margin-bottom: 0; }
 
 /* ---- the masthead ----
@@ -462,35 +462,96 @@ footer::after { content: var(--wall-label); display: block; margin-top: 12px; op
 button.gel { font: 650 12.5px/1.2 var(--mono); }
 .gels { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 16px; }
 
+/* The rail is a glass panel docked on the right, 35% of the window tall (Parker, 2026-11-11:
+   the top bar sat on the page's content). sections.js adds a grip bar to move it, corner
+   handles to size it, and one vertical list that keeps the wheel to itself; until that script
+   runs, the panel itself scrolls. On a wide window the page keeps a margin for it. */
 nav.sections {
-  position: sticky; top: 12px; z-index: 20; display: flex; flex-wrap: wrap; gap: 8px;
-  margin: 26px 0 8px; padding: 9px 10px; border-radius: 22px;
+  position: fixed; z-index: 30; top: 104px; right: 16px; left: auto;
+  width: 248px; height: 35vh; min-height: 120px; max-height: calc(100vh - 32px);
+  margin: 0; padding: 0; box-sizing: border-box;
+  display: flex; flex-direction: column; flex-wrap: nowrap; gap: 0; overflow: hidden;
+  border-radius: 18px;
   -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur);
-  background: linear-gradient(var(--glass-tint), var(--glass-tint-2)), color-mix(in srgb, var(--bg0) 55%, transparent);
-  border: 1px solid var(--glass-edge); box-shadow: var(--glass-shadow);
+  background: linear-gradient(var(--glass-tint), var(--glass-tint-2)), color-mix(in srgb, var(--bg0) 62%, transparent);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow), 0 0 0 1px #00000030, 0 22px 50px -24px #000000c0;
 }
 nav.sections:empty { display: none; }
-/* JS moves the rail outside the masthead so it follows the actual browser viewport. */
-html.has-reading-rail nav.sections {
-  position:fixed;top:12px;left:16px;right:16px;margin:0;max-height:72px;overflow:auto;flex-wrap:nowrap;
+nav.sections:not(.rail-float) { overflow-y: auto; overflow-x: hidden; gap: 6px; padding: 10px; }
+nav.sections.rail-moving { box-shadow: var(--glass-shadow), 0 0 0 1px color-mix(in srgb, var(--acc) 55%, transparent), 0 28px 60px -20px #000000d0; }
+nav.sections.rail-moving, nav.sections.rail-moving * { user-select: none; }
+
+nav.sections .rail-grip {
+  flex: none; display: flex; align-items: center; gap: 9px; padding: 9px 14px 8px;
+  cursor: grab; touch-action: none; user-select: none;
+  font: 750 10.5px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dim);
+  background: linear-gradient(180deg, #ffffff1c, #ffffff05);
+  border-bottom: 1px solid color-mix(in srgb, var(--acc) 22%, var(--line));
 }
-html.has-reading-rail header.top { padding-top:110px; }
-nav.sections a[aria-current] { outline:2px solid var(--acc);outline-offset:1px; }
-nav.sections .reading-label { overflow:hidden;text-overflow:ellipsis;min-width:0;white-space:nowrap; }
-nav.sections .reading-time { margin-left:auto;white-space:nowrap;color:var(--dim);font-variant-numeric:tabular-nums; }
-nav.sections .reading-child { font-size:11px; }
-nav.sections .reading-key { flex-shrink:0;font-size:10px;color:var(--dim);padding:5px;white-space:nowrap; }
-nav.sections .reading-live { flex-shrink:0;font-size:8px;color:var(--acc);opacity:0; }
-nav.sections .reading-now .reading-live { opacity:1; }
-nav.sections .reading-now .reading-time { color:var(--fg); }
-@media(min-width:1100px) {
-  html.has-reading-rail .wrap { margin-left:248px;margin-right:auto;max-width:min(1180px,calc(100% - 248px)); }
-  html.has-reading-rail header.top { padding-top:48px; }
-  html.has-reading-rail nav.sections { left:16px;right:auto;top:24px;width:216px;max-height:calc(100vh - 48px);flex-direction:column;align-items:stretch; }
-  html.has-reading-rail nav.sections a { border-radius:13px;padding:10px;flex-shrink:0; }
-  html.has-reading-rail nav.sections .reading-label { white-space:normal;overflow-wrap:anywhere; }
-  html.has-reading-rail nav.sections .reading-child { margin-left:12px; }
+nav.sections .rail-fold {
+  margin-left: auto; width: 24px; height: 22px; padding: 0; border-radius: 999px; cursor: pointer;
+  font: 700 14px/1 var(--mono); color: var(--fg); border: 1px solid var(--line2);
+  background: color-mix(in srgb, var(--bg0) 45%, transparent);
 }
+nav.sections .rail-fold:hover { color: var(--fgb); border-color: var(--acc); }
+nav.sections .rail-fold:focus-visible { outline: 2px solid var(--acc); outline-offset: 1px; }
+nav.sections.rail-folded { height: auto !important; min-height: 0; }
+nav.sections.rail-folded .rail-list, nav.sections.rail-folded .rail-size { display: none; }
+nav.sections.rail-folded .rail-grip { border-bottom: 0; }
+html.rail-docked:has(nav.sections.rail-folded) body { padding-right: 0; }
+nav.sections .rail-grip svg { width: 10px; height: 16px; fill: currentColor; opacity: .85; flex: none; }
+nav.sections .rail-grip:hover { color: var(--fgb); }
+nav.sections .rail-grip:hover svg { fill: var(--acc); opacity: 1; }
+nav.sections .rail-grip:active { cursor: grabbing; }
+nav.sections .rail-grip:focus-visible { outline: 2px solid var(--acc); outline-offset: -3px; border-radius: 18px 18px 6px 6px; }
+
+nav.sections .rail-list {
+  position: relative; flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column; gap: 6px; padding: 8px 6px 14px 10px;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-gutter: stable;
+}
+/* Chrome ignores the ::-webkit-scrollbar styling below once scrollbar-color is set, so the standard
+   properties are only for browsers without it (Firefox). */
+@supports not selector(::-webkit-scrollbar) {
+  nav.sections .rail-list { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--acc) 75%, #ffffff) transparent; }
+}
+nav.sections .rail-list::-webkit-scrollbar { width: 11px; height: 0; }
+nav.sections .rail-list::-webkit-scrollbar-track { margin: 6px 0; border-radius: 999px; background: color-mix(in srgb, var(--bg0) 40%, transparent); box-shadow: inset 0 0 0 1px #ffffff12; }
+nav.sections .rail-list::-webkit-scrollbar-thumb {
+  border-radius: 999px; border: 3px solid transparent; background-clip: padding-box;
+  background-image: linear-gradient(180deg, color-mix(in srgb, var(--acc) 80%, #fff), color-mix(in srgb, var(--acc) 70%, #000));
+  box-shadow: inset 0 1px 0 #ffffff90;
+}
+nav.sections .rail-list::-webkit-scrollbar-thumb:hover { border-width: 2px; filter: brightness(1.15); }
+nav.sections .rail-list::-webkit-scrollbar-button { display: none; height: 0; }
+
+nav.sections a { display: flex; width: 100%; box-sizing: border-box; flex-shrink: 0; border-radius: 12px; padding: 8px 10px; }
+nav.sections a .reading-label, nav.sections .reading-label { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+nav.sections a[aria-current] { outline: 2px solid var(--acc); outline-offset: -2px; }
+/* A stamped element (concur, or "printed" on a checklist) shows in the rail in the stamp's green. */
+nav.sections a.has-concur {
+  border-color: #35c27a; color: #d9ffe9;
+  background: linear-gradient(180deg, #ffffff40 0%, #ffffff12 46%, #ffffff00 52%), radial-gradient(120% 95% at 50% 125%, #35c27a90, transparent 72%), color-mix(in srgb, #0f3d26 70%, transparent);
+}
+nav.sections a.has-concur .reading-label::before { content: "\2713  "; color: #6fe3a3; font-weight: 800; }
+
+nav.sections .rail-size { position: absolute; z-index: 2; bottom: 0; width: 22px; height: 22px; touch-action: none; opacity: .35; transition: opacity .15s ease; }
+nav.sections .rail-size-sw { left: 0; cursor: nesw-resize; background: linear-gradient(45deg, transparent 0 46%, var(--fg) 46% 54%, transparent 54% 64%, var(--fg) 64% 72%, transparent 72%); border-bottom-left-radius: 18px; }
+nav.sections .rail-size-se { right: 0; cursor: nwse-resize; background: linear-gradient(-45deg, transparent 0 46%, var(--fg) 46% 54%, transparent 54% 64%, var(--fg) 64% 72%, transparent 72%); border-bottom-right-radius: 18px; }
+nav.sections:hover .rail-size { opacity: .7; }
+nav.sections .rail-size:hover { opacity: 1; }
+
+nav.sections .reading-time { margin-left: auto; white-space: nowrap; color: var(--dim); font-variant-numeric: tabular-nums; }
+nav.sections .reading-child { font-size: 11px; margin-left: 12px; width: calc(100% - 12px); }
+nav.sections .reading-key { flex-shrink: 0; font-size: 10px; color: var(--dim); padding: 2px 4px 4px; white-space: normal; }
+nav.sections .reading-live { flex-shrink: 0; font-size: 8px; color: var(--acc); opacity: 0; }
+nav.sections .reading-now .reading-live { opacity: 1; }
+nav.sections .reading-now .reading-time { color: var(--fg); }
+
+/* While the panel is docked, the page keeps a lane for it; dragged elsewhere, the lane goes back to the page. */
+@media (min-width: 900px) { html.rail-docked body:has(> nav.sections) { padding-right: 280px; } }
+@media (max-width: 700px) { nav.sections { width: min(248px, 62vw); top: 72px; } }
 :is(h2, section, figure)[id] { scroll-margin-top: 96px; }
 
 section.pane {
@@ -509,7 +570,7 @@ video { display: block; width: 100%; height: auto; border-radius: 12px; backgrou
 }
 @media (max-width: 640px) {
   .wrap { padding: 0 16px 80px; }
-  header.top, .wrap > header:first-child, body > header { padding-top: 40px; }
+  header.top, .wrap > header:first-child, body > header { padding-top: 56px; }
   h1 { font-size: clamp(2rem, 9vw, 2.6rem); }
   h2 { margin-top: 52px; }
   .esc-list > li { padding: 14px 16px 14px 56px; }
