@@ -405,6 +405,7 @@
     Array.prototype.forEach.call(ul.querySelectorAll('.ndel'), function (b) {
       b.addEventListener('click', function () { del(+b.dataset.i); });
     });
+    renderPictures();
   }
 
   function open(el) {
@@ -454,9 +455,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('.notable'), function (el) {
       var list = N[el.dataset.nid] || [];
       var agreed = !!C[el.dataset.nid];
-      if (!list.length && !agreed) return;
+      if (!list.length && !agreed && !(P[el.dataset.nid] || []).length) return;
       out.push('[' + el.dataset.nid + '] ' + el.dataset.ntitle + (agreed ? '  ✓ concur' : ''));
       list.forEach(function (n) { out.push('  · ' + n.text.replace(/\n+/g, ' ')); });
+      (P[el.dataset.nid] || []).forEach(function (pic) { out.push('  · [doc-image #' + pic.n + '] (sent with ↪ in T3)'); });
       out.push('');
     });
     var map = out.join('\n');
@@ -528,6 +530,150 @@
       setTimeout(function () { btn.textContent = o; }, 1400);
     }
   }
+
+  /* ---- T3: pictures attached to an element ----
+     As in Terminal Delight, a picture belongs to the element, not to one note: paste it into
+     the note box or pick a file, and it is listed as [doc-image #n] under that element's notes.
+     T3 gives a page no storage, so pictures live in memory until ↪ sends them or the page closes. */
+  var P = {}, picSeq = 0, T3_HOST = false, MAX_PIC_EDGE = 1600;
+  function renderPictures() {
+    var ul = document.getElementById('note-list');
+    if (!ul || !T3_HOST) return;
+    (P[active] || []).forEach(function (pic, i) {
+      var li = document.createElement('li');
+      li.className = 'npic';
+      li.innerHTML = '<div class="nts"><span>[doc-image #' + pic.n + ']</span>' +
+        '<button class="ndel" type="button">delete</button></div>';
+      var img = document.createElement('img');
+      img.src = pic.dataUrl; img.alt = 'doc-image #' + pic.n;
+      img.style.cssText = 'display:block;max-width:100%;border-radius:8px;margin-top:6px';
+      li.appendChild(img);
+      li.querySelector('.ndel').addEventListener('click', function () {
+        P[active].splice(i, 1);
+        if (!P[active].length) delete P[active];
+        render(); badges();
+      });
+      ul.appendChild(li);
+    });
+    if ((P[active] || []).length) document.getElementById('note-none').style.display = 'none';
+  }
+  /* One format on the wire: a PNG no larger than MAX_PIC_EDGE on its long side. */
+  function addPicture(file) {
+    if (!file || !/^image\//.test(file.type) || !active) return;
+    var nid = active, reader = new FileReader();
+    reader.onload = function () {
+      var img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, MAX_PIC_EDGE / Math.max(img.width, img.height));
+        var c = document.createElement('canvas');
+        c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        (P[nid] = P[nid] || []).push({ n: ++picSeq, dataUrl: c.toDataURL('image/png'),
+          width: c.width, height: c.height });
+        if (active === nid) render();
+        badges();
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  function t3Pictures() {
+    var ta = document.getElementById('note-text');
+    if (ta) ta.addEventListener('paste', function (e) {
+      var items = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && /^image\//.test(items[i].type)) {
+          e.preventDefault(); addPicture(items[i].getAsFile());
+        }
+      }
+    });
+    var actions = document.querySelector('#d-note .note-actions');
+    if (!actions || document.getElementById('note-pic')) return;
+    var input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
+    input.id = 'note-pic'; input.hidden = true;
+    input.addEventListener('change', function () {
+      Array.prototype.forEach.call(input.files, addPicture); input.value = '';
+    });
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = 'Add picture';
+    b.title = 'Attach a picture to this element. Pasting one into the box works too.';
+    b.addEventListener('click', function () { input.click(); });
+    actions.insertBefore(b, actions.querySelector('[data-close]'));
+    actions.appendChild(input);
+    if (ta) ta.placeholder = 'Your comment. Paste a picture here to attach it to this element.';
+  }
+
+  /* ---- T3: ↪ sends the notes to the agent ----
+     T3 announces itself to a page it will take notes from; only then does the bar offer ↪.
+     Each note goes into the thread's message box as its own comment, unsent, and T3 closes
+     the page, the way Terminal Delight's send pastes the map and leaves Enter to the reader. */
+  var T3_COMPOSE = 't3/compose';
+  function t3Comments() {
+    var out = [], seen = {};
+    Array.prototype.forEach.call(document.querySelectorAll('.notable'), function (el) {
+      var nid = el.dataset.nid, list = N[nid] || [], agreed = !!C[nid], pics = P[nid] || [];
+      if (!list.length && !agreed && !pics.length) return;
+      var cap = el.querySelector('figcaption');
+      var quote = cap ? cap.textContent.replace(/\s+/g, ' ').trim().slice(0, 400) : '';
+      var title = el.dataset.ntitle || '';
+      var r = el.getBoundingClientRect();
+      var rect = { x: Math.round(r.left + scrollX), y: Math.round(r.top + scrollY),
+        width: Math.round(r.width), height: Math.round(r.height) };
+      if (!list.length && agreed) out.push({ anchor: nid, title: title, quote: quote, rect: rect, text: 'Concur.' });
+      list.forEach(function (n, i) {
+        out.push({ anchor: nid, title: title, quote: quote, rect: rect,
+          text: (agreed && i === 0 ? 'Concur. ' : '') + n.text });
+      });
+      pics.forEach(function (pic) {
+        out.push({ anchor: nid, title: title, quote: quote, rect: rect,
+          text: '[doc-image #' + pic.n + ']',
+          image: { dataUrl: pic.dataUrl, width: pic.width, height: pic.height } });
+      });
+      seen[nid] = 1;
+    });
+    /* A note whose element is gone from this revision of the page is still the reader's
+       word. It goes too, said to be orphaned, rather than vanishing without a trace. */
+    Object.keys(N).forEach(function (nid) {
+      if (seen[nid]) return;
+      (N[nid] || []).forEach(function (n) {
+        out.push({ anchor: nid, title: (n.title || nid) + ' (no longer on this page)', quote: '',
+          text: n.text });
+      });
+    });
+    return out;
+  }
+  function t3Send(btn) {
+    var comments = t3Comments();
+    if (!comments.length) {
+      var o = btn.textContent;
+      btn.textContent = 'No notes yet';
+      setTimeout(function () { btn.textContent = o; }, 1400);
+      return;
+    }
+    parent.postMessage({ jsonrpc: '2.0', id: 'notes-' + Date.now(), method: T3_COMPOSE,
+      params: { comments: comments, close: true } }, '*');
+  }
+  function t3Host(e) {
+    var d = e.data;
+    if (e.source !== parent || !d || d.jsonrpc !== '2.0' ||
+        d.method !== 't3/notifications/page-host' || !d.params || d.params.compose !== true) return;
+    var bar = document.getElementById('notebar');
+    if (!bar || document.getElementById('btn-t3-send')) return;
+    var b = document.createElement('button');
+    b.id = 'btn-t3-send';
+    b.className = 'primary';
+    b.dataset.noteAction = 't3-send';
+    b.title = 'Put these notes in the message box, unsent, and close the page';
+    b.textContent = '\u21AA send to agent';
+    var exp = document.getElementById('btn-export');
+    bar.insertBefore(b, exp || null);
+    var status = bar.querySelector('.notes-persistence');
+    if (status) status.textContent = 'In T3 · notes and pictures last until this page closes';
+    T3_HOST = true;
+    t3Pictures();
+  }
+  if (window.parent !== window) window.addEventListener('message', t3Host);
 
   /* ---- portable HTML snapshot ----
      Terminal Delight owns writes to the original path. A standalone browser can
@@ -643,6 +789,7 @@
       else if (a === 'export') exportNotes();
       else if (a === 'clear') clearNotes();
       else if (a === 'copy') copyExport(t);
+      else if (a === 't3-send') t3Send(t);
     });
     ['d-note', 'd-export'].forEach(function (id) {
       var d = document.getElementById(id);
