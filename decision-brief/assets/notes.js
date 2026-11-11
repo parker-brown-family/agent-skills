@@ -35,6 +35,8 @@
  *   window.NOTES_FILE     — filename used for the storage key and the download. Default: location basename.
  *   window.NOTES_TARGETS  — [[selector, prefix], ...] overriding what gets an affordance.
  *   window.CONCUR_TARGETS — selector for what takes a concur stamp. Default: the grill's decisions.
+ *   window.CONCUR_WORD    — the word the stamp says, for a page whose stamp means something else:
+ *                           'printed' makes a print checklist. The record (island, map) is unchanged.
  */
 (function () {
   'use strict';
@@ -90,6 +92,9 @@
   var CKEY = 'concurs:' + FILE;
   var SKEY = 'notes-sync:' + FILE;
   var CONCUR_SEL = window.CONCUR_TARGETS || '.grill .q:not(.ask .q), .grill-q, .ask';
+  var WORD = String(window.CONCUR_WORD || 'concur').toLowerCase();
+  var WORDS = WORD === 'concur' ? 'concurs' : WORD;
+  var WORD_DONE = WORD === 'concur' ? 'Concurred' : WORD.charAt(0).toUpperCase() + WORD.slice(1);
 
   /* ---- which notes the page shows: the file's and this browser's, together ----
      Notes live in two places: the islands baked into this file, which is what an agent
@@ -260,7 +265,7 @@
   function stampSvg(id) {
     var r = -12 + 9 * seed(id), dx = (seed(id + ':x') - 0.5) * 6, dy = (seed(id + ':y') - 0.5) * 6;
     var ink = '#35c27a';
-    return '<svg class="concur-stamp" viewBox="0 0 120 120" aria-label="concur stamp" style="--r:' +
+    return '<svg class="concur-stamp" viewBox="0 0 120 120" aria-label="' + WORD + ' stamp" style="--r:' +
       r.toFixed(1) + 'deg;--dx:' + dx.toFixed(1) + 'px;--dy:' + dy.toFixed(1) + 'px">' +
       '<g filter="url(#concur-ink)">' +
       '<rect x="9" y="33" width="102" height="54" rx="7" fill="none" stroke="' + ink + '" stroke-width="5"/>' +
@@ -269,7 +274,7 @@
       '<path d="M22 61 L28 67 L39 52" fill="none" stroke="' + ink + '" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/>' +
       '<text x="70" y="69" text-anchor="middle" textLength="58" lengthAdjust="spacingAndGlyphs" fill="' + ink + '" ' +
       'font-family="Anton, Oswald, Impact, \'Arial Black\', \'DejaVu Sans Condensed\', sans-serif" ' +
-      'font-weight="800" font-size="21">CONCUR</text></g></svg>';
+      'font-weight="800" font-size="21">' + WORD.toUpperCase() + '</text></g></svg>';
   }
 
   /* Wet ink. The strokes swell a little, a fine speckle and a few round air pockets are cut
@@ -323,7 +328,10 @@
     zone.classList.toggle('on', on);
     el.classList.toggle('has-concur', on);
     zone.setAttribute('aria-pressed', on ? 'true' : 'false');
-    zone.title = on ? 'Concurred. Click to peel it off' : 'Concur with this decision';
+    zone.title = on ? WORD_DONE + '. Click to peel it off' : (WORD === 'concur' ? 'Concur with this decision' : 'Mark ' + WORD);
+    /* The rail names the same element; it carries the stamp too, so progress shows there at a glance. */
+    Array.prototype.forEach.call(document.querySelectorAll('nav.sections a[href="#' + el.dataset.nid + '"]' +
+      (el.id ? ', nav.sections a[href="#' + el.id + '"]' : '')), function (a) { a.classList.toggle('has-concur', on); });
   }
 
   function concurZones() {
@@ -334,7 +342,7 @@
       var zone = document.createElement('button');
       zone.type = 'button';
       zone.className = 'concur-zone';
-      zone.innerHTML = '<span class="concur-q" aria-hidden="true">?</span><span class="concur-lbl">concur</span>';
+      zone.innerHTML = '<span class="concur-q" aria-hidden="true">?</span><span class="concur-lbl">' + WORD + '</span>';
       zone.addEventListener('click', function (ev) {
         ev.preventDefault(); ev.stopPropagation();
         var id = el.dataset.nid;
@@ -355,7 +363,7 @@
       var s = document.createElement('span');
       s.className = 'cnt';
       s.id = 'concur-cnt';
-      s.innerHTML = '&middot; <b id="concur-count">0</b> <span id="concur-word">concurs</span>';
+      s.innerHTML = '&middot; <b id="concur-count">0</b> <span id="concur-word">' + WORDS + '</span>';
       var first = bar.querySelector('.cnt');
       if (first) first.parentNode.insertBefore(s, first.nextSibling); else bar.insertBefore(s, bar.firstChild);
     }
@@ -376,7 +384,7 @@
     var ce = document.getElementById('concur-count');
     if (ce) ce.textContent = cc;
     var cw = document.getElementById('concur-word');
-    if (cw) cw.textContent = cc === 1 ? 'concur' : 'concurs';
+    if (cw) cw.textContent = cc === 1 ? WORD : WORDS;
     /* A concur alone is an answer worth exporting; clear stays notes-only. */
     ['btn-export', 'btn-embed'].forEach(function (id) {
       var b = document.getElementById(id);
@@ -436,7 +444,7 @@
     var out = [
       'NOTES — ' + FILE,
       count + ' notes on ' + els + ' elements' +
-        (cc ? ' · ' + cc + (cc === 1 ? ' concur' : ' concurs') : '') + '.',
+        (cc ? ' · ' + cc + ' ' + (cc === 1 ? WORD : WORDS) : '') + '.',
       'Each [anchor] is an element id in that file — search it to find the passage.',
       ''
     ];

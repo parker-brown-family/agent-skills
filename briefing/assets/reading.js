@@ -95,7 +95,7 @@
     }
     function geometry(){
       var visible=[],eligible=[],areas={},top=0,bottom=innerHeight;
-      if(nav&&innerWidth<1100)top=nav.getBoundingClientRect().bottom;
+      // The rail floats beside the page (sections.js), so no strip of the viewport is hidden behind it.
       var bar=document.getElementById('notebar');if(bar)bottom=Math.min(bottom,bar.getBoundingClientRect().top);
       list.forEach(function(t){
         if(t.box.closest('[hidden],dialog:not([open])'))return;
@@ -119,10 +119,10 @@
     function formatted(ms){var seconds=Math.floor(ms/1000);return Math.floor(seconds/60)+':'+String(seconds%60).padStart(2,'0');}
     var lastActive=null;
     function paint(g){
-      var all=combined(),map=times(all);g=g||geometry();varcounting=activity()==='active',active=list.filter(function(t){return t.kind==='section'&&g.visible.includes(t.anchor);}).sort(function(a,b){return g.areas[b.anchor]-g.areas[a.anchor];})[0];
+      var all=combined(),map=times(all);g=g||geometry();var counting=activity()==='active',active=list.filter(function(t){return t.kind==='section'&&g.visible.includes(t.anchor);}).sort(function(a,b){return g.areas[b.anchor]-g.areas[a.anchor];})[0];
       if(nav){nav.dataset.readingState=counting?'counting':'paused';nav.querySelector('.reading-key').textContent=counting?'● counting now · totals':'Paused · total visible time';}
       labels.forEach(function(v,key){var running=counting&&g.visible.includes(key);v.time.textContent=map.has(key)?formatted(map.get(key)):'—';v.link.classList.toggle('reading-now',running);v.link.title=(running?'Counting now':'Not counting now')+' · total visible time '+v.time.textContent;if(active&&key===active.anchor)v.link.setAttribute('aria-current','location');else v.link.removeAttribute('aria-current');});
-      if(active&&active.anchor!==lastActive&&nav){var item=labels.get(active.anchor);if(item&&innerWidth>=1100){var link=item.link;if(link.offsetTop<nav.scrollTop)nav.scrollTop=link.offsetTop;else if(link.offsetTop+link.offsetHeight>nav.scrollTop+nav.clientHeight)nav.scrollTop=link.offsetTop+link.offsetHeight-nav.clientHeight;}lastActive=active.anchor;}
+      if(active&&active.anchor!==lastActive&&nav){var item=labels.get(active.anchor);if(item){var link=item.link,box=nav.querySelector('.rail-list')||nav;if(link.offsetTop<box.scrollTop)box.scrollTop=link.offsetTop;else if(link.offsetTop+link.offsetHeight>box.scrollTop+box.clientHeight)box.scrollTop=link.offsetTop+link.offsetHeight-box.clientHeight;}lastActive=active.anchor;}
       if(status)status.textContent=statusText;
       var exportButton=document.getElementById('btn-export');if(exportButton&&all.sessions.some(function(s){return s.revision===meta.revision;}))exportButton.disabled=false;
     }

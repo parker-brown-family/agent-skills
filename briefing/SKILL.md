@@ -108,12 +108,14 @@ python3 scripts/brief.py new next.src.html --id cache-eviction-ttl --purpose dec
 
 ## Check and Deliver
 
-Every HTML build has a **reading rail**: the sections and figures follow the reader down the left side, each with the time it has been on screen. Time counts only while the page is visible and focused, including still time, and pauses when they switch away or a dialog covers it. It is saved into the page itself, beside the notes.
+Every HTML build has a **reading rail**: a glass panel docked on the right, 35% of the window tall, listing the sections and figures with the time each has been on screen. The reader drags it by its grip anywhere on the page, resizes it from either bottom corner, folds it to its title bar (it starts folded on a narrow screen), and double-clicks the grip to dock it again; the wheel over it scrolls only the panel, and where they leave it is remembered. Time counts only while the page is visible and focused, including still time, and pauses when they switch away or a dialog covers it. It is saved into the page itself, beside the notes.
 
 - **In Terminal Delight**, hand over with the host's open-document action. A build with native reading saves the time; an older one keeps notes only. Check which before saying it saves.
 - **In a browser**, run `brief.py review PAGE.html` and print the URL it returns on its own line. It starts or recovers the page's save service and opens the connected page. A plain `file://` page in Chrome reports *Browser storage only*: it cannot write the file, so never hand it over as saving.
 
 Details, limits and the QA switch that keeps tests out of a person's record: [HTML](reference/html.md#visible-time-record-saves).
+
+**A brief can be a checklist.** Put `<script>window.CONCUR_TARGETS = 'figure.job'; window.CONCUR_WORD = 'printed';</script>` in the source's head and give each job a `figure class="job"` with a stable lowercase id. Each job then takes a stamp with that word: the card and its rail entry turn green, and the stamp is saved into the page through `brief.py review`, exactly as a concur is (the record and the Copy map still call it a concur). Jackson's colouring bookshelf, which tracks print jobs, is the worked example.
 
 Run `check` on the finished brief and the [verification list](reference/verification.md). For HTML, `node tests/browser.mjs path/to/brief.html` adds your page to the browser check: a note control on every heading and figure, and no overflow or clipped figure text at pane and phone widths. `check` reports which `wallpaper` a page wears, and `edited_since_build: true` when someone edited a built page by hand; port that edit into the source, because `html` will not rebuild over it unless told to discard it. If your host has the `fancy-pants-brief` glass gate, run it on HTML. It fails a page with no reader notes, as well as a page out of the look. Run browser checks in an isolated headless browser, never on the person's live desktop.
 
