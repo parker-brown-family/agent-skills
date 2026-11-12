@@ -52,7 +52,7 @@
    so a rail that briefing's reading.js rebuilds is wrapped once it is final. */
 (function () {
   var KEY = 'brief-rail-geometry', MIN_W = 180, MIN_H = 120, EDGE = 8;
-  var DOTS = '<svg viewBox="0 0 10 16" aria-hidden="true">' + [2, 8].map(function (x) {
+  var DOTS = '<svg viewBox="0 0 10 16" width="10" height="16" aria-hidden="true">' + [2, 8].map(function (x) {
     return [2, 8, 14].map(function (y) { return '<circle cx="' + x + '" cy="' + y + '" r="1.6"/>'; }).join('');
   }).join('') + '</svg>';
   function load() { try { return JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { return null; } }

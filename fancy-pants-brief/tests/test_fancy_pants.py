@@ -97,6 +97,17 @@ class Gate(unittest.TestCase):
 
     # ---- innocent pages, so the gate is never switched off for crying wolf
 
+    # The briefing scaffold's own `svg{display:block;width:100%;height:auto}` drew the section
+    # rail's six-dot grip as six circles the width of the panel on every brief built from it.
+    def test_a_bare_svg_rule_that_sizes_every_svg_fails(self):
+        f = fails(page('svg{display:block;width:100%;height:auto}.small{font-size:13px}'))
+        self.assertTrue(any('every SVG' in x and 'figure svg' in x for x in f), f)
+        self.assertTrue(any('every SVG' in x for x in fails(page('h2, svg { height: 40px }'))))
+
+    def test_an_svg_rule_scoped_to_figures_or_without_a_size_passes(self):
+        self.assertEqual(fails(page('figure svg{display:block;width:100%;height:auto}')), [])
+        self.assertEqual(fails(page('.diagram svg{width:320px} svg{overflow:visible} svg .ink{stroke-width:2}')), [])
+
     def test_a_print_rule_that_whitens_paper_passes(self):
         # the Okanagan interview report, 2026-10-27
         own = '.x{padding:1px}\n@media print{body{background:white!important;color:#111!important}}'
