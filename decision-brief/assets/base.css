@@ -500,7 +500,16 @@ nav.sections.rail-folded { height: auto !important; min-height: 0; }
 nav.sections.rail-folded .rail-list, nav.sections.rail-folded .rail-size { display: none; }
 nav.sections.rail-folded .rail-grip { border-bottom: 0; }
 html.rail-docked:has(nav.sections.rail-folded) body { padding-right: 0; }
-nav.sections .rail-grip svg { width: 10px; height: 16px; fill: currentColor; opacity: .85; flex: none; }
+/* The grip's six dots. The sizes are !important because this sheet sits in @layer brief and
+   loses to any rule in a page's own style block. The briefing scaffold used to carry
+   `svg { display: block; width: 100%; height: auto }` for its figures, and that rule drew these
+   dots as six circles the width of the panel on every brief built from it (2026-11-12). A layered
+   !important outranks an unlayered normal declaration, so the control keeps its size whatever a
+   page says about SVGs. Any other icon this sheet draws inside a control needs the same. */
+nav.sections .rail-grip svg {
+  width: 10px !important; height: 16px !important; flex: none !important;
+  fill: currentColor; opacity: .85;
+}
 nav.sections .rail-grip:hover { color: var(--fgb); }
 nav.sections .rail-grip:hover svg { fill: var(--acc); opacity: 1; }
 nav.sections .rail-grip:active { cursor: grabbing; }

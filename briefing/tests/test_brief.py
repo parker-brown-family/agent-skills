@@ -564,6 +564,21 @@ class BriefTests(unittest.TestCase):
         for part in ('one.md', 'two.md', '#sec-gone'):
             self.assertIn(part, str(caught.exception))
 
+    def test_a_scaffolded_source_sizes_no_svg_outside_a_figure(self):
+        # The scaffold once carried `svg{display:block;width:100%;height:auto}`. The house sheet
+        # sits in a cascade layer and loses to a page's own rules, so that line made the section
+        # rail's six-dot grip six circles as wide as its panel on every brief started from here.
+        source = self.root / 'plain.src.html'
+        brief.scaffold(source, 'plain-brief', 'summary')
+        own = re.search(r'<style>(.*?)</style>', source.read_text(), re.S).group(1)
+        own = re.sub(r'/\*.*?\*/', '', own, flags=re.S)
+        for selectors, declarations in re.findall(r'([^{}]+)\{([^{}]*)\}', own):
+            if 'svg' in {s.strip() for s in selectors.split(',')}:
+                self.assertNotRegex(declarations, r'(?<![\w-])(?:width|height)\s*:')
+        built = self.root / 'plain.html'
+        brief.build(source, built)
+        self.assertRegex(built.read_text(), r'nav\.sections \.rail-grip svg \{\s*width: 10px !important; height: 16px !important')
+
     def test_a_scaffolded_source_names_itself_so_rebuilds_need_no_flags(self):
         source = self.root / 'named.src.html'
         created = brief.scaffold(source, 'named-brief', 'summary')

@@ -1694,8 +1694,10 @@ QUESTIONS = {
 HTML_SCAFFOLD = '''<!doctype html>
 <html lang="en"><head><title>{title}</title><!-- briefing: {meta} --><!--BRIEF:head-->
 <style>
-/* This brief's own figures and notes. The house look arrives through BRIEF:head. */
-svg{display:block;width:100%;height:auto}.small{font-size:13px;color:var(--dim)}
+/* This brief's own figures and notes. The house look arrives through BRIEF:head, and it
+   already sizes a drawing: figure svg { display: block; width: 100%; height: auto }. Scope any
+   SVG rule of your own to figure svg; a bare svg { } also resizes the page's own controls. */
+.small{font-size:13px;color:var(--dim)}
 </style></head><body>
 <!--brief-content-->
 <header class="top"><div class="wrap">{last_time}<div class="eyebrow">Briefing · {purpose} · HTML</div><div class="opening" id="top" data-brief-anchor="top"><h1>{title}</h1> <p class="lede">TODO(brief): where this stands, in a line or two. It is what the reader reacts to first, so say the thing they would argue with.</p></div><nav class="sections"></nav></div></header>

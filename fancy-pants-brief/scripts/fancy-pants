@@ -259,8 +259,11 @@ def static_check(doc):
     if re.search(r'color-scheme\s*:[^;}]*\blight\b', css, re.I) or (meta and 'light' in meta.group(1).lower()):
         fails.append('asks for a light colour scheme; these pages are dark, always')
     covered, roles, bright = set(), set(), set()
+    every_svg = False
     for sel, decls in RULE_RE.findall(css):
         sels = {s.strip() for s in sel.split(',')}
+        if 'svg' in sels and re.search(r'(?<![\w-])(?:width|height)\s*:', decls):
+            every_svg = True
         for value in BG_RE.findall(decls):
             v = value.strip().lower().replace('!important', '').strip()
             if sels & GROUNDS and v not in SEE_THROUGH:
@@ -269,6 +272,9 @@ def static_check(doc):
                 bright |= {s for s in sels if s}
         if sels & {':root', 'html'}:
             roles |= set(re.findall(r'--(' + '|'.join(ROLES) + r')\s*:', decls))
+    if every_svg:
+        fails.append('sizes every SVG on the page with a bare `svg { }` rule, the section rail\'s and the notes\' '
+                     'own icons included — write `figure svg { }`; base.css already sizes a figure\'s drawing')
     if covered:
         fails.append('paints an opaque ground over the wallpaper: ' + ', '.join(sorted(covered))
                      + ' { background } — remove it, the wall is the ground')

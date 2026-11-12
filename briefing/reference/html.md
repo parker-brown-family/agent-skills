@@ -25,6 +25,8 @@ The output is self-contained for its rendering and annotation UI. Evidence links
 
 The new output's handoff bridge shows an unresolved-feedback notice when carried comments have an unknown revision or missing target. Copy Map includes those removed targets and their reader text. The older skill's map generator and storage stay unchanged.
 
+Scope a brief's own SVG rules to `figure svg`. The house sheet already sizes a figure's drawing, and a bare `svg { width: … }` in the brief's style block also resizes the page's own controls: it is what drew the section rail's grip as six large circles until 2026-11-12. The rail now keeps its size regardless, the glass gate names the rule, and `tests/browser.mjs` measures the grip.
+
 Edit the source, never the built page. A rebuild replaces the page's content with the source's, so `html` refuses when the page's content no longer matches the revision it was built with, and `check` reports that as `edited_since_build: true`. Port the edit into the source and rebuild. `--discard-output-edits` rebuilds anyway, keeps the edited page as a `.bak`, and marks any carried comments' revision unknown, since the reader commented on wording that is now gone. `html` also refuses to write over a file it did not build.
 
 The wallpaper comes from `decision-brief/scripts/brief-wall`, which needs Omarchy themes and `vips`. Where those are missing, the refusal carries `brief-wall`'s own reason. `--no-wall` builds on the stylesheet's own dark ground instead. That page is complete and commentable but outside the Omarchy house look; use it where the house look is not available, not to skip it.

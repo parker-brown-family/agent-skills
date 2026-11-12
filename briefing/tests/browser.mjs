@@ -80,6 +80,15 @@ try {
     if (out.exceptionDetails) throw new Error(JSON.stringify(out.exceptionDetails));
     return out.result.value;
   }
+  // The section rail's grip is six small dots. A page's own `svg { width: 100% }` once drew them
+  // as six circles as wide as the panel, on every brief built from the scaffold. A page with no
+  // rail has nothing to measure, and says so by returning null.
+  async function gripKeepsItsSize(where) {
+    const grip = await evaluate(`(()=>{const s=document.querySelector('nav.sections .rail-grip svg');
+      if(!s) return null; const r=s.getBoundingClientRect(); return {w:Math.round(r.width),h:Math.round(r.height)};})()`);
+    if (grip) assert.ok(grip.w <= 12 && grip.h <= 18, `the section rail's grip icon is ${grip.w}x${grip.h} px in ${where}; it should be 10x16`);
+    return grip;
+  }
   async function navigate(path) {
     await call('Page.navigate', { url: /^https?:\/\//.test(path) ? path : pathToFileURL(path).href });
     const until = Date.now() + 10000;
@@ -149,6 +158,7 @@ try {
     const metrics = await evaluate(`({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
       clipped:[...document.querySelectorAll('svg[viewBox]')].flatMap(svg=>{const v=svg.viewBox.baseVal;return [...svg.querySelectorAll('text')].filter(t=>{const b=t.getBBox();return b.x<v.x-1||b.x+b.width>v.x+v.width+1||b.y<v.y-1||b.y+b.height>v.y+v.height+1;}).map(t=>t.textContent);})})`);
     assert.equal(metrics.width, width); assert.equal(metrics.overflow, false); assert.deepEqual(metrics.clipped, []);
+    await gripKeepsItsSize('the example, at ' + width + ' px');
     const image = await call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
     writeFileSync(join(report, 'brief-' + width + '.png'), Buffer.from(image.data, 'base64'));
     await evaluate("document.getElementById('fig-resolution').scrollIntoView({behavior:'instant',block:'start'})");
@@ -325,6 +335,7 @@ try {
       const m = await evaluate(`({width:innerWidth,overflow:document.documentElement.scrollWidth>innerWidth,
         clipped:[...document.querySelectorAll('svg[viewBox]')].flatMap(svg=>{const v=svg.viewBox.baseVal;return [...svg.querySelectorAll('text')].filter(t=>{const b=t.getBBox();return b.x<v.x-1||b.x+b.width>v.x+v.width+1||b.y<v.y-1||b.y+b.height>v.y+v.height+1;}).map(t=>t.textContent);})})`);
       assert.equal(m.width, width); assert.equal(m.overflow, false); assert.deepEqual(m.clipped, [], 'SVG text outside its viewBox');
+      await gripKeepsItsSize(process.argv[2] + ', at ' + width + ' px');
       await evaluate("scrollTo({top:0,behavior:'instant'})");
       const shot = await call('Page.captureScreenshot', { format: 'png', captureBeyondViewport: false });
       writeFileSync(join(report, 'review-' + width + '.png'), Buffer.from(shot.data, 'base64'));

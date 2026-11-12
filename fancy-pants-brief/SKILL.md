@@ -127,7 +127,7 @@ until body text clears 7:1 over the brightest tenth of the wallpaper. Take the r
 never choose a theme to match the subject; the variety is the point. `--theme` and `--image`
 exist so that a rebuild keeps the wallpaper a page already has.
 
-Three things in a page's own CSS undo all of that, and the gate fails each one:
+Four things in a page's own CSS undo all of that, and the gate fails each one:
 
 - **Painting the ground.** `body`, `main` or `.wrap` with an opaque `background` covers the
   wallpaper. The wall is the ground.
@@ -135,6 +135,12 @@ Three things in a page's own CSS undo all of that, and the gate fails each one:
   `brief-wall` owns `--bg --bg2 --bg0 --fg --fg2 --fgb --acc --mut --sel --dim`, the six
   chromatic roles, `--wall` and `--scrim`. Give the page's own colours other names.
 - **Asking for light.** A `color-scheme` that includes `light`.
+- **Sizing every SVG.** A bare `svg { width: … }` or `svg { height: … }` also resizes the
+  page's own controls. `base.css` sits in a cascade layer and loses to a page's rules, so the
+  briefing scaffold's old `svg{display:block;width:100%;height:auto}` drew the section rail's
+  six-dot grip as six circles the width of its panel (Parker, 2026-11-12: *"why exactly is the
+  nav being made into blobs... obviously it's unacceptable"*). Write `figure svg { … }`;
+  `base.css` already sizes a figure's drawing.
 
 A `@media print` block is exempt, because paper is white.
 
