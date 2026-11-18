@@ -28,6 +28,8 @@
      --hw-danger | success | warning | neutral | done (+ -ink, -tint, -edge)   status only
      --hw-avatar-*, --hw-assist-*, --hw-word, --hw-press, --hw-glow-live
      Shapes: --hw-line-width (2), --hw-folio-radius (4), --hw-folio-chip (10), --hw-folio-bar (3)
+     Toggles, never checkboxes: <button type="button" role="switch" aria-checked class="hw-toggle">.
+     A figure inside a display-face label (a price on a button): <span class="hw-fig">.
      Type: one class per role, .hw-text-<role> (or font: var(--hw-type-<role>) plus its tracking).
            The display face sets the frame roles only and never a digit (tokens.json behaviour.type);
            the ui face sets content, numbers and data included, in figures that line up.
@@ -115,8 +117,9 @@
   --hw-type-label: 600 14px/20px var(--hw-font-ui);
   --hw-type-meta: 400 14px/20px var(--hw-font-ui);
   --hw-type-body: 400 16px/24px var(--hw-font-ui);
-  --hw-type-button: 600 16px/24px var(--hw-font-ui);
-  --hw-type-gel: 600 14px/20px var(--hw-font-ui);
+  --hw-type-button: 400 18px/24px var(--hw-font-display);
+  --hw-type-button-small: 400 16px/20px var(--hw-font-display);
+  --hw-type-gel: 400 16px/20px var(--hw-font-display);
   --hw-type-title-card: 600 20px/28px var(--hw-font-ui);
   --hw-type-lead: 400 20px/28px var(--hw-font-ui);
   --hw-type-title-record: 600 30px/36px var(--hw-font-ui);
@@ -141,6 +144,10 @@
   --hw-gel-shadow: 0 8px 20px #00000055, inset 0 1px 0 #ffffff66;
   --hw-gel-filter: blur(14px) saturate(1.5);
   --hw-frost-filter: blur(14px) saturate(1.4);
+  --hw-toggle-width: 44px;
+  --hw-toggle-height: 26px;
+  --hw-toggle-thumb: 20px;
+  --hw-toggle-inset: 3px;
 }
 
 :root {
@@ -253,6 +260,10 @@
   --hw-word: var(--hw-ink);
   --hw-line: var(--hw-edge);
   --hw-page: var(--hw-ground);
+  --hw-toggle-on: var(--hw-accent);
+  --hw-toggle-thumb-on: var(--hw-on-accent);
+  --hw-toggle-off: var(--hw-inset);
+  --hw-toggle-thumb-off: var(--hw-edge-control);
   --hw-signature: var(--hw-accent);
   --hw-accent-fill: linear-gradient(180deg, var(--hw-accent-top) 0%, var(--hw-accent) 100%);
   --hw-accent-fill-hover: linear-gradient(180deg, var(--hw-accent-hover-top) 0%, var(--hw-accent-hover) 100%);
@@ -1098,6 +1109,34 @@
   background: var(--hw-gel-fill); border: 1px solid var(--hw-gel-edge); box-shadow: var(--hw-gel-shadow); }
 
 
+
+/* ════════════════════════════════════════════════════════════════════════════
+   6 · Toggles, in place of every checkbox. One control per decision, its label on the left, the toggle on
+   the right; 44 px to the hand. Markup: <button type="button" role="switch" aria-checked="false"
+   class="hw-toggle" aria-labelledby="..."></button>; a form keeps the value in a hidden input.
+   Several choices from a list are selectable rows (the selected tint and a check icon), never boxes.
+   ════════════════════════════════════════════════════════════════════════════ */
+.hw-toggle { position: relative; flex: none; box-sizing: border-box; width: var(--hw-toggle-width); height: var(--hw-toggle-height);
+  padding: 0; border-radius: var(--hw-radius-pill); cursor: pointer;
+  background: var(--hw-toggle-off); border: 1px solid var(--hw-edge-control);
+  transition: background-color var(--hw-dur-2) var(--hw-ease), border-color var(--hw-dur-2) var(--hw-ease); }
+.hw-toggle::before { content: ""; position: absolute; left: 0; right: 0;
+  top: calc((var(--hw-toggle-height) - var(--hw-size-target)) / 2 - 1px); bottom: calc((var(--hw-toggle-height) - var(--hw-size-target)) / 2 - 1px); }
+.hw-toggle::after { content: ""; position: absolute; top: calc(var(--hw-toggle-inset) - 1px); left: calc(var(--hw-toggle-inset) - 1px);
+  width: var(--hw-toggle-thumb); height: var(--hw-toggle-thumb); border-radius: 50%;
+  background: var(--hw-toggle-thumb-off); box-shadow: 0 1px 2px rgb(0 0 0 / .28);
+  transition: transform var(--hw-dur-2) var(--hw-ease), background-color var(--hw-dur-2) var(--hw-ease); }
+.hw-toggle[aria-checked="true"] { background: var(--hw-toggle-on); border-color: var(--hw-toggle-on); }
+.hw-toggle[aria-checked="true"]::after { background: var(--hw-toggle-thumb-on);
+  transform: translateX(calc(var(--hw-toggle-width) - var(--hw-toggle-thumb) - 2 * var(--hw-toggle-inset))); }
+.hw-toggle:disabled, .hw-toggle[aria-disabled="true"] { cursor: not-allowed; background: var(--hw-inset); border-color: var(--hw-edge); }
+.hw-toggle:disabled::after, .hw-toggle[aria-disabled="true"]::after { background: var(--hw-edge); box-shadow: none; }
+.hw-toggle:disabled[aria-checked="true"], .hw-toggle[aria-disabled="true"][aria-checked="true"] { background: var(--hw-accent-tint); border-color: var(--hw-edge); }
+.hw-toggle-row { display: flex; align-items: center; justify-content: space-between; gap: var(--hw-space-4);
+  min-height: var(--hw-size-target); font: var(--hw-type-body); color: var(--hw-ink); }
+.hw-toggle-row [data-hint] { display: block; font: var(--hw-type-meta); color: var(--hw-ink-3); }
+
+
 /* ════════════════════════════════════════════════════════════════════════════
    4 · Type: one class per role, carrying its face, size, case, tracking and figures
    ════════════════════════════════════════════════════════════════════════════ */
@@ -1114,9 +1153,12 @@
 .hw-text-meta { font: var(--hw-type-meta); }
 .hw-text-body { font: var(--hw-type-body); }
 .hw-text-button { font: var(--hw-type-button); }
+.hw-text-button-small { font: var(--hw-type-button-small); }
 .hw-text-gel { font: var(--hw-type-gel); }
 .hw-text-title-card { font: var(--hw-type-title-card); }
 .hw-text-lead { font: var(--hw-type-lead); }
 .hw-text-title-record { font: var(--hw-type-title-record); }
 .hw-text-figure { font: var(--hw-type-figure); }
 .hw-text-data { font: var(--hw-type-data); font-variant-numeric: tabular-nums lining-nums; }
+/* A figure inside a display-face string (a price on a pay button): the text face, same size. */
+.hw-fig { font-family: var(--hw-font-ui); font-weight: 400; font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0; text-transform: none; }

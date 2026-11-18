@@ -12,7 +12,7 @@
   all: revert; box-sizing: border-box; }
 .hw :where(h1, h2, h3, h4, p, ul, ol, dl, dd, blockquote, hr) { margin: 0; }
 .hw :where(ul, ol) { padding: 0; list-style: none; }
-.hw :where(button, input, select, textarea) { font: inherit; color: inherit; }
+:where(.hw) :where(button, input, select, textarea) { font: inherit; color: inherit; }
 .hw :where(a) { color: var(--hw-accent-ink); text-underline-offset: 3px; }
 .hw .ico { width: 20px; height: 20px; flex: none; display: inline-block; vertical-align: middle; }
 .hw .ico.s { width: 16px; height: 16px; }
@@ -78,7 +78,7 @@
 .hw .hw-btn:active:not([disabled]), .hw .hw-btn.is-press { box-shadow: var(--hw-press); }
 .hw .hw-btn.quiet-danger { color: var(--hw-danger-ink); border-color: var(--hw-danger-edge); }
 .hw .hw-btn.ghost { border-color: transparent; background: transparent; box-shadow: none; color: var(--hw-ink-2); }
-.hw .hw-btn.small { min-height: var(--hw-size-control-dense); padding: 0 var(--hw-space-3); font: var(--hw-type-label); position: relative; }
+.hw .hw-btn.small { min-height: var(--hw-size-control-dense); padding: 0 var(--hw-space-3); font: var(--hw-type-button-small); position: relative; }
 /* a 36 px button keeps a 44 px hit area: rows that hold one are 56 tall, so hit areas never overlap */
 .hw .hw-btn.small::before { content: ""; position: absolute; left: 0; right: 0; top: -4px; bottom: -4px; }
 .hw .hw-btn.wide { width: 100%; }
@@ -128,11 +128,7 @@
 .hw .hw-field.err .hw-hint { color: var(--hw-danger-ink); display: flex; gap: var(--hw-space-1); align-items: center; }
 .hw .hw-group { display: flex; flex-direction: column; gap: var(--hw-gap-group); }
 .hw .hw-form { display: flex; flex-direction: column; gap: var(--hw-gap-section); }
-.hw .hw-toggle { display: flex; align-items: center; gap: var(--hw-space-3); min-height: var(--hw-size-target); }
-.hw .hw-switch { width: 40px; height: 24px; border-radius: var(--hw-radius-pill); background: var(--hw-inset); border: 1px solid var(--hw-edge-control); position: relative; flex: none; }
-.hw .hw-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--hw-surface); box-shadow: 0 1px 2px rgba(0,0,0,.25); }
-.hw .hw-switch.on { background: var(--hw-accent); border-color: var(--hw-accent); }
-.hw .hw-switch.on::after { left: 18px; background: var(--hw-on-accent); }
+/* toggles: .hw-toggle and .hw-toggle-row are in tokens.css (section 6) */
 
 /* ── lists, tables ───────────────────────────────────────────────────────────── */
 .hw .hw-list { background: var(--hw-surface-fill); border: 1px solid var(--hw-edge); border-radius: var(--hw-radius-card); box-shadow: var(--hw-elev-1); overflow: hidden; }

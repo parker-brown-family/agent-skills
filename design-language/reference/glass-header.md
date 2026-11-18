@@ -37,7 +37,8 @@ the core, the mid tone and its opacity, so every glow weighs the same. The gel t
 dark accent's hue and chroma at the settled gel's lightness; a product whose accent is ink takes
 its dark accent as it stands, because a gold fill would sit on the warning colour. In the example,
 the five tones are Nord slate, Jade Horse jade, Praus gold, Retro 82 navy and Piper's burgundy.
-That is a rule for a starting point; the tones themselves are a judgement for the eye.
+The owner then made the settled skin every product's, each in its own theme's deep tone, so in
+the example the rule is the decision; the tones themselves remain a judgement for the eye.
 
 ## Keep the folio tab joined
 

@@ -1,4 +1,4 @@
-# The folio tab, the line, and the theme switch
+# The folio tab, the line, the theme switch, and the toggle
 
 Every app in a family draws these three the same way. They are where the family is most
 visible, so they are shared, and identity comes from the colour in them.
@@ -53,3 +53,19 @@ third state so a person can go back to following the system.
 - **Native apps** read the same account field after sign-in and follow the device before it.
 
 `tokens.json` carries this as `behaviour.theme`, so a builder reads one place.
+
+## The toggle, in place of every checkbox
+
+The example's owner: "I hate checkboxes, TOGGLES... but yes one is better than 3". So a family
+has no checkboxes. A two-state choice is a toggle, its label on the left and the toggle on the
+right, one per decision; two consents that always go together become one.
+
+- Markup: `<button type="button" role="switch" aria-checked="false" class="hw-toggle">`, labelled
+  by its row; a form keeps the value in a hidden input. Native: `accessibilityRole="switch"`.
+- Size: a 44 × 26 px track (`--hw-toggle-width`, `-height`), a 20 px thumb 3 px in, 44 px to the
+  hand (48 on Android).
+- Colours by role: the on track is the accent, its thumb the text on an accent; the off track is
+  the well, its outline and thumb the control edge. Disabled: the well and the edge, no opacity.
+- Several choices from a list are selectable rows, never toggles or boxes.
+- `scripts/stray-checkboxes.sh` (source) and `scripts/stray-checkboxes.js` (a rendered screen)
+  find what is left. In the example they found nine on the first run.
