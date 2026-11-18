@@ -238,6 +238,10 @@ OVERRIDES = {}   # (product, mode, role) -> value; used by --selftest only
 SETTLED = {}        # product -> a palette its owner settled by eye: {'light': {...}, 'dark': {...},
                     #   'derived': {mode: {role: (lightness, chroma or None or 'ink')}}}; placed last,
                     #   only its accent and gel move, and only as far as a check needs
+REVIEW = {}         # (product, mode, role) -> value: a second provider's accepted changes, given whole;
+                    #   neutral roles move their aliases with them; the checks hold them like any other
+REVIEW_WHY = {}     # product -> one line: what the review changed and why
+GLOW_REACH = {}     # product -> {'reach-x': '32%', 'reach-y': '92%'} where not the base 38% by 112%
 GLOW_FROM = {}      # product -> (name, colour): the theme colour its header's corner tone takes
                     #   its hue and chroma (at most 0.07) from
 # The header's lightness structure when no product is settled: the corner core and mid (with the
@@ -334,6 +338,20 @@ def signature_for(src, c, mode):
             return h, (round(start, 3), round(L, 3))
         L += step
     return hexof(L, C, H), (round(start, 3), round(L, 3))
+
+def glow_reach(name):
+    base = SHARED['header']['glow']
+    return {'reach-x': base['reach-x'], 'reach-y': base['reach-y'], **GLOW_REACH.get(name, {})}
+
+def apply_review(name, mode, c, roles):
+    """Put the review's values for these roles into a palette, and move the aliases that point at them."""
+    for (p_, m, role), v in REVIEW.items():
+        if p_ == name and m == mode and role in roles and (name, mode, role) not in OVERRIDES:
+            old = c.get(role)
+            c[role] = v
+            for k, t in ALIASES.items():
+                if t == role and c.get(k) == old:
+                    c[k] = v
 
 def alpha_hex(h, a):
     return h + '%02x' % round(a * 255)
@@ -491,9 +509,13 @@ def derive_all():
     for name in ORDER:
         for mode in ('light', 'dark'):
             c = products[name][mode]
+            apply_review(name, mode, c, NEUTRAL_ROLES)
             c.update(header_roles(name, mode, c, products))
+            apply_review(name, mode, c, ('glow-core', 'glow-mid', 'gel'))
             if (name, mode, 'gel') in OVERRIDES:
                 c['gel'] = OVERRIDES[(name, mode, 'gel')]
+                continue
+            if (name, mode, 'gel') in REVIEW:
                 continue
             g0 = c['gel']
             L, C, H = oklch(g0)
@@ -942,7 +964,8 @@ def build_css():
                         and not (k == 'page' and c[k] == c['ground']):
                     v[k] = c[k]
             blocks.append(v)
-        out.append(css_block(f'[data-product="{name}"]', blocks[0]))
+        reach = {f'glow-{k}': v for k, v in glow_reach(name).items() if v != SHARED['header']['glow'][k]}
+        out.append(css_block(f'[data-product="{name}"]', {**blocks[0], **reach}))
         out.append(css_block(f'.dark[data-product="{name}"], .dark [data-product="{name}"], [data-product="{name}"] .dark', blocks[1]))
     out.append(SIG_CSS)
     out.append(HEADER_CSS)
@@ -1107,7 +1130,7 @@ def native_group():
                    'role': 'switch (accessibilityRole="switch", accessibilityState={ checked })', 'never': 'a checkbox (expo-checkbox or any other)'},
         'button_label': 'the display face for the words; a run of figures inside the label in the text face at the same size; a label that is only a number is data (type-data)',
         'header': {'height': s['header']['height'], 'control': s['header']['control'], 'hit': s['size']['target'],
-                   'glow': 'draw with react-native-svg: a RadialGradient centred on the top right corner, rx 38% of the width, ry 112% of the height; stops glow-core at 0 and 0.14, glow-mid at 0.46, transparent at 1',
+                   'glow': 'draw with react-native-svg: a RadialGradient centred on the top right corner, rx products.<name>.header_glow.reach-x of the width (base 38%), ry reach-y of the height (base 112%); stops glow-core at 0 and 0.14, glow-mid at 0.46, transparent at 1',
                    'glass': 'opaque on native: the ground, the glow, then white at 7% fading to 2%; expo-blur only for the frosted controls',
                    'edge': {'width': 1, 'color': '#ffffff', 'alpha': 0.125}, 'shadow': {'y': 14, 'blur': 34, 'alpha': 0.33}},
         'motion': {'dur1': s['motion']['dur-1'], 'dur2': s['motion']['dur-2'], 'dur3': s['motion']['dur-3'],
@@ -1202,8 +1225,10 @@ def build_json():
                        'slot': src.get('slot'), 'hue': rec.get('hue'), 'intent': src['intent'],
                        'neutral_hue': rec.get('neutral_hue'), 'neutral_scale': rec.get('neutral_scale'),
                        'why': src['why'], 'inferred': src['inferred'], 'moves': rec['moves'], 'settled': name in SETTLED,
+                       **({'review': REVIEW_WHY[name]} if name in REVIEW_WHY else {}),
                        **({'also_from': src['also']} if src.get('also') else {}),
                        **({'pending': src['pending']} if src.get('pending') else {})},
+            'header_glow': {**glow_reach(name), 'origin': SHARED['header']['glow']['origin']},
             'light': color_group(products[name]['light']),
             'dark': color_group(products[name]['dark']),
         }

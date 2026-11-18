@@ -38,7 +38,11 @@ dark accent's hue and chroma at the settled gel's lightness; a product whose acc
 its dark accent as it stands, because a gold fill would sit on the warning colour. In the example,
 the five tones are Nord slate, Jade Horse jade, Praus gold, Retro 82 navy and Piper's burgundy.
 The owner then made the settled skin every product's, each in its own theme's deep tone, so in
-the example the rule is the decision; the tones themselves remain a judgement for the eye.
+the example the rule is the decision; the tones themselves remain a judgement for the eye, and a
+second provider's review then changed five of them ([review.md](review.md)). The reach can differ
+per product too (the family file's `GLOW_REACH`; in the example Stone 32%, Scythe 28% by 92%,
+Surge 46% by 122%): `tokens.css` sets `--hw-glow-reach-x` and `-y` in that product's block and
+`tokens.json` carries them under `products.<name>.header_glow`.
 
 ## Keep the folio tab joined
 

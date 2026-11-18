@@ -1,3 +1,19 @@
+## 4.1, values only: copy tokens.css again (Piper: regenerate theme.ts)
+
+No markup changes. A second provider's review of the header on the five other products, all ten
+changes taken; `--check` still passes 1,546, `--selftest` 23. Head Waters, the faces and the toggles are unchanged.
+
+| Product | Roles that changed |
+|---|---|
+| Stone | `glow-core`, `glow-mid` (light and dark): slate; glow reach `--hw-glow-reach-x` 32% |
+| Silo | `glow-core`, `glow-mid` (light and dark): grey-jade |
+| Scythe | dark `ground` `#0e0e0e` (ink-black) and `page`; glow reach 28% × 92% |
+| Surge | `glow-core`, `glow-mid` (light and dark): navy to azure; dark `ground` `#0c192b` and `page`; glow reach 46% × 122%; dark `gel` stays `#5ea5cd` |
+| Piper | dark neutrals become dark earth from the brand brown: `ground`, `surface`, `surface-top`, `surface-bottom`, `raised`, `raised-bottom`, `float`, `inset`, `field`, `edge`, `neutral-tint`, `neutral-edge`, with `page`, `assist-surface`, `avatar-bg`, `done-tint`, `line`, `toggle-off`; `glow-core`, `glow-mid` (dark), `glow-mid` (light): deeper burgundy |
+
+The reach is emitted per product in `tokens.css` (`--hw-glow-reach-x`, `-y` in each `[data-product]`
+block) and in `tokens.json` under `products.<name>.header_glow`; Piper's native glow reads it there.
+
 # Tokens version 4: what to change, for the builders
 
 You are on version 2; nobody applied version 3, so this one page takes you to version 4. Copy
