@@ -10,15 +10,24 @@ the DOM.
 - T2 Under 14 px is for uppercase labels and chips only (example: eyebrows and table headers at
   13 in the display face, chips at 12), never a sentence.
 - T3 Text sizes come from 12, 14, 16, 20, 24, 30, 38; the display face's are fitted to its
-  x-height (example: 13, 16, 19, 28, 34, 44). One screen uses four sizes at most.
+  x-height (example: 13, 16.5, 19, 27, 34, 43). One screen uses four sizes at most.
 - T4 The display face sets the frame only: wordmark, tabs, eyebrows, section and page titles
-  (example: Federo). Everything a person reads or types uses the text face (example: DM Sans),
-  including a person's or record's name where a title goes.
-- T5 Numbers that line up (a column, a total, a counter, a clock) use a face whose digits are one
-  width (example: DM Mono, because DM Sans has no tabular figures) and align right.
+  (example: Federo). Everything a person reads or types uses the text face (example: IBM Plex
+  Sans), every button, number and datum included, and a person's or record's name where a title goes.
+- T5 Numbers that line up (a column, a total, a counter, a clock) are in a face whose digits are
+  one width (example: Plex as it stands) and align right.
 - T6 A paragraph is at most 68 characters wide.
 - T7 No digit, price, time, date, count, table cell or form value is set in the display face.
 - T8 Nothing is faked: `font-synthesis: none`; a face with one weight is never bold.
+
+## The header
+
+- H1 Where the family takes the glass header, it is 96 px in two rows: the name, the switch and
+  the main button; then the tabs ([glass-header.md](glass-header.md)).
+- H2 The glow starts in the top right corner, behind the main button, and fades left and down;
+  the name sits on clear glass.
+- H3 The main button's label reads 4.5:1 over clear glass, not only over the glow.
+- H4 The selected tab opens into the page through the header's edge and shadow.
 
 Sources: [modular scale](https://alistapart.com/article/more-meaningful-typography/),
 [line length](https://practicaltypography.com/line-length.html),

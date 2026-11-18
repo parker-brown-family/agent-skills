@@ -38,13 +38,15 @@ it, with three rounds of review by the product owner and one by a second AI prov
    between table and files. `--selftest` puts back every value that was once wrong and proves a
    check still fails. [reference/checks.md](reference/checks.md)
 6. **Give every app the same shapes.** The folio tab (the selected menu item opening into the
-   page, a bar over its words in the product's colour), a 2 px line under the bar, and one theme
+   page, a bar over its words in the product's colour), a 2 px line under a plain bar, and one theme
    switch, light, dark and system, remembered with the person's account and applied before
-   first paint. [reference/shapes-and-switch.md](reference/shapes-and-switch.md)
+   first paint. [reference/shapes-and-switch.md](reference/shapes-and-switch.md). Where the family
+   wants depth, a glass header with a glow of the product's deep tone from the top right corner,
+   after Terminal Delight's docs site. [reference/glass-header.md](reference/glass-header.md)
 7. **Type: a display face for the frame, a text face for content, digits only in a face whose
    figures line up, and every font's licence read from its file.** The frame is the words the
    product ships (wordmark, tabs, titles); it never sets a digit. Read figures and reserved names
-   from the font files, not from CSS or a web page. The example: Federo, DM Sans and DM Mono.
+   from the font files, not from CSS or a web page. The example: Federo and IBM Plex Sans.
    [reference/type.md](reference/type.md)
 8. **Draw it.** Every token and pattern as live HTML and CSS built from the tokens, light and
    dark, and for an audit a before and after of each app's worst screen at the width it is used
@@ -77,6 +79,11 @@ themes and intents, and run without `--check` to write `tokens.css` and `tokens.
 - Marks drawn by an agent treated as final. Label them placeholders.
 - `tabular-nums` asked of a face that has no tabular figures: it changes nothing, and a column of
   amounts quietly fails to line up. Read the font file (`scripts/font_facts.py`).
+- Values the owner settled by eye, taken as final: two failed the colour-blind distance and one
+  button's label fell under 4.5 on clear glass. Put a settled palette through the same checks and
+  record each move, smallest first.
+- A `color-mix()` in the middle of a `background` list: only the last layer may be a plain colour,
+  and the browser drops the whole declaration without a word.
 
 ## Files
 
@@ -85,7 +92,7 @@ themes and intents, and run without `--check` to write `tokens.css` and `tokens.
   read from the file (needs fontTools). `scripts/frame-digits.js`: finds a number set in the
   display face on a rendered screen.
 - `reference/`: the method, the rules, the colour rule, the checks, the shapes and switch, the
-  review, and [sources.md](reference/sources.md): every source used, linked, with the date read.
+  glass header, type, the review, and [sources.md](reference/sources.md): every source used, linked, with the date read.
 - `examples/head-waters/`: `family.py`, `tokens.css`, `tokens.json`, `specimens.css` (every
   pattern built from tokens), two design-language pages, the builders' change sheet,
   screenshots, and the OFL licence of every face named. The pages and screenshots were drawn

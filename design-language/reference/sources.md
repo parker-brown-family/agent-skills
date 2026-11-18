@@ -35,10 +35,10 @@ All read on 2026-11-18 unless marked.
 - Tim Brown, [More meaningful typography](https://alistapart.com/article/more-meaningful-typography/), A List Apart: the modular scale.
 - Matthew Butterick, [Line length](https://practicaltypography.com/line-length.html), Practical Typography: T6.
 - [Federo](https://github.com/google/fonts/tree/main/ofl/federo), SIL Open Font License 1.1, Copyright (c) 2011, Cyreal, with Reserved Font Name "Federo". Licence read from its OFL file (`examples/head-waters/OFL-Federo.txt`); figures, weight and x-height read from the font with `scripts/font_facts.py`.
-- [DM Sans](https://github.com/googlefonts/dm-fonts) 4.004, SIL Open Font License 1.1, © 2014 The DM Sans Project Authors, no reserved name (`OFL-DMSans.txt`). Read from the file: no `tnum` feature.
-- [DM Mono](https://github.com/googlefonts/dm-mono), SIL Open Font License 1.1, © 2020 The DM Mono Project Authors, no reserved name (`OFL-DMMono.txt`).
+- [IBM Plex Sans](https://github.com/google/fonts/tree/main/ofl/ibmplexsans), SIL Open Font License 1.1, Copyright © 2017 IBM Corp., with Reserved Font Name "Plex" in its OFL file (`examples/head-waters/OFL-IBMPlexSans.txt`); its name table states none. Figures read from the font: every digit 0.60 em.
+- [DM Sans](https://github.com/googlefonts/dm-fonts) 4.004, the first candidate for content, measured and set aside: no `tnum` feature.
 - SIL, [OFL-FAQ 1.1-update8](https://openfontlicense.org/ofl-faq/): 2.1 (a WOFF that only compresses keeps the name), 2.6 (subsetting is modification), 5.1 to 5.9 (Reserved Font Names).
-- Chromium, measured through the DevTools protocol (`CSS.getPlatformFontsForNode`): with the unicode-range, the seven number characters of "4 · $95.00" drew in DM Sans and the rest in Federo; without it, Federo drew all eighteen.
+- Chromium, measured through the DevTools protocol (`CSS.getPlatformFontsForNode`): with the unicode-range, the seven number characters of "4 · $95.00" drew in IBM Plex Sans and the rest in Federo; without it, Federo drew all eighteen.
 - The pages drawn before the type changed embed [Inter](https://github.com/rsms/inter) (© 2016 The Inter Project Authors, `OFL-Inter.txt`) and [JetBrains Mono](https://github.com/JetBrains/JetBrainsMono) (© 2020 The JetBrains Mono Project Authors, `OFL-JetBrainsMono.txt`), both SIL OFL 1.1.
 - Terminal Delight's Deco skin, [app/skins/deco.toml](https://github.com/parker-brown-family/terminal-delight/blob/main/app/skins/deco.toml) and [app/themes/deco.toml](https://github.com/parker-brown-family/terminal-delight/blob/main/app/themes/deco.toml): no face of its own, so its chrome is the terminal's default, JetBrains Mono, with tracked capitals for labels.
 
@@ -49,6 +49,11 @@ All read on 2026-11-18 unless marked.
 - [Praus](https://github.com/parker-brown-family/omarchy-praus-theme), Parker Brown, MIT.
 - Only colour values are used. No theme's wallpapers are redistributed: their licences vary, so
   the example pages are built without one.
+
+## The glass header
+
+- Terminal Delight documentation site, [docsite/redesign/redesign.css](https://github.com/parker-brown-family/terminal-delight/blob/main/docsite/redesign/redesign.css): the glass (blur, a faint lit gradient over the ground, a hairline edge, a soft shadow) and the gel button. The corner glow, the two rows and the folio tab inside them are the family's.
+- [Deep Quiet](https://github.com/parker-brown-family/omarchy-deep-quiet-theme), Parker Brown and David Heinemeier Hansson, MIT: the example's front page, its sea-glass moved toward the company's brand teal, with old-tree browns, settled by the owner by eye.
 
 ## The theme switch
 
