@@ -6,12 +6,13 @@ and do the chore from the font files themselves.
 ## The rules
 
 1. **A display face for the frame.** The frame is the words the product ships: the wordmark, tab
-   names, eyebrows, section and page titles. List those roles (`FRAME_ROLES` in the family file)
+   names, eyebrows, section and page titles, and the words on buttons. List those roles (`FRAME_ROLES` in the family file)
    and give the display face to nothing else. A string that came from a person or a record, such
    as a client's name or an appointment's title, is content even where a title goes; the example
    gives it a role of its own, `title-record`, in the text face.
-2. **A text face for content.** Everything a person reads or types: body, fields, buttons, meta
-   lines (dates, times, counts), names, numbers and data.
+2. **A text face for content.** Everything a person reads or types: body, fields, meta lines
+   (dates, times, counts), names, numbers and data, and any figure inside a button's label
+   (`<span class="hw-fig">`). A control whose label is only a number is data.
 3. **Digits only in a face whose figures line up.** Figures that must line up (an amount column,
    a total, a counter, a clock) need digits of one width: by default, or through a `tnum`
    feature. Read which from the file (`scripts/font_facts.py FONT` prints each digit's width and
@@ -55,12 +56,15 @@ nice". The first text face tried beside it was DM Sans, and `font_facts.py` show
 feature and digits of different widths: with `tabular-nums` set, 111.11 measured 28 px and 888.88
 measured 53 px at 16 px in Chromium. Then he saw IBM Plex Sans on a billing report: "let's keep it
 simple ... Still fedora for all the STYLE stuff... and then IBM for all the CONTENT". Plex's digits
-are all 0.60 em by default, so numbers stay in the text face, and the family has two faces.
+are all 0.60 em by default, so numbers stay in the text face, and the family has two faces. A
+settled mock then drew its buttons in Plex, and the owner corrected it: "remember how I said
+buttons get fedora? still stands". So a button's words are Federo and its amount is Plex: "Pay"
+in one face, "$95.00" in the other, at one size.
 
 | Face | Sets | Fitted |
 |---|---|---|
-| Federo | wordmark 19 (capitals, 0.11 em), eyebrow 13 (capitals), tab 16.5; titles 27, 34, 43 | x-height 0.46 em against Plex's 0.516, so titles are the step × 1.12; wordmark and tabs are the settled header's |
-| IBM Plex Sans | label, meta, body, every button, card title, lead, record title, a figure alone, data | the 12 to 38 scale, at 400, 500 and 600 |
+| Federo | wordmark 19 (capitals, 0.11 em), eyebrow 13 (capitals), tab 16.5; buttons 18, small and gel 16; titles 27, 34, 43 | x-height 0.46 em against Plex's 0.516, so titles and buttons are the step × 1.12; wordmark and tabs are the settled header's |
+| IBM Plex Sans | label, meta, body, card title, lead, record title, a figure alone, data, a figure on a button | the 12 to 38 scale, at 400, 500 and 600 |
 
 Both faces reserve their names. Federo's OFL.txt reserves "Federo"; Plex's reserves "Plex", though
 its own name table states no reserved name, which is why rule 4 says to read the OFL.txt. The

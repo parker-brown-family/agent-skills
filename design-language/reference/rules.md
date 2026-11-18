@@ -11,18 +11,32 @@ the DOM.
   13 in the display face, chips at 12), never a sentence.
 - T3 Text sizes come from 12, 14, 16, 20, 24, 30, 38; the display face's are fitted to its
   x-height (example: 13, 16.5, 19, 27, 34, 43). One screen uses four sizes at most.
-- T4 The display face sets the frame only: wordmark, tabs, eyebrows, section and page titles
-  (example: Federo). Everything a person reads or types uses the text face (example: IBM Plex
+- T4 The display face sets the frame only: wordmark, tabs, eyebrows, section and page titles,
+  and every button (example: Federo). Everything a person reads or types uses the text face (example: IBM Plex
   Sans), every button, number and datum included, and a person's or record's name where a title goes.
 - T5 Numbers that line up (a column, a total, a counter, a clock) are in a face whose digits are
   one width (example: Plex as it stands) and align right.
 - T6 A paragraph is at most 68 characters wide.
 - T7 No digit, price, time, date, count, table cell or form value is set in the display face.
 - T8 Nothing is faked: `font-synthesis: none`; a face with one weight is never bold.
+- T9 A figure inside a button label is in the text face at the label's size
+  (`<span class="hw-fig">`); a control whose label is only a number (a stepper, a page number, a
+  count) is data, its plus and minus included. A pay button keeps its amount.
+
+## Toggles
+
+- TG1 No checkboxes. A two-state choice is a toggle (`role="switch"`) with its label on the left
+  and the toggle on the right; one toggle per decision, so one consent is one toggle.
+- TG2 Several choices from a list are selectable rows (the selected tint and a check icon), not
+  toggles and not boxes.
+- TG3 On and off differ by the thumb's place as well as colour; the on track reads 3:1 on every
+  surface it sits on (check R17); 44 px to the hand, 48 on Android.
+- TG4 `scripts/stray-checkboxes.sh` finds checkboxes in source and `scripts/stray-checkboxes.js`
+  on a rendered screen; both must come back empty.
 
 ## The header
 
-- H1 Where the family takes the glass header, it is 96 px in two rows: the name, the switch and
+- H1 Where the family takes the glass header (the example: every product), it is 96 px in two rows: the name, the switch and
   the main button; then the tabs ([glass-header.md](glass-header.md)).
 - H2 The glow starts in the top right corner, behind the main button, and fades left and down;
   the name sits on clear glass.

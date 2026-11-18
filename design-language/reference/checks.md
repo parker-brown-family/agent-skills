@@ -21,6 +21,7 @@ ends bound every label position between them.
 | R13 | every type role at a weight its face has, and a native cut bundled for it |
 | R14 | every role that asks for tabular figures is in a face whose figures line up |
 | R15 | each face's licence file present and OFL 1.1, with the copyright and reserved name the family file records, read from the file |
+| R17 | toggles: the on track 3:1 on surface, ground, raised and float; the off outline 3:1 on the same; each thumb 3:1 on its track |
 | R16 | the glass header: its ink (and at 82%) 4.5:1 on the glass, the folio bar 3:1, the gel's label 4.5:1 at both edges of its line over the glow and over clear glass, the switch icon 3:1 on the frosted button |
 
 Colour-blind simulation follows Machado, Oliveira and Fernandes, *A physiologically-based model
@@ -37,10 +38,11 @@ and the closest pair they accepted (3.91), with room.
   once wrong, and theme colours used raw. Each must make at least one check fail. Add an entry
   whenever a review finds a failure, so it can never come back unnoticed.
 
-In the example, the self-test restores twenty-one values: three outlines that failed on wells, a
+In the example, the self-test restores twenty-three values: three outlines that failed on wells, a
 heavy sheen, a translucent brand subtitle, four theme accents used raw, two accents at the rule's
 starting lightness before step 6 moved them, six type values (the big number in the display face,
 DM Sans as the text face, a semibold Federo title, meta in Federo, a face recorded with no
-reserved name, a unicode-range that leaves out only the digits), and the three values the owner
+reserved name, a unicode-range that leaves out only the digits), the three values the owner
 settled by eye that a check then moved (two accents too close for colour-blind readers, a gel
-whose label fell under 4.5 on clear glass).
+whose label fell under 4.5 on clear glass), buttons put back in the text face, and a pale toggle
+whose on and off differ only by a faint colour.

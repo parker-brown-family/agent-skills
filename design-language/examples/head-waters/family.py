@@ -108,6 +108,8 @@ OLD_VALUES = [
     ('RAW', 'home', ('light', 'accent'), '#0C6E75', 'Home light accent as settled: 3.04 from Stone for colour-blind readers'),
     ('RAW', 'home', ('dark', 'accent'), '#6BAAAE', 'Home dark accent as settled: 3.50 from Silo for colour-blind readers'),
     ('RAW', 'home', ('dark', 'gel'), '#2F9AA0', 'Home dark gel as settled: its label under 4.5 at the bottom of its line over clear glass'),
+    ('TYPE', None, 'button', ('md', 600, 'ui', 0, False, False), 'buttons in IBM Plex Sans, as the example first had them: a frame role in the content face'),
+    ('ALIAS', None, 'toggle-on', 'accent-tint', 'a pale tinted on-state for the toggle: on and off differ only by a faint colour'),
     ('TYPE', None, 'title-page', ((34, 40), 600, 'display', 0, False, False), 'a semibold Federo title: one weight, so the browser fakes it'),
     ('TYPE', None, 'meta', ('sm', 400, 'display', 0, False, False), 'meta (dates, times) in Federo'),
     ('FONT', None, 'Federo', None, 'Federo recorded with no reserved name: a subset would ship under a name its licence reserves'),
@@ -124,7 +126,8 @@ FACES = {
     'ui': 'var(--font-ibm-plex-sans, "IBM Plex Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
     'mono': 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
 }
-FRAME_ROLES = ('wordmark', 'eyebrow', 'tab', 'title-section', 'title-page', 'display')
+# Buttons are frame too (the owner: "remember how I said buttons get fedora? still stands").
+FRAME_ROLES = ('wordmark', 'eyebrow', 'tab', 'title-section', 'title-page', 'display', 'button', 'button-small', 'gel')
 # Federo's x-height is 0.46 em against Plex's 0.516: a Federo title is the step it replaces x 1.12.
 # The wordmark and tabs are the values of the header the owner settled.
 TYPE = {
@@ -135,8 +138,10 @@ TYPE = {
     'title-page': ((34, 40), 400, 'display', 0, False, False),
     'display': ((43, 52), 400, 'display', 0, False, False),
     'label': ('sm', 600, 'ui', 0, False, False), 'meta': ('sm', 400, 'ui', 0, False, False),
-    'body': ('md', 400, 'ui', 0, False, False), 'button': ('md', 600, 'ui', 0, False, False),
-    'gel': ((14, 20), 600, 'ui', 0, False, False),
+    'body': ('md', 400, 'ui', 0, False, False),
+    'button': ((18, 24), 400, 'display', 0, False, False),        # Plex 16 semibold -> Federo 18
+    'button-small': ((16, 20), 400, 'display', 0, False, False),
+    'gel': ((16, 20), 400, 'display', 0, False, False),
     'title-card': ('lg', 600, 'ui', 0, False, False), 'lead': ('lg', 400, 'ui', 0, False, False),
     'title-record': ('2xl', 600, 'ui', 0, False, False),
     'figure': ('3xl', 600, 'ui', 0, False, False),
@@ -165,7 +170,8 @@ NATIVE_FACES = {  # @expo-google-fonts export names, read from each package
 TYPE_NOTES = {
     'figures': 'IBM Plex Sans\'s figures line up by default (every digit 0.60 em), so amounts, totals and clocks are Plex as it stands (type-data). Never switch on old-style figures (onum) for data. The first candidate, DM Sans 4.004, had no tabular figures: at 16 px, 111.11 measured 28 px and 888.88 53 px with tabular-nums set.',
     'emphasis': 'Federo has one weight and no italic. A frame string takes no emphasis inside it; one ranks above another by size and ink level. A word that needs emphasis inside a title is content, so it is Plex 600. font-synthesis: none on :root stops a browser faking bold or italic.',
-    'buttons': 'IBM Plex Sans 600, every button, the header\'s gel included.',
+    'buttons': 'Federo, every button, the header\'s gel included; one weight, so a button ranks by its fill and size.',
+    'button_figures': 'A figure inside a button label is IBM Plex Sans at the same size: <button class="hw-btn primary">Pay <span class="hw-fig">$95.00</span></button>. A control whose label is only a number (a stepper, a page number, a count) is data, its plus and minus included. Keep the amount on a pay button.',
     'licences': 'Each licence is read from its own OFL.txt (check R15). Both faces reserve their names, "Federo" and "Plex" (Plex\'s only in its OFL.txt). Ship each file as published, or a WOFF2 that only compresses it; a subset or other conversion is a modified version and may not use the name (OFL-FAQ 2.1, 2.6), so neither goes through next/font/google.',
     'web': 'localFont({ src: "./fonts/Federo-Regular.woff2", variable: "--font-federo", weight: "400", display: "swap", declarations: [{ prop: "unicode-range", value: behaviour.type.unicode_range }] }); localFont({ src: "./fonts/IBMPlexSans-var.woff2", variable: "--font-ibm-plex-sans", weight: "100 700", display: "swap" })',
     'native': 'Bundle @expo-google-fonts/federo and /ibm-plex-sans; native.type.<role>.fontFamily names the cut. Native has no unicode-range, so the frame text component throws in development on a digit.',
@@ -191,7 +197,7 @@ SETTLED = {'home': {
                  'ink-2': (0.79, 'ink'), 'ink-3': (0.72, 'ink'), 'edge': (0.37, 0.016), 'edge-control': (0.62, 0.02),
                  'neutral': (0.64, 0.02), 'neutral-tint': (0.33, 0.016), 'neutral-edge': (0.43, 0.016)}},
 }}
-# Each other product's corner tone: the theme colour its hue and chroma come from (proposed to the
-# owner, who settled the header for Home only).
+# Each other product's corner tone: the theme colour its hue and chroma come from. The owner settled
+# the header on the front page, then made it every product's skin, each in its own theme's deep tone.
 GLOW_FROM = {'stone': ('Nord slate', '#4c566a'), 'silo': ('Jade Horse jade', '#8bcbb1'),
              'scythe': ('Praus gold', '#A18C60'), 'surge': ('Retro 82 navy', '#05182e'), 'piper': ('Piper burgundy', '#7a3341')}

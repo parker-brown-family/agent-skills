@@ -40,12 +40,13 @@ it, with three rounds of review by the product owner and one by a second AI prov
 6. **Give every app the same shapes.** The folio tab (the selected menu item opening into the
    page, a bar over its words in the product's colour), a 2 px line under a plain bar, and one theme
    switch, light, dark and system, remembered with the person's account and applied before
-   first paint. [reference/shapes-and-switch.md](reference/shapes-and-switch.md). Where the family
+   first paint; and toggles, never checkboxes. [reference/shapes-and-switch.md](reference/shapes-and-switch.md). Where the family
    wants depth, a glass header with a glow of the product's deep tone from the top right corner,
    after Terminal Delight's docs site. [reference/glass-header.md](reference/glass-header.md)
 7. **Type: a display face for the frame, a text face for content, digits only in a face whose
    figures line up, and every font's licence read from its file.** The frame is the words the
-   product ships (wordmark, tabs, titles); it never sets a digit. Read figures and reserved names
+   product ships (wordmark, tabs, titles, buttons); it never sets a digit, so a figure on a button
+   is in the text face. Read figures and reserved names
    from the font files, not from CSS or a web page. The example: Federo and IBM Plex Sans.
    [reference/type.md](reference/type.md)
 8. **Draw it.** Every token and pattern as live HTML and CSS built from the tokens, light and
@@ -90,7 +91,8 @@ themes and intents, and run without `--check` to write `tokens.css` and `tokens.
 - `scripts/tokens.py`: the generator and checks (standard library Python; 3.11+ to read a theme).
 - `scripts/font_facts.py`: a font's weights, x-height, figures, missing glyphs and reserved name,
   read from the file (needs fontTools). `scripts/frame-digits.js`: finds a number set in the
-  display face on a rendered screen.
+  display face on a rendered screen. `scripts/stray-checkboxes.sh` and `.js`: find checkboxes in
+  source and on screen.
 - `reference/`: the method, the rules, the colour rule, the checks, the shapes and switch, the
   glass header, type, the review, and [sources.md](reference/sources.md): every source used, linked, with the date read.
 - `examples/head-waters/`: `family.py`, `tokens.css`, `tokens.json`, `specimens.css` (every
