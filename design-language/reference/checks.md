@@ -17,6 +17,10 @@ ends bound every label position between them.
 | R9 | any two product accents 5.0 apart (100 × OKLab) after deuteranopia and protanopia simulation, in each mode |
 | R10 | a brand a client page wears passes R2 and R3 with its own colours; an advisory names a subtitle that fails |
 | R11 | the folio bar (signature) at 3:1 on the page and the bar |
+| R12 | the display face on frame roles only, and on every one; no frame role asks for figures; its web unicode-range leaves out every character of a number |
+| R13 | every type role at a weight its face has, and a native cut bundled for it |
+| R14 | every role that asks for tabular figures is in a face whose figures line up |
+| R15 | each face's licence file present and OFL 1.1, with the copyright and reserved name the family file records, read from the file |
 
 Colour-blind simulation follows Machado, Oliveira and Fernandes, *A physiologically-based model
 for simulation of color vision deficiency*, IEEE TVCG 2009
@@ -32,6 +36,8 @@ and the closest pair they accepted (3.91), with room.
   once wrong, and theme colours used raw. Each must make at least one check fail. Add an entry
   whenever a review finds a failure, so it can never come back unnoticed.
 
-In the example, the self-test restores eleven values: three outlines that failed on wells, a heavy
-sheen, a translucent brand subtitle, four theme accents used raw, and two accents at the rule's
-starting lightness before step 6 moved them.
+In the example, the self-test restores seventeen values: three outlines that failed on wells, a
+heavy sheen, a translucent brand subtitle, four theme accents used raw, two accents at the rule's
+starting lightness before step 6 moved them, and six type values (the big number in the display
+face, tabular figures asked of DM Sans, a semibold Federo title, meta in Federo, Federo recorded
+with no reserved name, and a unicode-range that leaves out only the digits).

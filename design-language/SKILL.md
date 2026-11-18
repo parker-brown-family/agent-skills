@@ -41,16 +41,18 @@ it, with three rounds of review by the product owner and one by a second AI prov
    page, a bar over its words in the product's colour), a 2 px line under the bar, and one theme
    switch, light, dark and system, remembered with the person's account and applied before
    first paint. [reference/shapes-and-switch.md](reference/shapes-and-switch.md)
-7. **Use only openly licensed faces, and read the licence from the file.** The example uses
-   JetBrains Mono for titles and tracked-caps labels and Inter for everything read or typed,
-   both SIL OFL 1.1.
+7. **Type: a display face for the frame, a text face for content, digits only in a face whose
+   figures line up, and every font's licence read from its file.** The frame is the words the
+   product ships (wordmark, tabs, titles); it never sets a digit. Read figures and reserved names
+   from the font files, not from CSS or a web page. The example: Federo, DM Sans and DM Mono.
+   [reference/type.md](reference/type.md)
 8. **Draw it.** Every token and pattern as live HTML and CSS built from the tokens, light and
    dark, and for an audit a before and after of each app's worst screen at the width it is used
    (phone, iPad, laptop). Drawings beat sentences; captions make a claim.
 9. **Get one review from a second provider**, and mark which choices are feel and which are
    measurement, so the reviewer knows where to push. [reference/review.md](reference/review.md)
 10. **Hand the builders one page of changes:** every token renamed, added, removed or changed,
-    old and new, breaking changes first. `examples/head-waters/05-changes-for-builders-v3.md`.
+    old and new, breaking changes first. `examples/head-waters/11-changes-for-builders-v4.md`.
 
 ## Run it
 
@@ -73,12 +75,19 @@ themes and intents, and run without `--check` to write `tokens.css` and `tokens.
 - Per-product corner shapes (an engraved groove, a cut corner, a stripe): the owner replaced
   them all with one folio tab. Identity comes from colour and mark; shape is shared.
 - Marks drawn by an agent treated as final. Label them placeholders.
+- `tabular-nums` asked of a face that has no tabular figures: it changes nothing, and a column of
+  amounts quietly fails to line up. Read the font file (`scripts/font_facts.py`).
 
 ## Files
 
 - `scripts/tokens.py`: the generator and checks (standard library Python; 3.11+ to read a theme).
+- `scripts/font_facts.py`: a font's weights, x-height, figures, missing glyphs and reserved name,
+  read from the file (needs fontTools). `scripts/frame-digits.js`: finds a number set in the
+  display face on a rendered screen.
 - `reference/`: the method, the rules, the colour rule, the checks, the shapes and switch, the
   review, and [sources.md](reference/sources.md): every source used, linked, with the date read.
 - `examples/head-waters/`: `family.py`, `tokens.css`, `tokens.json`, `specimens.css` (every
   pattern built from tokens), two design-language pages, the builders' change sheet,
-  screenshots, and the OFL licences of the two embedded faces.
+  screenshots, and the OFL licence of every face named. The pages and screenshots were drawn
+  before the type changed and show Inter and JetBrains Mono, which they embed; the tokens are
+  current.
