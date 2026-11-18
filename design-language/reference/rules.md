@@ -7,13 +7,18 @@ the DOM.
 ## Type
 
 - T1 Body text is 16 px on a 24 px line; a sentence a person reads is never smaller than 14 px.
-- T2 12 px is for uppercase eyebrows, table headers and chips only, never a sentence.
-- T3 Sizes come from 12, 14, 16, 20, 24, 30, 38; one screen uses four of them at most.
-- T4 Titles and tracked-caps labels use the display face (example: JetBrains Mono); everything
-  a person reads at length or types uses the UI face (example: Inter). A standalone big number
-  uses the display face, tabular.
-- T5 Numbers in a column use tabular figures and align right.
+- T2 Under 14 px is for uppercase labels and chips only (example: eyebrows and table headers at
+  13 in the display face, chips at 12), never a sentence.
+- T3 Text sizes come from 12, 14, 16, 20, 24, 30, 38; the display face's are fitted to its
+  x-height (example: 13, 16, 19, 28, 34, 44). One screen uses four sizes at most.
+- T4 The display face sets the frame only: wordmark, tabs, eyebrows, section and page titles
+  (example: Federo). Everything a person reads or types uses the text face (example: DM Sans),
+  including a person's or record's name where a title goes.
+- T5 Numbers that line up (a column, a total, a counter, a clock) use a face whose digits are one
+  width (example: DM Mono, because DM Sans has no tabular figures) and align right.
 - T6 A paragraph is at most 68 characters wide.
+- T7 No digit, price, time, date, count, table cell or form value is set in the display face.
+- T8 Nothing is faked: `font-synthesis: none`; a face with one weight is never bold.
 
 Sources: [modular scale](https://alistapart.com/article/more-meaningful-typography/),
 [line length](https://practicaltypography.com/line-length.html),

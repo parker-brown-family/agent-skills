@@ -28,8 +28,9 @@
      --hw-danger | success | warning | neutral | done (+ -ink, -tint, -edge)   status only
      --hw-avatar-*, --hw-assist-*, --hw-word, --hw-press, --hw-glow-live
      Shapes: --hw-line-width (2), --hw-folio-radius (4), --hw-folio-chip (10), --hw-folio-bar (3)
-     Type: font: var(--hw-type-body) ... -tab and -eyebrow are JetBrains Mono in tracked capitals
-           (uppercase, --hw-tracking-label); titles and -figure are JetBrains Mono; the rest Inter.
+     Type: one class per role, .hw-text-<role> (or font: var(--hw-type-<role>) plus its tracking).
+           The display face sets the frame roles only and never a digit (tokens.json behaviour.type);
+           the ui face sets content; the figures face sets digits that must line up.
 */
 
 
@@ -38,9 +39,10 @@
    ════════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  --hw-font-display: var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --hw-font-ui: var(--font-inter, "Inter"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --hw-font-mono: var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --hw-font-display: var(--font-federo, "Federo"), var(--font-dm-sans, "DM Sans"), system-ui, sans-serif;
+  --hw-font-ui: var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --hw-font-figures: var(--font-dm-mono, "DM Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --hw-font-mono: var(--font-dm-mono, "DM Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --hw-text-xs: 12px;
   --hw-leading-xs: 16px;
   --hw-text-sm: 14px;
@@ -59,7 +61,7 @@
   --hw-weight-medium: 500;
   --hw-weight-semibold: 600;
   --hw-weight-bold: 700;
-  --hw-tracking-label: 0.12em;
+  --hw-tracking-label: 0.1em;
   --hw-tracking-display: 0.0em;
   --hw-space-1: 4px;
   --hw-space-2: 8px;
@@ -103,18 +105,24 @@
   --hw-ease: cubic-bezier(0.2, 0, 0, 1);
   --hw-ease-exit: cubic-bezier(0.3, 0, 1, 1);
   --hw-motion-travel-max: 16px;
-  --hw-type-eyebrow: 600 12px/16px var(--hw-font-display);
+  --hw-type-wordmark: 400 19px/28px var(--hw-font-display);
+  --hw-tracking-wordmark: 0.1em;
+  --hw-type-eyebrow: 400 13px/16px var(--hw-font-display);
+  --hw-tracking-eyebrow: 0.1em;
+  --hw-type-tab: 400 16px/20px var(--hw-font-display);
+  --hw-tracking-tab: 0.08em;
+  --hw-type-title-section: 400 28px/32px var(--hw-font-display);
+  --hw-type-title-page: 400 34px/40px var(--hw-font-display);
+  --hw-type-display: 400 44px/52px var(--hw-font-display);
   --hw-type-label: 600 14px/20px var(--hw-font-ui);
-  --hw-type-tab: 600 14px/20px var(--hw-font-display);
   --hw-type-meta: 400 14px/20px var(--hw-font-ui);
   --hw-type-body: 400 16px/24px var(--hw-font-ui);
   --hw-type-button: 600 16px/24px var(--hw-font-ui);
   --hw-type-title-card: 600 20px/28px var(--hw-font-ui);
   --hw-type-lead: 400 20px/28px var(--hw-font-ui);
-  --hw-type-title-section: 600 24px/32px var(--hw-font-display);
-  --hw-type-title-page: 600 30px/36px var(--hw-font-display);
-  --hw-type-display: 600 38px/44px var(--hw-font-display);
-  --hw-type-figure: 600 38px/44px var(--hw-font-display);
+  --hw-type-title-record: 600 30px/36px var(--hw-font-ui);
+  --hw-type-figure: 600 38px/44px var(--hw-font-ui);
+  --hw-type-data: 400 16px/24px var(--hw-font-figures);
   --hw-focus-width: 2px;
   --hw-focus-offset: 2px;
 }
@@ -720,7 +728,7 @@
   --hw-danger-top: #ffa79e;
 }
 
-/* Head Waters · the suite. From miasma (inferred). */
+/* Head Waters · the suite. From miasma (inferred). PENDING: a holding value: the owner has since asked for Home to be Deep Quiet pulled toward the company brand, and is choosing among mixes; that pick replaces this entry. */
 
 [data-product="home"] {
   --hw-ground: #f8f8f8;
@@ -875,3 +883,25 @@
   top: calc((var(--hw-size-control-dense) - var(--hw-size-target)) / 2);
   bottom: calc((var(--hw-size-control-dense) - var(--hw-size-target)) / 2); }
 
+
+/* ════════════════════════════════════════════════════════════════════════════
+   4 · Type: one class per role, carrying its face, size, case, tracking and figures
+   ════════════════════════════════════════════════════════════════════════════ */
+/* Nothing is faked: a display face with one weight and no italic draws as it is when bold or
+   italic is asked of it, instead of being smeared. It inherits from the root. */
+:root { font-synthesis: none; }
+.hw-text-wordmark { font: var(--hw-type-wordmark); letter-spacing: var(--hw-tracking-wordmark); text-transform: uppercase; }
+.hw-text-eyebrow { font: var(--hw-type-eyebrow); letter-spacing: var(--hw-tracking-eyebrow); text-transform: uppercase; }
+.hw-text-tab { font: var(--hw-type-tab); letter-spacing: var(--hw-tracking-tab); text-transform: uppercase; }
+.hw-text-title-section { font: var(--hw-type-title-section); }
+.hw-text-title-page { font: var(--hw-type-title-page); }
+.hw-text-display { font: var(--hw-type-display); }
+.hw-text-label { font: var(--hw-type-label); }
+.hw-text-meta { font: var(--hw-type-meta); }
+.hw-text-body { font: var(--hw-type-body); }
+.hw-text-button { font: var(--hw-type-button); }
+.hw-text-title-card { font: var(--hw-type-title-card); }
+.hw-text-lead { font: var(--hw-type-lead); }
+.hw-text-title-record { font: var(--hw-type-title-record); }
+.hw-text-figure { font: var(--hw-type-figure); }
+.hw-text-data { font: var(--hw-type-data); font-variant-numeric: tabular-nums lining-nums; }

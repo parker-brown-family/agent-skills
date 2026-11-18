@@ -54,10 +54,10 @@ See [shapes-and-switch.md](shapes-and-switch.md).
 
 ## 7 · Type
 
-Use faces whose licence allows embedding and redistribution, and read the licence from the
-font's own licence file, not a web page. The example asked for the face of a terminal skin the
-owner liked; the skin set no face, so its chrome used the terminal's default, JetBrains Mono.
-Check that sort of claim in the source before building on it.
+A display face for the frame, a text face for content, digits only in a face whose figures
+line up, and every font's licence read from its own file. Fit the display face by x-height,
+measure the real strings, and give the web a unicode-range net so no digit is drawn in it. The
+whole method and the example (Federo, DM Sans, DM Mono) are in [type.md](type.md).
 
 ## 8 · Draw it
 

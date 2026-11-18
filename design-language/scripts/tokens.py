@@ -12,7 +12,7 @@ reference/omarchy-colour.md and reference/checks.md. Standard library only (Pyth
 tomllib, used only to read an installed theme the family file did not record).
 Part of the design-language skill: github.com/parker-brown-family/agent-skills. MIT licence.
 """
-import json, math, sys
+import json, math, re, sys
 from pathlib import Path
 
 HERE = Path.cwd()
@@ -99,19 +99,11 @@ def hue_gap(a, b):
 
 # ── the shared table ──────────────────────────────────────────────────────────
 SHARED = {
-    # Faces, version 3: Terminal Delight's Deco skin letters its chrome in JetBrains Mono (the
-    # desktop's monospace, or TD's shipped default) with tracked capitals for labels. Titles and
-    # labels take it; everything a person reads at length or types into takes Inter. Both are
-    # SIL Open Font License 1.1. Fraunces is gone.
-    'font': {
-        'display': 'var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace',
-        'ui': 'var(--font-inter, "Inter"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-        'mono': 'var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace',
-    },
+    # Faces are the family's: FACES, below, set by the family file (reference/type.md).
     'text': {'xs': [12, 16], 'sm': [14, 20], 'md': [16, 24], 'lg': [20, 28],
              'xl': [24, 32], '2xl': [30, 36], '3xl': [38, 44]},
     'weight': {'regular': 400, 'medium': 500, 'semibold': 600, 'bold': 700},
-    'tracking': {'label': 0.12, 'display': 0.0},     # em; Deco's tracked caps for labels only
+    'tracking': {'label': 0.10, 'display': 0.0},     # em; the frame's tracked capitals
     'space': {'1': 4, '2': 8, '3': 12, '4': 16, '5': 24, '6': 32, '7': 48, '8': 64},
     'gap': {'tight': 4, 'related': 8, 'group': 16, 'section': 32, 'section-tight': 24},
     'pad': {'card': 24, 'card-phone': 16, 'page': 24, 'page-phone': 16, 'control-x': 16},
@@ -126,23 +118,32 @@ SHARED = {
     'focus': {'width': 2, 'offset': 2},
     'glow-live': {'blur': 12, 'alpha': 0.35},
 }
-# type roles: (step, weight, face, tracking-em, uppercase, tabular)
-TYPE = {
-    'eyebrow': ('xs', 600, 'display', 0.12, True, False), 'label': ('sm', 600, 'ui', 0, False, False),
-    'tab': ('sm', 600, 'display', 0.08, True, False), 'meta': ('sm', 400, 'ui', 0, False, False),
-    'body': ('md', 400, 'ui', 0, False, False), 'button': ('md', 600, 'ui', 0, False, False),
-    'title-card': ('lg', 600, 'ui', 0, False, False), 'lead': ('lg', 400, 'ui', 0, False, False),
-    'title-section': ('xl', 600, 'display', 0, False, False), 'title-page': ('2xl', 600, 'display', 0, False, False),
-    'display': ('3xl', 600, 'display', 0, False, False), 'figure': ('3xl', 600, 'display', 0, False, True),
-}
-FONTS = [  # every face the family ships, with the licence as read from the file
-    dict(face='Inter', role='everything a person reads or types: body, fields, buttons, meta',
-         licence='SIL Open Font License 1.1', file='terminal-delight assets/fonts/OFL-Inter.txt',
-         copyright='2016 The Inter Project Authors', url='https://github.com/rsms/inter'),
-    dict(face='JetBrains Mono', role='titles, tracked-caps labels and tabs, big numbers, code',
-         licence='SIL Open Font License 1.1', file='terminal-delight assets/fonts/OFL-JetBrainsMono.txt',
-         copyright='2020 The JetBrains Mono Project Authors', url='https://github.com/JetBrains/JetBrainsMono'),
-]
+# ── type: set by the family file (see reference/type.md and examples/head-waters/family.py) ──
+# FACES: CSS stacks for 'display' (the frame), 'ui' (content), 'figures' (digits that line up), 'mono'.
+# TYPE: role -> (size, weight, face, tracking-em, uppercase, tabular); size is a step of
+#   SHARED['text'] or (px, line) for a display face fitted by its x-height.
+# FRAME_ROLES: the roles the display face may set. They never hold a digit.
+# FONTS: one entry per face, read from its files: licence_file (relative to the family file),
+#   licence, copyright (as the file says it), reserved_name (or None), weights, figures_line_up.
+# NATIVE_FACES: (face, weight) -> the static cut a native app bundles.
+FACES, TYPE, FRAME_ROLES, FONTS, NATIVE_FACES, TYPE_NOTES = {}, {}, (), [], {}, {}
+# Every character that can stand inside a number; the display face's unicode-range leaves them out.
+NUMBER_CHARS = '0123456789#$%+,./:=¢£¤¥°±²³¹¼½¾×÷‰′″⁄−' + ''.join(chr(c) for c in range(0x20a0, 0x20d0))
+FONT_DIR = Path('.')
+
+def unicode_range_without(chars):
+    out, start, gone = [], 0, sorted({ord(c) for c in chars})
+    for g in gone + [0x10000]:
+        if g > start:
+            out.append(f'U+{start:04X}' if g - 1 == start else f'U+{start:04X}-{g - 1:04X}')
+        start = g + 1
+    return ', '.join(out)
+
+def type_size(step):
+    return SHARED['text'][step] if isinstance(step, str) else step
+
+def font_for(css):
+    return next(f for f in FONTS if f['css'] == ('figures' if css == 'mono' else css))
 
 ELEV = {
     'inset': [dict(x=0, y=1, blur=2, spread=0, alpha=0.08, inset=True)],
@@ -469,11 +470,44 @@ def checks():
             need('R10', f'brand:{name}', 'light', 'white on web accent top', '#ffffff', mix_white(w['accent'], sheen_alpha(w['accent'], '#ffffff')), 4.5)
             need('R10', f'brand:{name}', 'dark', 'accentDark on dark surface', w['accentDark'], DARK['surface'], 4.5)
             need('R10', f'brand:{name}', 'dark', 'dark ink on accentDark', '#0d1117', w['accentDark'], 4.5)
+    rows.extend(type_checks())
     for name, rec in record.items():
         for m in rec['moves']:
             advisories.append(f'{name}: {m}')
     advisories.extend(theme_file_advisories())
     return rows, advisories
+
+def type_checks():
+    """R12-R15: which face sets what, what each face can do, and each licence as read from its file."""
+    rows = []
+    for name, (step, weight, face, track, upper, tab) in TYPE.items():
+        f = font_for(face)
+        frame = name in FRAME_ROLES
+        rows.append(('R12', 'type', name, f'{f["face"]} on a {"frame" if frame else "content"} role',
+                     face, 'display only on frame roles, and every frame role display', (face == 'display') == frame))
+        if face == 'display':
+            rows.append(('R12', 'type', name, 'frame role asks for no figures', tab, 'no tabular', not tab))
+        rows.append(('R13', 'type', name, f'{f["face"]} at weight {weight}', weight, f['weights'], weight in f['weights']))
+        rows.append(('R13', 'type', name, f'native cut for {face} {weight}', NATIVE_FACES.get((face, weight)), 'bundled', (face, weight) in NATIVE_FACES))
+        if tab:
+            rows.append(('R14', 'type', name, f'figures line up in {f["face"]}', f['figures'], 'tabular or monospaced', f['figures_line_up']))
+    rng = unicode_range_without(NUMBER_CHARS)
+    spans = [(int(r[2:].split('-')[0], 16), int(r[2:].split('-')[-1], 16)) for r in rng.split(', ')]
+    lost = [c for c in NUMBER_CHARS if any(lo <= ord(c) <= hi for lo, hi in spans)]
+    rows.append(('R12', 'type', 'web', "the display face's unicode-range leaves out every character of a number", ''.join(lost) or 'none left in', 'none', not lost))
+    for f in FONTS:
+        path = FONT_DIR / f['licence_file']
+        if not path.exists():
+            rows.append(('R15', 'font', f['face'], f'licence file {f["licence_file"]}', 'missing', 'read', False))
+            continue
+        text = path.read_text(errors='replace')
+        head = text.split('This Font Software is licensed')[0]
+        rows.append(('R15', 'font', f['face'], 'OFL 1.1 in its own licence file', 'SIL OPEN FONT LICENSE Version 1.1' in text, True, 'SIL OPEN FONT LICENSE Version 1.1' in text))
+        rows.append(('R15', 'font', f['face'], 'copyright as recorded', f['copyright'], 'in the file', f['copyright'] in head))
+        m = re.search(r'Reserved Font Names?\s+"?([^"\n.]+)"?', head)
+        found = m.group(1).strip() if m else None
+        rows.append(('R15', 'font', f['face'], 'reserved name as recorded', f'{found!r} in the file, {f["reserved_name"]!r} recorded', 'equal', found == f['reserved_name']))
+    return rows
 
 # ── emit CSS ──────────────────────────────────────────────────────────────────
 def css_block(sel, d, prefix='--hw-'):
@@ -510,7 +544,7 @@ def colour_vars(c, mode, full=True):
 def shared_vars():
     s = SHARED
     v = {}
-    for k, f in s['font'].items():
+    for k, f in FACES.items():
         v[f'font-{k}'] = f
     for k, (size, lh) in s['text'].items():
         v[f'text-{k}'] = f'{size}px'
@@ -531,10 +565,11 @@ def shared_vars():
     v['ease'] = 'cubic-bezier({}, {}, {}, {})'.format(*m['ease'])
     v['ease-exit'] = 'cubic-bezier({}, {}, {}, {})'.format(*m['ease-exit'])
     v['motion-travel-max'] = f"{m['travel-max']}px"
-    fam = {'ui': 'var(--hw-font-ui)', 'display': 'var(--hw-font-display)'}
-    for name, (step, weight, face, _t, _u, _tab) in TYPE.items():
-        size, lh = s['text'][step]
-        v[f'type-{name}'] = f'{weight} {size}px/{lh}px {fam[face]}'
+    for name, (step, weight, face, track, _u, _tab) in TYPE.items():
+        size, lh = type_size(step)
+        v[f'type-{name}'] = f'{weight} {size:g}px/{lh}px var(--hw-font-{face})'
+        if track:
+            v[f'tracking-{name}'] = f'{track}em'
     v['focus-width'] = f"{s['focus']['width']}px"
     v['focus-offset'] = f"{s['focus']['offset']}px"
     return v
@@ -639,8 +674,9 @@ HEADER = '''/* __FAMILY__ family tokens. Generated by tokens.py from the family 
      --hw-danger | success | warning | neutral | done (+ -ink, -tint, -edge)   status only
      --hw-avatar-*, --hw-assist-*, --hw-word, --hw-press, --hw-glow-live
      Shapes: --hw-line-width (2), --hw-folio-radius (4), --hw-folio-chip (10), --hw-folio-bar (3)
-     Type: font: var(--hw-type-body) ... -tab and -eyebrow are JetBrains Mono in tracked capitals
-           (uppercase, --hw-tracking-label); titles and -figure are JetBrains Mono; the rest Inter.
+     Type: one class per role, .hw-text-<role> (or font: var(--hw-type-<role>) plus its tracking).
+           The display face sets the frame roles only and never a digit (tokens.json behaviour.type);
+           the ui face sets content; the figures face sets digits that must line up.
 */'''
 
 def build_css():
@@ -661,7 +697,8 @@ def build_css():
    ════════════════════════════════════════════════════════════════════════════ */''')
     for name in ORDER:
         src = record[name]['source']
-        out.append(f"/* {src['label']}. From {src['theme']}{' (inferred)' if src.get('inferred') else ''}. */")
+        out.append(f"/* {src['label']}. From {src['theme']}{' (inferred)' if src.get('inferred') else ''}."
+                   + (f" PENDING: {src['pending']}" if src.get('pending') else '') + ' */')
         blocks = []
         for mode in ('light', 'dark'):
             c = products[name][mode]
@@ -673,7 +710,26 @@ def build_css():
         out.append(css_block(f'[data-product="{name}"]', blocks[0]))
         out.append(css_block(f'.dark[data-product="{name}"], .dark [data-product="{name}"], [data-product="{name}"] .dark', blocks[1]))
     out.append(SIG_CSS)
+    out.append(type_css())
     return '\n\n'.join(out) + '\n'
+
+def type_css():
+    lines = ['''/* ════════════════════════════════════════════════════════════════════════════
+   4 · Type: one class per role, carrying its face, size, case, tracking and figures
+   ════════════════════════════════════════════════════════════════════════════ */
+/* Nothing is faked: a display face with one weight and no italic draws as it is when bold or
+   italic is asked of it, instead of being smeared. It inherits from the root. */
+:root { font-synthesis: none; }''']
+    for name, (step, weight, face, track, upper, tab) in TYPE.items():
+        d = [f'font: var(--hw-type-{name})']
+        if track:
+            d.append(f'letter-spacing: var(--hw-tracking-{name})')
+        if upper:
+            d.append('text-transform: uppercase')
+        if tab:
+            d.append('font-variant-numeric: tabular-nums lining-nums')
+        lines.append(f'.hw-text-{name} {{ {"; ".join(d)}; }}')
+    return '\n'.join(lines)
 
 # ── emit JSON ─────────────────────────────────────────────────────────────────
 def tok(value, typ, css=None, desc=None):
@@ -714,8 +770,9 @@ def native_group():
     num = lambda d: {k: v for k, v in d.items() if not isinstance(v, str)}
     typ = {}
     for name, (step, weight, face, track, upper, tab) in TYPE.items():
-        size, lh = s['text'][step]
-        t = {'face': face, 'size': size, 'lineHeight': lh, 'weight': str(weight), 'letterSpacing': round(track * size, 2)}
+        size, lh = type_size(step)
+        t = {'face': face, 'fontFamily': NATIVE_FACES.get((face, weight)), 'size': size, 'lineHeight': lh,
+             'weight': str(weight), 'letterSpacing': round(track * size, 2)}
         if upper:
             t['textTransform'] = 'uppercase'
         if tab:
@@ -723,11 +780,9 @@ def native_group():
         typ[name] = t
     return {
         '$description': 'Plain numbers for a native theme (React Native, iPad, Android, Mac). Sizes are dp/pt, equal to CSS px. Fills are solid on native.',
-        'font': {
-            'ui': {'bundle': ['Inter_400Regular', 'Inter_600SemiBold'], 'package': '@expo-google-fonts/inter', 'licence': 'OFL 1.1'},
-            'display': {'bundle': ['JetBrainsMono_500Medium', 'JetBrainsMono_600SemiBold'], 'package': '@expo-google-fonts/jetbrains-mono', 'licence': 'OFL 1.1'},
-            'note': 'Both bundled, so every platform draws the same faces; allowFontScaling keeps Dynamic Type working.',
-        },
+        'font': {css: {'face': font_for(css)['face'], 'bundle': sorted(n for (f, _w), n in NATIVE_FACES.items() if f == css),
+                       'licence': font_for(css)['licence'] + (f', Reserved Font Name "{font_for(css)["reserved_name"]}": bundle the file as published, never a subset' if font_for(css)['reserved_name'] else '')}
+                 for css in ('display', 'ui', 'figures')},
         'type': typ,
         'space': num(s['space']), 'gap': num(s['gap']), 'pad': num(s['pad']), 'size': num(s['size']),
         'radius': num(s['radius']), 'focus': dict(s['focus']), 'folio': dict(s['folio']), 'line': dict(s['line']),
@@ -767,13 +822,24 @@ BEHAVIOUR = {
     },
 }
 
+def type_behaviour():
+    disp = font_for('display')
+    return {
+        '$description': 'Which face sets what. The display face sets only the frame roles, words the product ships; content, including a person\'s or record\'s name where a title goes, is the ui face; digits that line up are the figures face.',
+        'frame_roles': list(FRAME_ROLES),
+        'digits': f'No digit, price, time, date, count, table cell or form value is ever set in {disp["face"]}. On the web the net below draws any that slip through in the next face of the stack; scripts/frame-digits.js finds them on a rendered screen.',
+        'unicode_range': unicode_range_without(NUMBER_CHARS),
+        'unicode_range_use': f'put it on {disp["face"]}\'s @font-face (next/font/local: declarations: [{{ prop: "unicode-range", value: <this> }}])',
+        **TYPE_NOTES,
+    }
+
 def build_json():
     s = SHARED
     products, record = derive_all()
     j = {
         '$description': f'{FAMILY} family tokens. Each product colour derives from an Omarchy theme by the rule in tokens.py; products.<name>.source records the theme, its licence, the colours read, and every lightness the rule moved.',
         'shared': {
-            'font': {k: tok(v, 'fontFamily', f'--hw-font-{k}') for k, v in s['font'].items()},
+            'font': {k: tok(v, 'fontFamily', f'--hw-font-{k}') for k, v in FACES.items()},
             'fonts': FONTS,
             'text': {k: {'size': tok(f'{a}px', 'dimension', f'--hw-text-{k}'),
                          'lineHeight': tok(f'{b}px', 'dimension', f'--hw-leading-{k}')} for k, (a, b) in s['text'].items()},
@@ -798,7 +864,7 @@ def build_json():
             'color': {'light': color_group(resolve(dict(LIGHT))), 'dark': color_group(resolve(dict(DARK)))},
         },
         'products': {},
-        'behaviour': BEHAVIOUR,
+        'behaviour': {**BEHAVIOUR, 'type': type_behaviour()},
         'native': native_group(),
     }
     for name in ORDER:
@@ -809,7 +875,8 @@ def build_json():
             'source': {'theme': src['theme'], 'url': src['url'], 'licence': src['licence'], 'colours_read': src['colours'],
                        'slot': src.get('slot'), 'hue': rec.get('hue'), 'intent': src['intent'],
                        'neutral_hue': rec.get('neutral_hue'), 'neutral_scale': rec.get('neutral_scale'),
-                       'why': src['why'], 'inferred': src['inferred'], 'moves': rec['moves']},
+                       'why': src['why'], 'inferred': src['inferred'], 'moves': rec['moves'],
+                       **({'pending': src['pending']} if src.get('pending') else {})},
             'light': color_group(products[name]['light']),
             'dark': color_group(products[name]['dark']),
         }
@@ -830,6 +897,23 @@ def selftest():
             BRAND_SUBTITLE_ALPHA, BRAND_BAND_SHEEN = old
             fails = [r for r in checks()[0] if not r[-1]]
             BRAND_SUBTITLE_ALPHA, BRAND_BAND_SHEEN = keep
+        elif where == 'TYPE':
+            keep = TYPE[key]
+            TYPE[key] = old
+            fails = [r for r in checks()[0] if not r[-1]]
+            TYPE[key] = keep
+        elif where == 'FONT':
+            f = next(x for x in FONTS if x['face'] == key)
+            keep = f['reserved_name']
+            f['reserved_name'] = old
+            fails = [r for r in checks()[0] if not r[-1]]
+            f['reserved_name'] = keep
+        elif where == 'CHARS':      # the range a too-short list would give, checked against the full list
+            rng = unicode_range_without(old)
+            saved = globals()['unicode_range_without']
+            globals()['unicode_range_without'] = lambda chars, _r=rng: _r
+            fails = [r for r in checks()[0] if not r[-1]]
+            globals()['unicode_range_without'] = saved
         elif where == 'RAW':
             OVERRIDES[(prod, key[0], key[1])] = old
             fails = [r for r in checks()[0] if not r[-1]]
@@ -854,6 +938,7 @@ def load_family():
         raise SystemExit('usage: tokens.py --family FAMILY.py [--out DIR] [--check | --selftest | --table]')
     path = Path(args[args.index('--family') + 1]).resolve()
     exec(compile(path.read_text(), str(path), 'exec'), globals())
+    globals()['FONT_DIR'] = path.parent
     HERE = Path(args[args.index('--out') + 1]).resolve() if '--out' in args else path.parent
 
 def main():
