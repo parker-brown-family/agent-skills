@@ -42,11 +42,15 @@ SOURCES = {
                   colours={'accent': '#faa968', 'background': '#05182e', 'foreground': '#f6dcac', 'green': '#028391'},
                   licence='MIT (Omarchy stock theme)', url='https://github.com/omacom/omarchy/tree/HEAD/themes/retro-82',
                   why='Parker: "Surge will follow the Retro 82 Omarchy theme", "brighter, more azure kind of blue". Retro 82\'s own accent is orange, on the warning hue; the azure is taken between its navy ground (253°) and its teal (208°). The exact point is feel, not measurement.', inferred=False),
-    'home': dict(theme='miasma', label='Head Waters · the suite', intent='gentle', slot='accent',
-                 colours={'accent': '#78824b', 'background': '#222222', 'foreground': '#c2c2b0'},
-                 licence='MIT (Omarchy stock theme)', url='https://github.com/omacom/omarchy/tree/HEAD/themes/miasma',
-                 why='Inferred: Parker named no theme. Home already wore olive drab, Miasma is the stock olive theme, and olive is the one free hue in the set.', inferred=True,
-                 pending='a holding value: the owner has since asked for Home to be Deep Quiet pulled toward the company brand, and is choosing among mixes; that pick replaces this entry.'),
+    'home': dict(theme='deep-quiet', label='Head Waters · the suite', intent='gentle', slot=None,
+                 colours={'blue': '#8FBEB7', 'foreground': '#DDD7C1', 'dark_background': '#1D241F', 'brown': '#BE9A76'},
+                 also={'the company brand teal': '#007480',
+                       'old-tree browns (the settled mock)': {'bark': '#2C1F15', 'umber': '#3D2C1E', 'heartwood': '#4E3927',
+                                                              'weathered': '#6A5340', 'lit corner': '#6E553C'}},
+                 licence='MIT (Parker Brown and David Heinemeier Hansson)',
+                 url='https://github.com/parker-brown-family/omarchy-deep-quiet-theme',
+                 why='Settled by the owner by eye ("Settle on C ! <3"): Deep Quiet\'s sea-glass moved toward the company\'s brand teal, "with a little bit of brown", then "OLD TREE" browns in a corner glow. The dark ink is Deep Quiet\'s foreground and the tab bar close to its brown. Given whole in SETTLED; only what fails a check moves.',
+                 inferred=False),
 }
 ORDER = ['piper', 'scythe', 'stone', 'silo', 'surge', 'home']   # fixed products first, then the rule in this order
 
@@ -96,7 +100,14 @@ OLD_VALUES = [
     ('RAW', 'surge', ('dark', 'accent'), '#58c4ff', 'Surge dark at the starting lightness 0.78, before step 6 moved it'),
     # type: each must fail R12 to R15
     ('TYPE', None, 'figure', ('3xl', 600, 'display', 0, False, True), 'the big number in the display face, as the version before set it'),
-    ('TYPE', None, 'data', ('md', 400, 'ui', 0, False, True), 'figures asked to line up in DM Sans, which has no tabular figures'),
+    ('FACE', None, 'ui', dict(face='DM Sans', css='ui', role='content', licence_file='OFL-Federo.txt', licence='SIL Open Font License 1.1',
+                             copyright='Copyright (c) 2011, Cyreal (www.cyreal.org)', reserved_name='Federo', weights=[400, 500, 600],
+                             italic=True, figures_line_up=False, figures='proportional only (no tnum)'),
+     'DM Sans, the first candidate, as the content face: its figures cannot line up, so the data role fails'),
+    ('FONT', None, 'IBM Plex Sans', None, 'Plex recorded from its name table, which states no reserved name; its OFL.txt reserves "Plex"'),
+    ('RAW', 'home', ('light', 'accent'), '#0C6E75', 'Home light accent as settled: 3.04 from Stone for colour-blind readers'),
+    ('RAW', 'home', ('dark', 'accent'), '#6BAAAE', 'Home dark accent as settled: 3.50 from Silo for colour-blind readers'),
+    ('RAW', 'home', ('dark', 'gel'), '#2F9AA0', 'Home dark gel as settled: its label under 4.5 at the bottom of its line over clear glass'),
     ('TYPE', None, 'title-page', ((34, 40), 600, 'display', 0, False, False), 'a semibold Federo title: one weight, so the browser fakes it'),
     ('TYPE', None, 'meta', ('sm', 400, 'display', 0, False, False), 'meta (dates, times) in Federo'),
     ('FONT', None, 'Federo', None, 'Federo recorded with no reserved name: a subset would ship under a name its licence reserves'),
@@ -105,31 +116,31 @@ OLD_VALUES = [
 
 # ── type (reference/type.md) ──────────────────────────────────────────────────
 # The owner, on a sample of Federo: "can't use it for numbers or data... but the title and headers
-# look really nice", and Federo for "the surrounding elements, the meta elements, the headers, the
-# titles, the folders, maybe even buttons", with DM Sans "for all of the body content". Measuring the
-# files then found that DM Sans 4.004 has no tabular figures, so digits that line up take DM Mono.
+# look really nice"; then, on IBM Plex Sans: "let's keep it simple ... Still fedora for all the STYLE
+# stuff... and then IBM for all the CONTENT". Two faces. The first candidate for content, DM Sans
+# 4.004, had no tabular figures; Plex's line up by default, so numbers need no third face.
 FACES = {
-    'display': 'var(--font-federo, "Federo"), var(--font-dm-sans, "DM Sans"), system-ui, sans-serif',
-    'ui': 'var(--font-dm-sans, "DM Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-    'figures': 'var(--font-dm-mono, "DM Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace',
-    'mono': 'var(--font-dm-mono, "DM Mono"), ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+    'display': 'var(--font-federo, "Federo"), var(--font-ibm-plex-sans, "IBM Plex Sans"), system-ui, sans-serif',
+    'ui': 'var(--font-ibm-plex-sans, "IBM Plex Sans"), system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    'mono': 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
 }
 FRAME_ROLES = ('wordmark', 'eyebrow', 'tab', 'title-section', 'title-page', 'display')
-# Federo's x-height is 0.46 em against DM Sans's 0.526: a Federo title is the step it replaces x 1.14.
+# Federo's x-height is 0.46 em against Plex's 0.516: a Federo title is the step it replaces x 1.12.
+# The wordmark and tabs are the values of the header the owner settled.
 TYPE = {
-    'wordmark': ((19, 28), 400, 'display', 0.10, True, False),
+    'wordmark': ((19, 28), 400, 'display', 0.11, True, False),
     'eyebrow': ((13, 16), 400, 'display', 0.10, True, False),
-    'tab': ((16, 20), 400, 'display', 0.08, True, False),
-    'title-section': ((28, 32), 400, 'display', 0, False, False),
+    'tab': ((16.5, 20), 400, 'display', 0, False, False),
+    'title-section': ((27, 32), 400, 'display', 0, False, False),
     'title-page': ((34, 40), 400, 'display', 0, False, False),
-    'display': ((44, 52), 400, 'display', 0, False, False),
+    'display': ((43, 52), 400, 'display', 0, False, False),
     'label': ('sm', 600, 'ui', 0, False, False), 'meta': ('sm', 400, 'ui', 0, False, False),
-    'body': ('md', 400, 'ui', 0, False, False),
-    'button': ('md', 600, 'ui', 0, False, False),        # the owner has not yet chosen Federo or DM Sans
+    'body': ('md', 400, 'ui', 0, False, False), 'button': ('md', 600, 'ui', 0, False, False),
+    'gel': ((14, 20), 600, 'ui', 0, False, False),
     'title-card': ('lg', 600, 'ui', 0, False, False), 'lead': ('lg', 400, 'ui', 0, False, False),
     'title-record': ('2xl', 600, 'ui', 0, False, False),
     'figure': ('3xl', 600, 'ui', 0, False, False),
-    'data': ('md', 400, 'figures', 0, False, True),
+    'data': ('md', 400, 'ui', 0, False, True),
 }
 FONTS = [  # read from the files with scripts/font_facts.py and from each OFL.txt
     dict(face='Federo', css='display', role='the frame: wordmark, eyebrows, tabs, section and page titles',
@@ -139,31 +150,48 @@ FONTS = [  # read from the files with scripts/font_facts.py and from each OFL.tx
          figures='proportional: a 1 is 0.31 em, a 0 is 0.61 em; no tabular figures',
          measured='x-height 0.46 em, cap height 0.73 em; 220 glyphs; lacks the ellipsis and arrows',
          url='https://github.com/google/fonts/tree/main/ofl/federo'),
-    dict(face='DM Sans', css='ui', role='everything a person reads or types, and one number standing alone',
-         licence_file='OFL-DMSans.txt', licence='SIL Open Font License 1.1',
-         copyright='Copyright 2014 The DM Sans Project Authors', reserved_name=None,
-         weights=[400, 500, 600], italic=True, figures_line_up=False,
-         figures='proportional only: version 4.004 has no tnum feature (a 1 is 0.34 em, a 0 is 0.66 em)',
-         measured='x-height 0.526 em, cap height 0.70 em; variable, opsz 9-40 and wght 100-1000',
-         url='https://github.com/googlefonts/dm-fonts'),
-    dict(face='DM Mono', css='figures', role='figures that line up (amounts, times and counts in a column, totals, counters); code',
-         licence_file='OFL-DMMono.txt', licence='SIL Open Font License 1.1',
-         copyright='Copyright 2020 The DM Mono Project Authors', reserved_name=None,
-         weights=[300, 400, 500], italic=True, figures_line_up=True,
-         figures='every digit 0.60 em', measured='x-height 0.496 em, cap height 0.70 em (the same as DM Sans)',
-         url='https://github.com/googlefonts/dm-mono'),
+    dict(face='IBM Plex Sans', css='ui', role='everything a person reads or types, numbers, data and every button included',
+         licence_file='OFL-IBMPlexSans.txt', licence='SIL Open Font License 1.1',
+         copyright='Copyright © 2017 IBM Corp.', reserved_name='Plex',
+         weights=[400, 500, 600], italic=True, figures_line_up=True,
+         figures='tabular by default: every digit 0.60 em',
+         measured='x-height 0.516 em, cap height 0.698 em; variable, wght 100-700 and wdth 75-100; the name table states no reserved name, the OFL.txt reserves "Plex"',
+         url='https://github.com/google/fonts/tree/main/ofl/ibmplexsans'),
 ]
 NATIVE_FACES = {  # @expo-google-fonts export names, read from each package
     ('display', 400): 'Federo_400Regular',
-    ('ui', 400): 'DMSans_400Regular', ('ui', 500): 'DMSans_500Medium', ('ui', 600): 'DMSans_600SemiBold',
-    ('figures', 400): 'DMMono_400Regular', ('figures', 500): 'DMMono_500Medium',
+    ('ui', 400): 'IBMPlexSans_400Regular', ('ui', 500): 'IBMPlexSans_500Medium', ('ui', 600): 'IBMPlexSans_600SemiBold',
 }
 TYPE_NOTES = {
-    'figures': 'DM Sans 4.004 has no tabular figures, so a column of amounts in DM Sans will not line up whatever font-variant-numeric says (at 16 px, 111.11 is 28 px wide and 888.88 is 53). Figures in a column, a total, a running count or a clock take DM Mono (type-data: every digit 0.60 em, the same cap height as DM Sans). A number inside a sentence, or one standing alone (type-figure), stays DM Sans.',
-    'emphasis': 'Federo has one weight and no italic. A frame string takes no emphasis inside it; one frame string ranks above another by size and ink level. A word that needs emphasis inside a title is content, so it is DM Sans 600. font-synthesis: none on :root stops a browser faking bold or italic.',
-    'optical_size': 'DM Sans is variable with an optical-size axis (9 to 40); browsers set it from the font size, so a 38 px figure draws the display cut and 14 px meta the text cut. Native bundles static cuts.',
-    'buttons': 'Not yet chosen: Federo or DM Sans. Until then type-button is DM Sans 600. If Federo wins, a button that carries a figure still draws the figure in DM Sans: the unicode-range does it on the web, and native splits the label.',
-    'licences': 'Each licence is read from its own OFL.txt (check R15). Federo reserves its name: ship the file as published, or a WOFF2 that only compresses it; a subset or other conversion is a modified version and may not be called Federo (OFL-FAQ 2.1, 2.6). DM Sans and DM Mono reserve no name, so they may be subset.',
-    'web': 'localFont({ src: "./fonts/Federo-Regular.ttf", variable: "--font-federo", weight: "400", display: "swap", declarations: [{ prop: "unicode-range", value: behaviour.type.unicode_range }] }); DM_Sans({ subsets: ["latin"], axes: ["opsz"], variable: "--font-dm-sans" }); DM_Mono({ subsets: ["latin"], weight: ["400", "500"], variable: "--font-dm-mono" })',
-    'native': 'Bundle @expo-google-fonts/federo, /dm-sans and /dm-mono; native.type.<role>.fontFamily names the cut. Native has no unicode-range, so the frame text component throws in development on a digit.',
+    'figures': 'IBM Plex Sans\'s figures line up by default (every digit 0.60 em), so amounts, totals and clocks are Plex as it stands (type-data). Never switch on old-style figures (onum) for data. The first candidate, DM Sans 4.004, had no tabular figures: at 16 px, 111.11 measured 28 px and 888.88 53 px with tabular-nums set.',
+    'emphasis': 'Federo has one weight and no italic. A frame string takes no emphasis inside it; one ranks above another by size and ink level. A word that needs emphasis inside a title is content, so it is Plex 600. font-synthesis: none on :root stops a browser faking bold or italic.',
+    'buttons': 'IBM Plex Sans 600, every button, the header\'s gel included.',
+    'licences': 'Each licence is read from its own OFL.txt (check R15). Both faces reserve their names, "Federo" and "Plex" (Plex\'s only in its OFL.txt). Ship each file as published, or a WOFF2 that only compresses it; a subset or other conversion is a modified version and may not use the name (OFL-FAQ 2.1, 2.6), so neither goes through next/font/google.',
+    'web': 'localFont({ src: "./fonts/Federo-Regular.woff2", variable: "--font-federo", weight: "400", display: "swap", declarations: [{ prop: "unicode-range", value: behaviour.type.unicode_range }] }); localFont({ src: "./fonts/IBMPlexSans-var.woff2", variable: "--font-ibm-plex-sans", weight: "100 700", display: "swap" })',
+    'native': 'Bundle @expo-google-fonts/federo and /ibm-plex-sans; native.type.<role>.fontFamily names the cut. Native has no unicode-range, so the frame text component throws in development on a digit.',
 }
+
+# ── the settled product and the header (reference/glass-header.md) ────────────
+# Home was settled by eye on a mock; these are the mock's values. The roles the mock did not show
+# are derived: (lightness, chroma) at the ground's hue, or 'ink' for the ink's hue and chroma.
+SETTLED = {'home': {
+    'light': {'ground': '#EDE6D5', 'surface': '#F7F1E2', 'ink': '#1B2420', 'accent': '#0C6E75', 'on-accent': '#ffffff',
+              'signature': '#7A5B3C', 'header-ink': '#241A10', 'header-tint': '#3D2C1E',
+              'glow-core': '#2C1F15', 'glow-mid': '#4E3927b0', 'gel': '#2F9AA0', 'on-gel': '#061416', 'frost-ink': '#2a2118'},
+    'dark': {'ground': '#1E221D', 'surface': '#272C25', 'ink': '#DDD7C1', 'accent': '#6BAAAE', 'on-accent': '#10161a',
+             'signature': '#B99A70', 'header-ink': '#EAE2CC', 'header-tint': '#2C1F15',
+             'glow-core': '#6E553C', 'glow-mid': '#3D2C1Ea0', 'gel': '#2F9AA0', 'on-gel': '#061416', 'frost-ink': '#EAE2CC'},
+    'derived': {
+        'light': {'surface-top': (0.972, None), 'surface-bottom': (0.959, None), 'raised': (0.968, None), 'raised-bottom': (0.952, None),
+                  'float': (0.978, 0.014), 'inset': (0.893, None), 'field': (0.982, 0.012),
+                  'ink-2': (0.42, 'ink'), 'ink-3': (0.48, 'ink'), 'edge': (0.85, 0.022), 'edge-control': (0.56, 0.02),
+                  'neutral': (0.53, 0.02), 'neutral-tint': (0.905, 0.02), 'neutral-edge': (0.80, 0.02)},
+        'dark': {'surface-top': (0.30, None), 'surface-bottom': (0.286, None), 'raised': (0.315, None), 'raised-bottom': (0.30, None),
+                 'float': (0.345, 0.016), 'inset': (0.215, None), 'field': (0.225, None),
+                 'ink-2': (0.79, 'ink'), 'ink-3': (0.72, 'ink'), 'edge': (0.37, 0.016), 'edge-control': (0.62, 0.02),
+                 'neutral': (0.64, 0.02), 'neutral-tint': (0.33, 0.016), 'neutral-edge': (0.43, 0.016)}},
+}}
+# Each other product's corner tone: the theme colour its hue and chroma come from (proposed to the
+# owner, who settled the header for Home only).
+GLOW_FROM = {'stone': ('Nord slate', '#4c566a'), 'silo': ('Jade Horse jade', '#8bcbb1'),
+             'scythe': ('Praus gold', '#A18C60'), 'surge': ('Retro 82 navy', '#05182e'), 'piper': ('Piper burgundy', '#7a3341')}

@@ -51,7 +51,7 @@
 .hw .hw-row { display: flex; align-items: center; gap: var(--hw-gap-related); flex-wrap: wrap; }
 .hw .g4 { gap: var(--hw-gap-tight); } .hw .g8 { gap: var(--hw-gap-related); } .hw .g16 { gap: var(--hw-gap-group); }
 .hw .g24 { gap: var(--hw-space-5); } .hw .g32 { gap: var(--hw-gap-section); }
-.hw .num { font-family: var(--hw-font-figures); font-variant-numeric: tabular-nums; }   /* figures that line up: DM Mono */
+.hw .num { font-variant-numeric: tabular-nums; }   /* Plex's figures line up already; this keeps it so */
 .hw .push { margin-left: auto; }
 
 /* ── depth ───────────────────────────────────────────────────────────────────── */

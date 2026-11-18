@@ -117,9 +117,19 @@ SHARED = {
                'ease': [0.2, 0, 0, 1], 'ease-exit': [0.3, 0, 1, 1], 'travel-max': 16},
     'focus': {'width': 2, 'offset': 2},
     'glow-live': {'blur': 12, 'alpha': 0.35},
+    # The glass header, after Terminal Delight's docs site (github.com/parker-brown-family/
+    # terminal-delight, docsite/redesign/redesign.css): a faint lit sheet over the ground, a
+    # hairline edge, and a soft shadow below in place of a hard line; a glow in the top right corner.
+    'header': {'height': 96, 'control': 34,
+               'glass': {'sheet': 'linear-gradient(#ffffff12, #ffffff04)', 'tint': 26, 'blur': 20,
+                         'edge': '#ffffff20', 'shadow': '0 14px 34px #00000055, inset 0 1px 0 #ffffff22'},
+               'glow': {'origin': '100% 0%', 'reach-x': '38%', 'reach-y': '112%', 'core-stop': '14%', 'mid-stop': '46%'},
+               'gel': {'alpha': 62, 'blur': 14, 'saturate': 1.5, 'sheet': 'linear-gradient(#ffffff48, #ffffff0d)',
+                       'edge-white': 45, 'shadow': '0 8px 20px #00000055, inset 0 1px 0 #ffffff66'},
+               'frost': {'blur': 14, 'saturate': 1.4}},
 }
 # ── type: set by the family file (see reference/type.md and examples/head-waters/family.py) ──
-# FACES: CSS stacks for 'display' (the frame), 'ui' (content), 'figures' (digits that line up), 'mono'.
+# FACES: CSS stacks for 'display' (the frame), 'ui' (content, numbers included), 'mono' (code only).
 # TYPE: role -> (size, weight, face, tracking-em, uppercase, tabular); size is a step of
 #   SHARED['text'] or (px, line) for a display face fitted by its x-height.
 # FRAME_ROLES: the roles the display face may set. They never hold a digit.
@@ -143,7 +153,7 @@ def type_size(step):
     return SHARED['text'][step] if isinstance(step, str) else step
 
 def font_for(css):
-    return next(f for f in FONTS if f['css'] == ('figures' if css == 'mono' else css))
+    return next(f for f in FONTS if f['css'] == css)
 
 ELEV = {
     'inset': [dict(x=0, y=1, blur=2, spread=0, alpha=0.08, inset=True)],
@@ -170,6 +180,8 @@ LIGHT = {
     'neutral': '#6b7785', 'neutral-tint': '#eef0f3', 'neutral-edge': '#cfd5dc',
     'done': '#3f7a55',
     'scrim': 'rgba(17, 22, 28, 0.45)',
+    'frost-sheet': 'linear-gradient(#ffffffa8, #ffffff55)', 'frost-tint': 'transparent',
+    'frost-edge': '#ffffffc0', 'frost-shadow': '0 6px 18px #00000026, inset 0 1px 0 #ffffffd0',
 }
 DARK = {
     'ground': '#11161c', 'surface': '#19202a', 'raised': '#212935', 'float': '#29323f',
@@ -184,6 +196,8 @@ DARK = {
     'neutral': '#8f9aa6', 'neutral-tint': '#262f3b', 'neutral-edge': '#3d4856',
     'done': '#6fbf8c',
     'scrim': 'rgba(0, 0, 0, 0.6)',
+    'frost-sheet': 'linear-gradient(#ffffff22, #ffffff08)', 'frost-tint': 'color-mix(in srgb, var(--hw-header-tint) 45%, transparent)',
+    'frost-edge': '#ffffff38', 'frost-shadow': '0 6px 18px #00000040, inset 0 1px 0 #ffffff30',
 }
 NEUTRAL_ROLES = ('ground', 'surface', 'surface-top', 'surface-bottom', 'raised', 'raised-bottom', 'float',
                  'inset', 'field', 'ink', 'ink-2', 'ink-3', 'edge', 'edge-control', 'neutral', 'neutral-tint', 'neutral-edge')
@@ -202,7 +216,7 @@ ALIASES = {
     'neutral-ink': 'ink-2', 'done-ink': 'ink-2', 'done-tint': 'neutral-tint',
     'avatar-bg': 'neutral-tint', 'avatar-ink': 'ink-2',
     'assist-surface': 'raised', 'assist-ink': 'ink', 'assist-live': 'accent',
-    'word': 'ink', 'line': 'edge',
+    'word': 'ink', 'line': 'edge', 'page': 'ground',
 }
 
 # ── the family: loaded from --family FILE (see examples/head-waters/family.py) ──
@@ -218,6 +232,15 @@ BRANDS = {}         # brands a client page may wear (optional), checked by R10
 BRAND_SUBTITLE_ALPHA = 1.0
 BRAND_BAND_SHEEN = 0.0
 OVERRIDES = {}   # (product, mode, role) -> value; used by --selftest only
+SETTLED = {}        # product -> a palette its owner settled by eye: {'light': {...}, 'dark': {...},
+                    #   'derived': {mode: {role: (lightness, chroma or None or 'ink')}}}; placed last,
+                    #   only its accent and gel move, and only as far as a check needs
+GLOW_FROM = {}      # product -> (name, colour): the theme colour its header's corner tone takes
+                    #   its hue and chroma (at most 0.07) from
+# The header's lightness structure when no product is settled: the corner core and mid (with the
+# mid's alpha), the frosted tint and the gel, per mode. A settled product's own values replace it.
+HEADER_LIGHTNESS = {'light': {'core': 0.252, 'mid': 0.363, 'mid_alpha': 0.69, 'tint': 0.309, 'gel': 0.63},
+                    'dark': {'core': 0.469, 'mid': 0.309, 'mid_alpha': 0.63, 'tint': 0.252, 'gel': 0.63}}
 
 def read_theme(name):
     """A theme's colours from its colors.toml, when the family file did not record them."""
@@ -309,6 +332,95 @@ def signature_for(src, c, mode):
         L += step
     return hexof(L, C, H), (round(start, 3), round(L, 3))
 
+def alpha_hex(h, a):
+    return h + '%02x' % round(a * 255)
+
+def header_reference(mode):
+    """Lightness of the corner core, mid (and its alpha), frosted tint and gel: from the first
+    settled product if there is one, else HEADER_LIGHTNESS."""
+    for fx in SETTLED.values():
+        hs = fx[mode]
+        return {'core': oklch(hs['glow-core'])[0], 'mid': oklch(hs['glow-mid'][:7])[0],
+                'mid_alpha': int(hs['glow-mid'][7:] or 'ff', 16) / 255, 'tint': oklch(hs['header-tint'])[0],
+                'gel': oklch(hs['gel'])[0], 'gel_C': oklch(hs['gel'])[1]}
+    return {**HEADER_LIGHTNESS[mode], 'gel_C': 0.094}
+
+HEADER_ROLES = ('header-ink', 'header-tint', 'glow-core', 'glow-mid', 'gel', 'on-gel', 'frost-ink')
+
+def header_roles(name, mode, c, products):
+    """The glass header's colours for one product and mode."""
+    if name in SETTLED:
+        return {k: SETTLED[name][mode][k] for k in HEADER_ROLES if k in SETTLED[name][mode]}
+    ref = header_reference(mode)
+    _label, col = GLOW_FROM.get(name, ('its accent', c['accent']))
+    _L, Ct, H = oklch(col)
+    C = min(Ct, 0.07)
+    dark_acc = products[name]['dark']['accent']
+    _aL, aC, aH = oklch(dark_acc)
+    ink_kind = SOURCES.get(name, {}).get('intent') == 'ink'
+    gel = dark_acc if ink_kind else hexof(ref['gel'], min(aC, ref['gel_C']), aH)
+    return {'header-ink': c['ink'], 'header-tint': hexof(ref['tint'], C * 0.6, H), 'glow-core': hexof(ref['core'], C, H),
+            'glow-mid': alpha_hex(hexof(ref['mid'], C, H), ref['mid_alpha']), 'gel': gel,
+            'on-gel': hexof(0.18, min(aC, 0.02), aH), 'frost-ink': c['ink']}
+
+def settled_palette(name, mode):
+    """A settled product's given values, with the roles its mock did not show derived from them."""
+    base = LIGHT if mode == 'light' else DARK
+    fx = SETTLED[name]
+    hs = fx[mode]
+    _gL, gC, gH = oklch(hs['ground'])
+    _iL, iC, iH = oklch(hs['ink'])
+    c = {**base, **{k: v for k, v in hs.items() if k in ('ground', 'surface', 'ink')}}
+    for role, (L, C) in fx.get('derived', {}).get(mode, {}).items():
+        c[role] = hexof(L, iC, iH) if C == 'ink' else hexof(L, gC if C is None else C, gH)
+    return c
+
+def derive_settled(name, placed):
+    """A settled palette: the given values, with only the accent moved, by rule step 6, if a check fails."""
+    out, moves = {}, []
+    for mode in ('light', 'dark'):
+        hs = SETTLED[name][mode]
+        c0 = settled_palette(name, mode)
+        L0, C, H = oklch(hs['accent'])
+        chosen, first_fail = None, (99, None)
+        for off in OFFSETS:
+            if off == 0:
+                acc = {'accent': hs['accent'], 'on-accent': hs['on-accent'],
+                       **{k: v for k, v in accent_set(L0, C, H, mode).items() if k not in ('accent', 'on-accent')}}
+            else:
+                acc = accent_set(L0 + off, C, H, mode)
+            cand = resolve({**c0, **acc})
+            iL, iC, iH = oklch(cand['accent-ink'])      # the link keeps the hue, finds its own lightness
+            step = -0.01 if mode == 'light' else 0.01
+            for _ in range(30):
+                if all(contrast(cand['accent-ink'], cand[bg]) >= 4.5 for bg in SURFACES + ('accent-tint',)):
+                    break
+                iL += step
+                cand['accent-ink'] = hexof(iL, iC, iH)
+            for (p_, m, role), v in OVERRIDES.items():
+                if p_ == name and m == mode:
+                    cand[role] = v
+            near = min(((min(cvd_distance(cand['accent'], o, 'deutan'), cvd_distance(cand['accent'], o, 'protan')), n)
+                        for n, o in placed[mode].items()), default=(99, None))
+            if (name, mode, 'accent') in OVERRIDES or (own_ok(cand, mode) and near[0] >= 5.0):
+                chosen = (off, cand, near)
+                break
+            if off == 0:
+                first_fail = near
+        if chosen is None:
+            chosen = (0, resolve({**c0, **accent_set(L0, C, H, mode), 'accent': hs['accent'], 'on-accent': hs['on-accent']}), first_fail)
+            moves.append(f'{mode}: no lightness in reach passes every check; left as settled for the checks to report')
+        off, cand, near = chosen
+        if off:
+            moves.append(f"{mode} accent {hs['accent']} -> {cand['accent']} (lightness {L0:.2f} -> {L0 + off:.2f}, rule step 6): "
+                         f"as settled it was {first_fail[0]:.2f} from {str(first_fail[1]).capitalize()} for colour-blind readers, under 5.0")
+        cand['signature'] = OVERRIDES.get((name, mode, 'signature'), hs.get('signature', cand['accent']))
+        cand['word'] = hs.get('header-ink', cand['ink'])
+        cand['page'] = cand['surface']
+        out[mode] = cand
+        placed[mode][name] = cand['accent']
+    return out, moves
+
 def derive_all():
     """Every product's light and dark palette, with the record of what the rule did."""
     products, record, placed = {}, {}, {'light': {}, 'dark': {}}
@@ -321,6 +433,10 @@ def derive_all():
         record[name] = {'source': fx['source'], 'moves': []}
     for name in [n for n in ORDER if n not in FIXED]:
         src = SOURCES[name]
+        if name in SETTLED:
+            products[name], moves = derive_settled(name, placed)
+            record[name] = {'source': src, 'moves': moves}
+            continue
         if 'colours' not in src:
             src['colours'] = read_theme(src['theme'])
         ident = src['colours'][src['slot']] if src.get('slot') else None
@@ -369,6 +485,25 @@ def derive_all():
             placed[mode][name] = cand['accent']
         record[name] = {'source': src, 'moves': moves, 'hue': round(H, 1), 'chroma': C,
                         'neutral_hue': round(bH, 1), 'neutral_scale': round(scale, 2)}
+    for name in ORDER:
+        for mode in ('light', 'dark'):
+            c = products[name][mode]
+            c.update(header_roles(name, mode, c, products))
+            if (name, mode, 'gel') in OVERRIDES:
+                c['gel'] = OVERRIDES[(name, mode, 'gel')]
+                continue
+            g0 = c['gel']
+            L, C, H = oklch(g0)
+            step = 0.01 if mode == 'dark' else -0.01
+            for _ in range(30):
+                if min(gel_label_contrasts(c).values()) >= 4.5:
+                    break
+                L += step
+                c['gel'] = hexof(L, C, H)
+            if c['gel'] != g0:
+                worst = min(gel_label_contrasts({**c, 'gel': g0}).items(), key=lambda kv: kv[1])
+                record[name]['moves'].append(f"{mode} gel {g0} -> {c['gel']} (lightness {oklch(g0)[0]:.2f} -> {L:.2f}): "
+                                             f"its label read {worst[1]:.2f} at the {worst[0]}")
     return products, record
 
 def palettes():
@@ -471,11 +606,64 @@ def checks():
             need('R10', f'brand:{name}', 'dark', 'accentDark on dark surface', w['accentDark'], DARK['surface'], 4.5)
             need('R10', f'brand:{name}', 'dark', 'dark ink on accentDark', '#0d1117', w['accentDark'], 4.5)
     rows.extend(type_checks())
+    for prod, mode, c in palettes():
+        rows.extend(header_checks(prod, mode, c))
+        advisories.append(f"{prod} {mode}: corner glow core {c['glow-core']} is {contrast(c['glow-core'], c['ground']):.2f}:1 against the ground (how much the glow shows)")
     for name, rec in record.items():
         for m in rec['moves']:
             advisories.append(f'{name}: {m}')
     advisories.extend(theme_file_advisories())
     return rows, advisories
+
+def over(top, a, bottom):
+    t, b = _rgb(top), _rgb(bottom)
+    return '#%02x%02x%02x' % tuple(round(a * x + (1 - a) * y) for x, y in zip(t, b))
+
+def header_surfaces(c):
+    """What the header's text and controls sit on, as drawn: the lit sheet over the ground tint over
+    the glow (or the ground, away from it). Returns the glass at the left and at the glow's core."""
+    g = SHARED['header']['glass']
+    tint = g['tint'] / 100
+    sheet_a = int('12', 16) / 255
+    left = over('#ffffff', sheet_a, over(c['ground'], tint, c['ground']))
+    corner = over('#ffffff', sheet_a, over(c['ground'], tint, over(c['glow-core'][:7], 1, c['ground'])))
+    return left, corner
+
+GEL_LABEL_BAND = (7 / 34, 27 / 34)   # the label's line box inside the 34 px button: where text can sit
+
+def gel_label_contrasts(c):
+    """on-gel against the gel at the top and bottom of its label band, over the glow's core and over
+    clear glass (where a narrow header puts the gel, past the glow's reach)."""
+    gl = SHARED['header']['gel']
+    left, corner = header_surfaces(c)
+    top_a, bottom_a = 0x48 / 255, 0x0d / 255
+    out = {}
+    for where, back in (('over the glow', corner), ('over clear glass', left)):
+        gel = over(c['gel'], gl['alpha'] / 100, back)
+        for edge, y in zip(('top', 'bottom'), GEL_LABEL_BAND):
+            a = top_a + (bottom_a - top_a) * y
+            out[f'{edge} of the label {where}'] = contrast(c['on-gel'], over('#ffffff', a, gel))
+    return out
+
+def header_checks(prod, mode, c):
+    """R16: the glass header. Its text on the glass, the folio bar on it, the gel button's label at both
+    ends of its sheen over the glow, and the frosted switch's icon."""
+    rows = []
+    def need(what, fg, bg, floor):
+        r = contrast(fg, bg)
+        rows.append(('R16', prod, mode, what, round(r, 2), floor, r >= floor))
+    left, corner = header_surfaces(c)
+    need('header ink on the glass', c['header-ink'], left, 4.5)
+    need('header ink at 82% (a tab not selected) on the glass', over(c['header-ink'], 0.82, left), left, 4.5)
+    need('folio bar (signature) on the glass', c['signature'], left, 3.0)
+    for what, r in gel_label_contrasts(c).items():
+        rows.append(('R16', prod, mode, f'on-gel at the {what}', round(r, 2), 4.5, r >= 4.5))
+    if mode == 'dark':
+        frost = over('#ffffff', 0x22 / 255, over(c['header-tint'], 0.45, corner))
+    else:
+        frost = over('#ffffff', 0xa8 / 255, corner)
+    need('switch icon (frost-ink) on the frosted button by the glow', c['frost-ink'], frost, 3.0)
+    return rows
 
 def type_checks():
     """R12-R15: which face sets what, what each face can do, and each licence as read from its file."""
@@ -572,6 +760,21 @@ def shared_vars():
             v[f'tracking-{name}'] = f'{track}em'
     v['focus-width'] = f"{s['focus']['width']}px"
     v['focus-offset'] = f"{s['focus']['offset']}px"
+    h = s['header']
+    v['header-height'] = f"{h['height']}px"
+    v['header-control'] = f"{h['control']}px"
+    v['glass-sheet'] = h['glass']['sheet']
+    v['glass-tint'] = f"{h['glass']['tint']}%"
+    v['glass-blur'] = f"{h['glass']['blur']}px"
+    v['glass-edge'] = h['glass']['edge']
+    v['glass-shadow'] = h['glass']['shadow']
+    for k, val in h['glow'].items():
+        v[f'glow-{k}'] = val
+    v['gel-alpha'] = f"{h['gel']['alpha']}%"
+    v['gel-sheet'] = h['gel']['sheet']
+    v['gel-shadow'] = h['gel']['shadow']
+    v['gel-filter'] = f"blur({h['gel']['blur']}px) saturate({h['gel']['saturate']})"
+    v['frost-filter'] = f"blur({h['frost']['blur']}px) saturate({h['frost']['saturate']})"
     return v
 
 def alias_block():
@@ -580,6 +783,11 @@ def alias_block():
     d['accent-fill'] = 'linear-gradient(180deg, var(--hw-accent-top) 0%, var(--hw-accent) 100%)'
     d['accent-fill-hover'] = 'linear-gradient(180deg, var(--hw-accent-hover-top) 0%, var(--hw-accent-hover) 100%)'
     d['danger-fill'] = 'linear-gradient(180deg, var(--hw-danger-top) 0%, var(--hw-danger) 100%)'
+    d['glow'] = ('radial-gradient(ellipse var(--hw-glow-reach-x) var(--hw-glow-reach-y) at var(--hw-glow-origin), '
+                 'var(--hw-glow-core) 0%, var(--hw-glow-core) var(--hw-glow-core-stop), var(--hw-glow-mid) var(--hw-glow-mid-stop), transparent 100%)')
+    d['gel-fill'] = 'var(--hw-gel-sheet), color-mix(in srgb, var(--hw-gel) var(--hw-gel-alpha), transparent)'
+    d['glass-tint-colour'] = 'color-mix(in srgb, var(--hw-ground) var(--hw-glass-tint), transparent)'
+    d['gel-edge'] = 'color-mix(in srgb, var(--hw-gel) 55%, #ffffff 45%)'
     g = SHARED['glow-live']
     d['glow-live'] = f"0 0 {g['blur']}px color-mix(in srgb, var(--hw-accent) {int(g['alpha'] * 100)}%, transparent)"
     return d
@@ -676,7 +884,7 @@ HEADER = '''/* __FAMILY__ family tokens. Generated by tokens.py from the family 
      Shapes: --hw-line-width (2), --hw-folio-radius (4), --hw-folio-chip (10), --hw-folio-bar (3)
      Type: one class per role, .hw-text-<role> (or font: var(--hw-type-<role>) plus its tracking).
            The display face sets the frame roles only and never a digit (tokens.json behaviour.type);
-           the ui face sets content; the figures face sets digits that must line up.
+           the ui face sets content, numbers and data included, in figures that line up.
 */'''
 
 def build_css():
@@ -698,20 +906,72 @@ def build_css():
     for name in ORDER:
         src = record[name]['source']
         out.append(f"/* {src['label']}. From {src['theme']}{' (inferred)' if src.get('inferred') else ''}."
+                   + (' Settled by its owner.' if name in SETTLED else '')
                    + (f" PENDING: {src['pending']}" if src.get('pending') else '') + ' */')
         blocks = []
         for mode in ('light', 'dark'):
             c = products[name][mode]
             v = colour_vars(c, mode, full=False)
-            for k in ('signature', 'word', 'edge-accent'):
-                if k in c and not (k == 'signature' and c[k] == c['accent']) and not (k == 'word' and c[k] == c['ink']):
+            for k in ('signature', 'word', 'edge-accent', 'page'):
+                if k in c and not (k == 'signature' and c[k] == c['accent']) and not (k == 'word' and c[k] == c['ink']) \
+                        and not (k == 'page' and c[k] == c['ground']):
                     v[k] = c[k]
             blocks.append(v)
         out.append(css_block(f'[data-product="{name}"]', blocks[0]))
         out.append(css_block(f'.dark[data-product="{name}"], .dark [data-product="{name}"], [data-product="{name}"] .dark', blocks[1]))
     out.append(SIG_CSS)
+    out.append(HEADER_CSS)
     out.append(type_css())
     return '\n\n'.join(out) + '\n'
+
+HEADER_CSS = r'''
+/* ════════════════════════════════════════════════════════════════════════════
+   5 · The glass header
+   On the recipe of Terminal Delight's docs site (docsite/redesign/redesign.css): a faint lit
+   sheet over the ground, a hairline edge and a soft shadow below in place of a hard line.
+   The old-tree glow starts in the top right corner, behind the gel button, and fades left and
+   down, leaving the wordmark on clear glass. Two rows: the wordmark, the switch and the gel;
+   then the tabs, with the selected one as the folio tab, open into the page below.
+   ════════════════════════════════════════════════════════════════════════════ */
+.hw-header {
+  position: relative; z-index: 2; isolation: isolate; min-height: var(--hw-header-height);
+  display: flex; flex-direction: column; justify-content: space-between;
+  color: var(--hw-header-ink); background: var(--hw-ground);
+  border-bottom: 1px solid var(--hw-glass-edge);
+  box-shadow: var(--hw-glass-shadow);
+}
+/* Under the content: the corner glow, softened by the glass's blur and kept inside the header,
+   then the glass itself (the ground at 26% and the faint lit sheet) over it. */
+.hw-header::before, .hw-header::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.hw-header::before { background: var(--hw-glow); filter: blur(var(--hw-glass-blur)); clip-path: inset(0); }
+.hw-header::after { background: var(--hw-glass-sheet), var(--hw-glass-tint-colour); }
+.hw-header-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px 8px; }
+.hw-header-row > .hw-end { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+.hw-header .hw-word { font: var(--hw-type-wordmark); letter-spacing: var(--hw-tracking-wordmark); text-transform: uppercase;
+  color: var(--hw-word); white-space: nowrap; }
+.hw-header-tabs { display: flex; align-items: flex-end; gap: 16px; padding: 0 16px; white-space: nowrap; }
+.hw-header .hw-tab { font: var(--hw-type-tab); color: inherit; opacity: .82; padding: 6px 2px 9px; text-decoration: none; }
+/* The folio tab in the header: the page's colour, the bar over its words, the chip; it covers the
+   hairline and opens the shadow below it, so it still joins the page. */
+.hw-header .hw-folio { opacity: 1; padding: 6px 15px 9px; margin-bottom: -1px; position: relative; z-index: 1;
+  background: var(--hw-page); color: var(--hw-ink); border-left: 0;
+  clip-path: polygon(0 0, calc(100% - var(--hw-folio-chip)) 0, 100% var(--hw-folio-chip), 100% calc(100% + var(--hw-pad-page)), 0 calc(100% + var(--hw-pad-page))); }
+.hw-header .hw-folio::after { display: none; }
+/* It stops at the page's padding, so it can never lie over content. */
+.hw-header .hw-folio::before { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: var(--hw-pad-page);
+  background: linear-gradient(var(--hw-page) 35%, color-mix(in srgb, var(--hw-page) 0%, transparent)); pointer-events: none; }
+/* Frosted round button (the theme switch lives here) and the gel button: 34 px to the eye, 44 px to the hand. */
+.hw-frost, .hw-gel { position: relative; height: var(--hw-header-control); border-radius: var(--hw-radius-pill);
+  display: inline-grid; place-items: center; flex: none; cursor: pointer; }
+.hw-frost::before, .hw-gel::before { content: ""; position: absolute; inset: calc((var(--hw-header-control) - var(--hw-size-target)) / 2); }
+.hw-frost { width: var(--hw-header-control); color: var(--hw-frost-ink);
+  -webkit-backdrop-filter: var(--hw-frost-filter); backdrop-filter: var(--hw-frost-filter);
+  background: var(--hw-frost-sheet), var(--hw-frost-tint); border: 1px solid var(--hw-frost-edge); box-shadow: var(--hw-frost-shadow); }
+.hw-frost svg { width: 16px; height: 16px; }
+.hw-gel { padding: 0 17px; font: var(--hw-type-gel); color: var(--hw-on-gel); white-space: nowrap;
+  -webkit-backdrop-filter: var(--hw-gel-filter); backdrop-filter: var(--hw-gel-filter);
+  background: var(--hw-gel-fill); border: 1px solid var(--hw-gel-edge); box-shadow: var(--hw-gel-shadow); }
+'''
 
 def type_css():
     lines = ['''/* ════════════════════════════════════════════════════════════════════════════
@@ -782,10 +1042,14 @@ def native_group():
         '$description': 'Plain numbers for a native theme (React Native, iPad, Android, Mac). Sizes are dp/pt, equal to CSS px. Fills are solid on native.',
         'font': {css: {'face': font_for(css)['face'], 'bundle': sorted(n for (f, _w), n in NATIVE_FACES.items() if f == css),
                        'licence': font_for(css)['licence'] + (f', Reserved Font Name "{font_for(css)["reserved_name"]}": bundle the file as published, never a subset' if font_for(css)['reserved_name'] else '')}
-                 for css in ('display', 'ui', 'figures')},
+                 for css in [f['css'] for f in FONTS]},
         'type': typ,
         'space': num(s['space']), 'gap': num(s['gap']), 'pad': num(s['pad']), 'size': num(s['size']),
         'radius': num(s['radius']), 'focus': dict(s['focus']), 'folio': dict(s['folio']), 'line': dict(s['line']),
+        'header': {'height': s['header']['height'], 'control': s['header']['control'], 'hit': s['size']['target'],
+                   'glow': 'draw with react-native-svg: a RadialGradient centred on the top right corner, rx 38% of the width, ry 112% of the height; stops glow-core at 0 and 0.14, glow-mid at 0.46, transparent at 1',
+                   'glass': 'opaque on native: the ground, the glow, then white at 7% fading to 2%; expo-blur only for the frosted controls',
+                   'edge': {'width': 1, 'color': '#ffffff', 'alpha': 0.125}, 'shadow': {'y': 14, 'blur': 34, 'alpha': 0.33}},
         'motion': {'dur1': s['motion']['dur-1'], 'dur2': s['motion']['dur-2'], 'dur3': s['motion']['dur-3'],
                    'durFade': s['motion']['dur-fade'], 'ease': s['motion']['ease'], 'easeExit': s['motion']['ease-exit'],
                    'travelMax': s['motion']['travel-max'], 'reducedMotion': 'durations 0; keep the press shadow and a 100 ms fade'},
@@ -861,6 +1125,8 @@ def build_json():
                 'travel-max': tok('16px', 'dimension', '--hw-motion-travel-max'),
             },
             'focus': {'width': tok('2px', 'dimension', '--hw-focus-width'), 'offset': tok('2px', 'dimension', '--hw-focus-offset')},
+            'header': {'$description': 'The glass header, after Terminal Delight\'s docs site (github.com/parker-brown-family/terminal-delight, docsite/redesign/redesign.css). It paints its own ground, glow and glass, so it looks the same wherever it sits; its frosted controls blur the glow behind them.',
+                       **SHARED['header']},
             'color': {'light': color_group(resolve(dict(LIGHT))), 'dark': color_group(resolve(dict(DARK)))},
         },
         'products': {},
@@ -875,7 +1141,8 @@ def build_json():
             'source': {'theme': src['theme'], 'url': src['url'], 'licence': src['licence'], 'colours_read': src['colours'],
                        'slot': src.get('slot'), 'hue': rec.get('hue'), 'intent': src['intent'],
                        'neutral_hue': rec.get('neutral_hue'), 'neutral_scale': rec.get('neutral_scale'),
-                       'why': src['why'], 'inferred': src['inferred'], 'moves': rec['moves'],
+                       'why': src['why'], 'inferred': src['inferred'], 'moves': rec['moves'], 'settled': name in SETTLED,
+                       **({'also_from': src['also']} if src.get('also') else {}),
                        **({'pending': src['pending']} if src.get('pending') else {})},
             'light': color_group(products[name]['light']),
             'dark': color_group(products[name]['dark']),
@@ -897,6 +1164,12 @@ def selftest():
             BRAND_SUBTITLE_ALPHA, BRAND_BAND_SHEEN = old
             fails = [r for r in checks()[0] if not r[-1]]
             BRAND_SUBTITLE_ALPHA, BRAND_BAND_SHEEN = keep
+        elif where == 'FACE':
+            i = next(n for n, x in enumerate(FONTS) if x['css'] == key)
+            keep = FONTS[i]
+            FONTS[i] = old
+            fails = [r for r in checks()[0] if not r[-1]]
+            FONTS[i] = keep
         elif where == 'TYPE':
             keep = TYPE[key]
             TYPE[key] = old
