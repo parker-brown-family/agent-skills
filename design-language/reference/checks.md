@@ -1,0 +1,37 @@
+# The checks
+
+`scripts/tokens.py` runs these on every product palette, light and dark. Contrast is the WCAG 2
+ratio. Every gradient is checked at both ends: a two-stop lightness ramp is monotonic, so its
+ends bound every label position between them.
+
+| Rule | What it requires |
+|---|---|
+| R1 | `ink`, `ink-2`, `ink-3` at 4.5:1 or more on every surface and both ends of every surface gradient |
+| R2 | text on a fill (accent, accent hover, danger) at 4.5:1 at the fill's light end; the sheen is computed per product to keep 4.6:1 |
+| R3 | accent ink at 4.5:1 on every surface and on its own tint |
+| R4 | control outlines at 3:1 on every surface they can sit on, wells included ([WCAG 1.4.11](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)) |
+| R5 | the focus ring at 3:1 on every surface ([WCAG 2.4.13](https://www.w3.org/WAI/WCAG22/Understanding/focus-appearance.html)) |
+| R6 | status text at 4.5:1 on its tint and on surfaces; neutral and done marks at 3:1 |
+| R7 | chromatic light accents at OKLCH lightness 0.38 to 0.55 |
+| R8 | an accent 40 degrees of hue from each status colour, or low in chroma (0.06 or less) and 8 apart in OKLab |
+| R9 | any two product accents 5.0 apart (100 × OKLab) after deuteranopia and protanopia simulation, in each mode |
+| R10 | a brand a client page wears passes R2 and R3 with its own colours; an advisory names a subtitle that fails |
+| R11 | the folio bar (signature) at 3:1 on the page and the bar |
+
+Colour-blind simulation follows Machado, Oliveira and Fernandes, *A physiologically-based model
+for simulation of color vision deficiency*, IEEE TVCG 2009
+([doi](https://doi.org/10.1109/TVCG.2009.113)), at severity 1, applied in linear sRGB. The 5.0
+threshold is a judgement: it clears every pair a reviewer called too close in the example (2.91)
+and the closest pair they accepted (3.91), with room.
+
+## Drift and the self-test
+
+- `--check` regenerates both files in memory and fails if either differs from the file on disk,
+  so a hand edit to `tokens.css` cannot pass.
+- `--selftest` puts back, one at a time, every value in the family's `OLD_VALUES`: values that were
+  once wrong, and theme colours used raw. Each must make at least one check fail. Add an entry
+  whenever a review finds a failure, so it can never come back unnoticed.
+
+In the example, the self-test restores eleven values: three outlines that failed on wells, a heavy
+sheen, a translucent brand subtitle, four theme accents used raw, and two accents at the rule's
+starting lightness before step 6 moved them.
