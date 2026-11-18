@@ -70,16 +70,19 @@ _PIPER_LIGHT = {'accent': '#5f4bae', 'accent-hover': '#4f3d99', 'accent-ink': '#
                'neutral': '#7d6656', 'neutral-tint': '#f0e6d8', 'neutral-edge': '#d8c4b3', 'word': '#5c571e'}
 # Piper dark, as OKLCH recipes: green field at hue 145, parchment ink at 75, lavender at 299, burgundy at 10
 G, P_, LV, BG_ = 145, 75, 299, 10
+# The dark neutrals are dark earth: the brand brown's hue (#2B170D, 46.9 deg) at chroma 0.018 on the
+# lightness steps of the green-black field they replaced (the second provider's review, below).
+EARTH, EARTH_C = 46.88, 0.018
 _PIPER_DARK_LCH = {
-    'ground': (0.17, 0.030, G), 'surface': (0.21, 0.032, G), 'surface-top': (0.225, 0.033, G), 'surface-bottom': (0.21, 0.032, G),
-    'raised': (0.245, 0.034, G), 'raised-bottom': (0.235, 0.034, G), 'float': (0.27, 0.036, G), 'inset': (0.14, 0.025, G),
-    'field': (0.15, 0.026, G), 'ink': (0.94, 0.030, P_), 'ink-2': (0.83, 0.032, P_), 'ink-3': (0.74, 0.032, P_),
-    'edge': (0.33, 0.032, G), 'edge-control': (0.56, 0.030, P_),
+    'ground': (0.17, EARTH_C, EARTH), 'surface': (0.21, EARTH_C, EARTH), 'surface-top': (0.225, EARTH_C, EARTH), 'surface-bottom': (0.21, EARTH_C, EARTH),
+    'raised': (0.245, EARTH_C, EARTH), 'raised-bottom': (0.235, EARTH_C, EARTH), 'float': (0.27, EARTH_C, EARTH), 'inset': (0.14, EARTH_C, EARTH),
+    'field': (0.15, EARTH_C, EARTH), 'ink': (0.94, 0.030, P_), 'ink-2': (0.83, 0.032, P_), 'ink-3': (0.74, 0.032, P_),
+    'edge': (0.33, EARTH_C, EARTH), 'edge-control': (0.56, 0.030, P_),
     'accent': (0.81, 0.084, LV), 'accent-hover': (0.86, 0.070, LV), 'accent-ink': (0.84, 0.076, LV),
     'accent-tint': (0.31, 0.060, LV), 'on-accent': (0.20, 0.050, LV),
     'edge-accent': (0.70, 0.105, BG_), 'danger': (0.70, 0.110, BG_), 'danger-ink': (0.75, 0.100, BG_),
     'danger-tint': (0.27, 0.055, BG_), 'danger-edge': (0.43, 0.080, BG_), 'on-danger': (0.18, 0.040, BG_),
-    'neutral': (0.68, 0.030, P_), 'neutral-tint': (0.27, 0.030, G), 'neutral-edge': (0.37, 0.030, G),
+    'neutral': (0.68, 0.030, P_), 'neutral-tint': (0.27, EARTH_C, EARTH), 'neutral-edge': (0.37, EARTH_C, EARTH),
     'word': (0.78, 0.140, 78),
 }
 
@@ -201,3 +204,24 @@ SETTLED = {'home': {
 # the header on the front page, then made it every product's skin, each in its own theme's deep tone.
 GLOW_FROM = {'stone': ('Nord slate', '#4c566a'), 'silo': ('Jade Horse jade', '#8bcbb1'),
              'scythe': ('Praus gold', '#A18C60'), 'surge': ('Retro 82 navy', '#05182e'), 'piper': ('Piper burgundy', '#7a3341')}
+
+# ── the second provider's review of the header on the five other products (reference/review.md) ──
+REVIEW = {
+    ('stone', 'light', 'glow-core'): '#283444', ('stone', 'dark', 'glow-core'): '#59677e',
+    ('stone', 'light', 'glow-mid'): '#50607690', ('stone', 'dark', 'glow-mid'): '#36465da8',
+    ('silo', 'light', 'glow-core'): '#253c33', ('silo', 'dark', 'glow-core'): '#3f5c50',
+    ('silo', 'light', 'glow-mid'): '#4b6259a2', ('silo', 'dark', 'glow-mid'): '#2a473a98',
+    ('scythe', 'dark', 'ground'): '#0e0e0e',
+    ('surge', 'light', 'glow-core'): '#092548', ('surge', 'dark', 'glow-core'): '#245c88',
+    ('surge', 'light', 'glow-mid'): '#205a80ae', ('surge', 'dark', 'glow-mid'): '#145480cb',
+    ('surge', 'dark', 'ground'): '#0c192b', ('surge', 'dark', 'gel'): '#5ea5cd',
+    ('piper', 'dark', 'glow-core'): '#70354b', ('piper', 'light', 'glow-mid'): '#653247a0', ('piper', 'dark', 'glow-mid'): '#5a2c44b0',
+}
+REVIEW_WHY = {
+    'stone': 'a slate glow with a shorter reach (32%)', 'silo': 'a grey-jade glow',
+    'scythe': 'an ink-black dark ground and a tighter gold glow (28% by 92%)',
+    'surge': 'navy to azure in the glow, a navy dark ground and a wider reach (46% by 122%)',
+    'piper': 'a deeper burgundy glow, and dark neutrals of dark earth from the brand brown in place of green-black',
+}
+GLOW_REACH = {'stone': {'reach-x': '32%'}, 'scythe': {'reach-x': '28%', 'reach-y': '92%'},
+              'surge': {'reach-x': '46%', 'reach-y': '122%'}}
