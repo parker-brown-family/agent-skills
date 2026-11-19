@@ -91,6 +91,22 @@ they were prose. A correct cognate may equal the source: Spanish “error” is 
 example. Keep explicit, reasoned exceptions instead of a blanket rule that
 every translated value must differ.
 
+## Sensitive Strings and Optional Cross-Checks
+
+Instructions, warnings and statements of what the program will do are
+translated from a plain statement of the idea, in the shortest and most
+directive words the language has. Exact wording matters less than an idea that
+cannot be misread. Keep those plain statements in a catalog beside the
+translations.
+
+When no native speaker will read a catalog before it ships, several cheap
+second opinions exist: the host product's own translations as a glossary,
+machine back-translation, a second model translating blind, a reviewing agent
+from another provider, and a blind back-translation of the final strings. They
+are options, chosen by how much a wrong reading would cost. See
+[cross-checks](reference/cross-checks.md) and the
+[back-translation helper](scripts/crosscheck.py).
+
 ## Wire at the Reader
 
 Separate stable values from captions. A state id such as `idle` may remain

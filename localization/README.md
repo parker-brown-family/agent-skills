@@ -44,4 +44,5 @@ of the workflow.
 - [Batch contract](reference/batches.md) and executable examples.
 - [Prompt, sample and evidence templates](reference/runbook.md).
 - [Observed failures behind the method](reference/case-notes.md).
+- [Optional cross-checks for a translation no native speaker has read](reference/cross-checks.md), with a [back-translation helper](scripts/crosscheck.py).
 - [MIT license](LICENSE).
