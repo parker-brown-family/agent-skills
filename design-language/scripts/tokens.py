@@ -181,6 +181,7 @@ LIGHT = {
     'warning': '#b7791f', 'warning-ink': '#7f4f00', 'warning-tint': '#fbf0d6', 'warning-edge': '#e8c983',
     'neutral': '#6b7785', 'neutral-tint': '#eef0f3', 'neutral-edge': '#cfd5dc',
     'done': '#3f7a55',
+    'on-warning': '#1f1300', 'on-success': '#ffffff',
     'scrim': 'rgba(17, 22, 28, 0.45)',
     'frost-sheet': 'linear-gradient(#ffffffa8, #ffffff55)', 'frost-tint': 'transparent',
     'frost-edge': '#ffffffc0', 'frost-shadow': '0 6px 18px #00000026, inset 0 1px 0 #ffffffd0',
@@ -197,6 +198,7 @@ DARK = {
     'warning': '#f2c46b', 'warning-ink': '#f5cd7f', 'warning-tint': '#33270e', 'warning-edge': '#6e5520',
     'neutral': '#8f9aa6', 'neutral-tint': '#262f3b', 'neutral-edge': '#3d4856',
     'done': '#6fbf8c',
+    'on-warning': '#2a1d02', 'on-success': '#0b2414',
     'scrim': 'rgba(0, 0, 0, 0.6)',
     'frost-sheet': 'linear-gradient(#ffffff22, #ffffff08)', 'frost-tint': 'color-mix(in srgb, var(--hw-header-tint) 45%, transparent)',
     'frost-edge': '#ffffff38', 'frost-shadow': '0 6px 18px #00000040, inset 0 1px 0 #ffffff30',
@@ -384,6 +386,26 @@ def header_roles(name, mode, c, products):
             'glow-mid': alpha_hex(hexof(ref['mid'], C, H), ref['mid_alpha']), 'gel': gel,
             'on-gel': hexof(0.18, min(aC, 0.02), aH), 'frost-ink': c['ink']}
 
+MODE_L = {'light': 0.30, 'dark': 0.80}     # the band: dark under a light page, light under a dark one
+MODE_C_MAX = 0.05
+
+def mode_roles(c, mode):
+    """The mode strip (you are acting for someone else, or on a test instance): a band in the product's
+    deep tone (the corner glow's hue and chroma, at most 0.05), inverse to the page so it is seen at a
+    glance without a status colour. Lightness moves only as far as R21 needs."""
+    _L, C, H = oklch(c['glow-core'][:7])
+    C = min(C, MODE_C_MAX)
+    L = MODE_L[mode]
+    step = 0.01 if mode == 'light' else -0.01
+    ink_L = 0.97 if mode == 'light' else 0.17
+    for _ in range(40):
+        band, ink = hexof(L, C, H), hexof(ink_L, min(C, 0.012), H)
+        if (contrast(ink, band) >= 7.0 and contrast(band, c['ground']) >= 3.0
+                and contrast(band, header_bare(c)) >= 3.0):
+            break
+        L -= step
+    return {'mode': band, 'on-mode': ink}
+
 def settled_palette(name, mode):
     """A settled product's given values, with the roles its mock did not show derived from them."""
     base = LIGHT if mode == 'light' else DARK
@@ -512,6 +534,10 @@ def derive_all():
             apply_review(name, mode, c, NEUTRAL_ROLES)
             c.update(header_roles(name, mode, c, products))
             apply_review(name, mode, c, ('glow-core', 'glow-mid', 'gel'))
+            c.update(mode_roles(c, mode))
+            for (p_, m, role), v in OVERRIDES.items():
+                if p_ == name and m == mode and role in ('mode', 'on-mode'):
+                    c[role] = v
             if (name, mode, 'gel') in OVERRIDES:
                 c['gel'] = OVERRIDES[(name, mode, 'gel')]
                 continue
@@ -742,12 +768,27 @@ def alert_checks(prod, mode, c):
     def need(what, fg, bg, floor):
         r = contrast(fg, bg)
         rows.append(('R19', prod, mode, what, round(r, 2), floor, r >= floor))
-    need('alert heading (danger-ink) on the alert tint', c['danger-ink'], c['danger-tint'], 4.5)
-    need('alert sentence (ink) on the alert tint', c['ink'], c['danger-tint'], 4.5)
-    need('alert icon mark (on-danger) on its disc', c['on-danger'], c['danger'], 4.5)
-    need('alert edge (danger) on the alert tint', c['danger'], c['danger-tint'], 3.0)
-    for bg in ('surface', 'ground'):
-        need(f'alert edge (danger) on {bg}', c['danger'], c[bg], 3.0)
+    for level, role in (('failed', 'danger'), ('attention', 'warning'), ('worked', 'success')):
+        need(f'{level} notice heading ({role}-ink) on its tint', c[f'{role}-ink'], c[f'{role}-tint'], 4.5)
+        need(f'{level} notice sentence (ink) on its tint', c['ink'], c[f'{role}-tint'], 4.5)
+        need(f'{level} notice icon mark (on-{role}) on its mark', c[f'on-{role}'], c[role], 4.5)
+        need(f'{level} notice edge ({role}-ink) on its tint', c[f'{role}-ink'], c[f'{role}-tint'], 3.0)
+        for bg in ('surface', 'ground', 'raised', 'float'):
+            need(f'{level} notice edge ({role}-ink) on {bg}', c[f'{role}-ink'], c[bg], 3.0)
+    # R21: the mode strip, seen at a glance and read, on the weakest ground it meets
+    for what, fg, bg, floor in (('mode strip words (on-mode) on the band', c['on-mode'], c['mode'], 7.0),
+                                ('mode strip band against the page ground', c['mode'], c['ground'], 3.0),
+                                ('mode strip band against the header\'s bare ground', c['mode'], header_bare(c), 3.0)):
+        r = contrast(fg, bg)
+        rows.append(('R21', prod, mode, what, round(r, 2), floor, r >= floor))
+    # R22: status in a row: the word on its tint, the icon on its tint
+    for st, tint, ink, mark in (('waiting', 'neutral-tint', 'neutral-ink', 'neutral'), ('done', 'done-tint', 'done-ink', 'done'),
+                                ('held', 'warning-tint', 'warning-ink', 'warning'), ('refused', 'danger-tint', 'danger-ink', 'danger'),
+                                ('unknown', 'neutral-tint', 'neutral-ink', 'neutral')):
+        r = contrast(c[ink], c[tint])
+        rows.append(('R22', prod, mode, f'{st} status word on its tint', round(r, 2), 4.5, r >= 4.5))
+        r = contrast(c[mark], c[tint])
+        rows.append(('R22', prod, mode, f'{st} status icon on its tint', round(r, 2), 3.0, r >= 3.0))
     return rows
 
 def type_checks():
@@ -971,7 +1012,8 @@ HEADER = '''/* __FAMILY__ family tokens. Generated by tokens.py from the family 
      Shapes: --hw-line-width (2), --hw-folio-radius (4), --hw-folio-chip (10), --hw-folio-bar (3)
      Toggles, never checkboxes: <button type="button" role="switch" aria-checked class="hw-toggle">.
      A figure inside a display-face label (a price on a button): <span class="hw-fig">.
-     Errors: .hw-alert (the one error pattern). Sign-in: .hw-header.single, .hw-signin, .hw-signin-card.
+     Notices: .hw-notice (failed, .attention, .worked; .hw-alert is failed), .hw-mode above the header.
+     Status in a row: .hw-status[data-status=waiting|done|held|refused|unknown]. Sign-in: .hw-signin*.
      Type: one class per role, .hw-text-<role> (or font: var(--hw-type-<role>) plus its tracking).
            The display face sets the frame roles only and never a digit (tokens.json behaviour.type);
            the ui face sets content, numbers and data included, in figures that line up.
@@ -1096,26 +1138,83 @@ TOGGLE_CSS = r'''
 
 PATTERN_CSS = r'''
 /* ════════════════════════════════════════════════════════════════════════════
-   7 · The alert: the family's one error pattern
-   A block in the alert colour with an icon, a Federo heading and one sentence saying what to do,
-   placed where the eye already is (under the button that was pressed), announced to screen
-   readers, kept until the next attempt. Never plain helper text, never a toast for an error.
-   <div class="hw-alert" role="alert" aria-live="assertive"><span class="hw-alert-icon" aria-hidden="true">!</span>
-     <div><p class="hw-alert-title">This Google account is not on Stone's list</p>
-     <p class="hw-alert-text">Ask your practice's owner to add it, or choose another account.</p></div></div>
+   7 · Notices: one pattern, four levels (4.3). The alert of 4.2 is its loudest level.
+   failed     something went wrong      danger roles    role="alert"   under the button pressed, or top of its panel
+   attention  something needs you       warning roles   role="status"  top of the section it concerns, until resolved
+   mode       you are in an unusual mode the mode band  a region       a strip above the header, on every page
+   worked     it worked, and nothing    success roles   role="status"  where the action was; only when the result
+              else on screen shows it                                  is not otherwise visible
+   A block: an icon, a Federo heading naming what happened (no figures), one Plex sentence saying what
+   to do or what it means. Never a notice: a field's own error (its hint), a routine save (the state
+   shows itself), a row's state (.hw-status), a question before a destructive act (a dialog), tips,
+   news or promotion, loading, an empty page.
+   <div class="hw-notice attention" role="status"><span class="hw-notice-icon" aria-hidden="true"></span>
+     <div><p class="hw-notice-title">The card on file expires this month</p>
+     <p class="hw-notice-text">Ask the client for a new card at their next visit.</p></div></div>
    ════════════════════════════════════════════════════════════════════════════ */
-.hw-alert { display: flex; gap: var(--hw-space-3); align-items: flex-start; padding: var(--hw-space-4);
-  background: var(--hw-danger-tint); color: var(--hw-ink); border: 1px solid var(--hw-danger-edge);
-  border-left: 4px solid var(--hw-danger); border-radius: var(--hw-radius-control); }
-.hw-alert-icon { flex: none; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center;
-  background: var(--hw-danger); color: var(--hw-on-danger); font: 600 14px/1 var(--hw-font-ui); }
-.hw-alert-title { margin: 0; font: var(--hw-type-alert-title); color: var(--hw-danger-ink); }
-.hw-alert-text { margin: var(--hw-space-1) 0 0; font: var(--hw-type-body); color: var(--hw-ink); }
+.hw-notice, .hw-alert { --n-tint: var(--hw-danger-tint); --n-edge: var(--hw-danger-edge); --n-mark: var(--hw-danger);
+  --n-on-mark: var(--hw-on-danger); --n-ink: var(--hw-danger-ink);
+  display: flex; gap: var(--hw-space-3); align-items: flex-start; padding: var(--hw-space-4);
+  background: var(--n-tint); color: var(--hw-ink); border: 1px solid var(--n-edge);
+  border-left: 4px solid var(--n-ink); border-radius: var(--hw-radius-control); }   /* the edge in the level's ink: 3:1 on any ground */
+.hw-notice.attention { --n-tint: var(--hw-warning-tint); --n-edge: var(--hw-warning-edge); --n-mark: var(--hw-warning);
+  --n-on-mark: var(--hw-on-warning); --n-ink: var(--hw-warning-ink); }
+.hw-notice.worked { --n-tint: var(--hw-success-tint); --n-edge: var(--hw-success-edge); --n-mark: var(--hw-success);
+  --n-on-mark: var(--hw-on-success); --n-ink: var(--hw-success-ink); }
+.hw-notice-icon, .hw-alert-icon { flex: none; width: 24px; height: 24px; margin-top: 1px; display: grid; place-items: center;
+  border-radius: 50%; background: var(--n-mark); color: var(--n-on-mark); font: 600 14px/1 var(--hw-font-ui); }
+.hw-notice-icon::before { content: "!"; }                    /* failed: a disc with ! */
+.hw-alert-icon::before { content: none; }
+.hw-notice.attention .hw-notice-icon { border-radius: 0; clip-path: polygon(50% 4%, 100% 96%, 0 96%); padding-top: 6px; }  /* a triangle */
+.hw-notice.worked .hw-notice-icon::before { content: "\2713"; }   /* a check */
+.hw-notice-title, .hw-alert-title { margin: 0; font: var(--hw-type-alert-title); color: var(--n-ink); }
+.hw-notice-text, .hw-alert-text { margin: var(--hw-space-1) 0 0; font: var(--hw-type-body); color: var(--hw-ink); }
+
+/* The mode strip: you are acting for someone else (or on a test instance). It belongs with the
+   header: directly above it, full width, sticky with it, on every page while the mode lasts, never
+   dismissable; its one action leaves the mode. Above, not below, so the folio tab still opens into
+   the page. Inverse to the page, in the product's deep tone, so it
+   is seen at a glance without a status colour. Names are content, so its words are Plex; its button
+   is Federo. Also prefix the page title: "Acting for Riverside Physio · Stone".
+   <div class="hw-mode" role="region" aria-label="Acting for Riverside Physio"><span class="hw-mode-icon" aria-hidden="true"></span>
+     <p class="hw-mode-text"><b>You are Maria Ruiz, Head Waters staff, in Riverside Physio's Stone.</b> Everything you do here is recorded.</p>
+     <button class="hw-mode-action">Stop acting</button></div> */
+.hw-mode { display: flex; align-items: center; gap: var(--hw-space-3); min-height: 40px; padding: 6px 16px;
+  background: var(--hw-mode); color: var(--hw-on-mode); }
+.hw-mode-icon { flex: none; width: 18px; height: 18px; border: 2px solid currentColor; border-radius: 50% 50% 4px 4px; opacity: .9; }
+.hw-mode-text { flex: 1; margin: 0; font: var(--hw-type-meta); color: var(--hw-on-mode); }
+.hw-mode-text b { font-weight: 600; }
+.hw-mode-action { position: relative; flex: none; padding: 4px 12px; border-radius: var(--hw-radius-pill); cursor: pointer;
+  font: var(--hw-type-button-small); color: var(--hw-on-mode); background: transparent; border: 1px solid currentColor; }
+.hw-mode-action::before { content: ""; position: absolute; inset: -8px 0; }
+
+/* Status in a row: one vocabulary for Sent, payments, Today. A word and an icon, never colour alone.
+   waiting  (neutral)  queued, going out, booked, scheduled, not yet due       a clock
+   done     (done)     delivered, paid, signed, attended                        a check
+   held     (warning)  not sent or not taken, on purpose, with its reason beside it: held by a test
+                       instance, no consent, on hold                            a pause
+   refused  (danger)   the other side said no or it failed: bounced, declined, refused   a cross
+   unknown  (neutral, dashed)  no answer yet, and we will not guess                 a question mark
+   <span class="hw-status" data-status="held">Held</span> <span class="hw-status-why">a test server sends only to people who sign in</span> */
+.hw-status { --s-tint: var(--hw-neutral-tint); --s-ink: var(--hw-neutral-ink); --s-mark: var(--hw-neutral); --s-edge: var(--hw-neutral-edge);
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 8px; border-radius: var(--hw-radius-pill);
+  font: 600 13px/20px var(--hw-font-ui); color: var(--s-ink); background: var(--s-tint); border: 1px solid var(--s-edge); white-space: nowrap; }
+.hw-status::before { flex: none; font: 700 12px/1 var(--hw-font-ui); color: var(--s-mark); content: "\25F7"; }
+.hw-status[data-status="done"] { --s-tint: var(--hw-done-tint); --s-ink: var(--hw-done-ink); --s-mark: var(--hw-done); }
+.hw-status[data-status="done"]::before { content: "\2713"; }
+.hw-status[data-status="held"] { --s-tint: var(--hw-warning-tint); --s-ink: var(--hw-warning-ink); --s-mark: var(--hw-warning); --s-edge: var(--hw-warning-edge); }
+.hw-status[data-status="held"]::before { content: "\2016"; }
+.hw-status[data-status="refused"] { --s-tint: var(--hw-danger-tint); --s-ink: var(--hw-danger-ink); --s-mark: var(--hw-danger); --s-edge: var(--hw-danger-edge); }
+.hw-status[data-status="refused"]::before { content: "\2715"; }
+.hw-status[data-status="unknown"] { border-style: dashed; }
+.hw-status[data-status="unknown"]::before { content: "?"; }
+.hw-status-why { font: var(--hw-type-meta); color: var(--hw-ink-3); }
 
 /* ════════════════════════════════════════════════════════════════════════════
    8 · The sign-in page: the same in every app. A one-row glass header naming the product, one
    card: the title "Sign in to <Product>" in Federo, one line saying which account, the Google
-   button, and the alert under it after a refusal. Only what works on this instance: with
+   button with Google's own "G" on a white square inside it (Google asks for the mark; it is never
+   recoloured), and the alert under it after a refusal. Only what works on this instance: with
    password sign-in off there is no field, no "or", no "Forgot password?".
    ════════════════════════════════════════════════════════════════════════════ */
 .hw-header.single { min-height: var(--hw-size-bar); justify-content: center; }
@@ -1130,6 +1229,9 @@ PATTERN_CSS = r'''
 .hw-signin-lead { margin: calc(-1 * var(--hw-space-2)) 0 0; font: var(--hw-type-body); color: var(--hw-ink-2); }
 .hw-signin-or { display: flex; align-items: center; gap: var(--hw-space-3); font: var(--hw-type-meta); color: var(--hw-ink-3); }
 .hw-signin-or::before, .hw-signin-or::after { content: ""; flex: 1; border-top: 1px solid var(--hw-edge); }
+.hw-signin-g { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; margin-right: var(--hw-space-3);
+  border-radius: 4px; background: #ffffff; }
+.hw-signin-g svg { width: 18px; height: 18px; }
 '''
 
 def type_css():

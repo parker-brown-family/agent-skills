@@ -1,10 +1,62 @@
+## 4.3: notices with levels, the staff strip, status in rows (copy tokens.css again; Piper: regenerate theme.ts)
+
+New roles, and one changed rule: `.hw-alert`'s left edge is now its ink (`danger-ink`), so it reads
+3:1 on every ground; its markup is unchanged. Every product also gains `on-warning` and `on-success`
+(the marks on the attention and worked icons). `--check` passes 2,030, `--selftest` 27.
+
+| Product | `mode` / `on-mode`, light | `mode` / `on-mode`, dark |
+|---|---|---|
+| Head Waters | `#382b20` / `#fcf3ed` | `#d5b89c` / `#130e0a` |
+| Stone | `#232f3e` / `#f0f6fd` | `#afbfd8` / `#0c1015` |
+| Silo | `#1c332b` / `#eef8f3` | `#a6c6b8` / `#0a110e` |
+| Scythe | `#392c0c` / `#f9f5ec` | `#ccbc9a` / `#120f09` |
+| Surge | `#1c2f47` / `#f0f6fd` | `#a4c2dd` / `#0b1014` |
+| Piper | `#432328` / `#fdf2f3` | `#dab1bd` / `#140d0f` |
+
+**One notice pattern, four levels.** The 4.2 alert is the loudest; `.hw-alert` still works and is
+the failed level.
+
+| Level | For | Roles | Announced | Where |
+|---|---|---|---|---|
+| failed `.hw-notice` | something went wrong | danger | `role="alert"` | under the button that was pressed, or the top of its panel; until the next attempt |
+| attention `.hw-notice.attention` | something needs the person | warning | `role="status"` | the top of the section it concerns, before that content; until resolved |
+| mode `.hw-mode` | you are in an unusual mode: acting for someone else, or on a test instance | `mode`, `on-mode` | a labelled region | a strip **above the header**, full width, sticky with it, on every page; never dismissable; one button leaves the mode |
+| worked `.hw-notice.worked` | it worked, and nothing else on screen shows it | success | `role="status"` | where the action was; the person may close it |
+
+Each in-page level is one block: an icon (a disc with "!", a triangle, a check), a Federo heading
+naming what happened (no figures), one Plex sentence saying what to do or what it means (figures
+go here): `<div class="hw-notice attention" role="status"><span class="hw-notice-icon" aria-hidden="true"></span><div><p class="hw-notice-title">The card on file expires this month</p><p class="hw-notice-text">Ask the client for a new card at their next visit.</p></div></div>`.
+**Never a notice:** a field's own error (its hint, under the field), a routine save (the state
+shows itself), a row's state (`.hw-status`, below), a question before a destructive act (a
+dialog), tips, news or promotion, loading, an empty page.
+
+**The staff strip replaces Stone's provisional banner** (the alert's shape in the accent colour,
+inside the page): `<div class="hw-mode" role="region" aria-label="Acting for Riverside Physio"><span class="hw-mode-icon" aria-hidden="true"></span><p class="hw-mode-text"><b>You are Maria Ruiz, Head Waters staff, in Riverside Physio's Stone.</b> Everything you do here is recorded.</p><button class="hw-mode-action">Stop acting</button></div>`,
+placed before `.hw-header`. Names are content, so the words are Plex; the button is Federo. Prefix
+the page title too: `Acting for Riverside Physio · Stone`. A test instance may use the same strip.
+
+**Status in a row is one vocabulary** in Sent, Scythe's payments and Silo's Today: a word and an
+icon, never colour alone, with any reason beside it in `.hw-status-why`:
+`<span class="hw-status" data-status="held">Held</span> <span class="hw-status-why">a test server sends only to the people who sign in to it</span>`.
+
+| State | Roles | Icon | Sent | Payments | Today |
+|---|---|---|---|---|---|
+| `waiting` | neutral | a clock | waiting to go, going out, handed over | not yet due, pending | booked, confirmed |
+| `done` | done | a check | delivered | paid | attended, chart signed |
+| `held` | warning | a pause | held, not sent (no consent, suppressed) | card needed, on hold | waiting on the client |
+| `refused` | danger | a cross | bounced, refused by the mail service | declined, failed | no-show, cancelled late |
+| `unknown` | neutral, dashed | ? | no answer | no answer from the card service | not recorded |
+
+**Sign-in:** the Google button carries Google's own G on its white square at its left (Google asks
+for it; never recoloured): `<span class="hw-signin-g"><svg>…Google's four paths…</svg></span>`.
+
 ## 4.2, values only: copy tokens.css again (Piper: regenerate theme.ts)
 
 No markup changes. Text on a header button must pass on the header's weakest ground at any width,
 not only where the corner glow lends it light: Surge's account name read 3.89 over bare dark ground.
 Every dark gel is lifted until its label passes there at the button's top and foot; a new check
 (R18) measures text on the header's buttons over the bare ground in both modes and every product.
-`--check` passes 1,582, `--selftest` 25. Light mode is unchanged.
+`--check` and `--selftest` pass. Light mode is unchanged.
 
 | Product | Role that changed (dark) |
 |---|---|
@@ -20,7 +72,7 @@ Every dark gel is lifted until its label passes there at the button's top and fo
 Two patterns every app now shares, drawn for all six in `screenshots/fig-sign-in.webp`. New in `tokens.css`:
 `--hw-type-alert-title` (Federo 18/24), `.hw-alert` with `-icon`, `-title`, `-text`;
 `.hw-header.single`, `.hw-signin`, `.hw-signin-card`, `-title`, `-lead`, `-or`. Check R19 holds the
-alert: its words 4.5:1 on its tint, the icon's mark 4.5:1, its edge 3:1. 1,658 checks, 25 self-test values.
+alert: its words 4.5:1 on its tint, the icon's mark 4.5:1, its edge 3:1.
 
 **The alert is the one error pattern.** Every error in every app (a refused sign-in, a failed save, a
 lost connection) is one block:
@@ -161,4 +213,4 @@ Header: `--hw-header-*`, `--hw-glass-*`, `--hw-glow-*`, `--hw-gel`, `--hw-on-gel
 `--hw-toggle-on`, `-off`, `-thumb-on`, `-thumb-off`; `.hw-toggle`, `.hw-toggle-row`. Shapes:
 `--hw-signature`, `--hw-line*`, `--hw-folio-*`, `.hw-folio`, `.hw-theme-switch`. Checks:
 `scripts/frame-digits.js`, `scripts/stray-checkboxes.js`, `scripts/stray-checkboxes.sh`. Drawn:
-`screenshots/fig-buttons-toggles.webp`, `screenshots/fig-glass-headers.webp`, `screenshots/fig-sign-in.webp`.
+`screenshots/fig-buttons-toggles.webp`, `fig-glass-headers.webp`, `fig-sign-in.webp`, `fig-notices.webp`.
