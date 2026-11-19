@@ -286,6 +286,54 @@ test('a concurs island is made only when there are concurs, right after the note
     expect(el(two, 'report-concurs') === el(plan.out, 'report-concurs'), 'and equals the reference writer\'s', trunc(el(two, 'report-concurs')));
   });
 
+test('a rebuilt brief keeps the notes this browser left on the version before it (2026-11-19)',
+  'the storage key carries the content revision (briefing builds NOTES_FILE as <id>-<12 hex>), so any rebuild opened an empty key and notes only the browser held were stranded under the old one',
+  async (b, expect) => {
+    const one = file(buildBrief(REL, { notesFile: 'brief-aaaaaaaaaaaa' }));
+    const two = file(buildBrief(REL, { notesFile: 'brief-bbbbbbbbbbbb' }));
+    const other = file(buildBrief(REL, { notesFile: 'other-cccccccccccc' }));
+    const p = await openPage(b, one.url, { clock: tsDate('2026-11-19 17:35') });
+    await applyEdits(p.page, [add(A.finding, 'Written on the first build.', '2026-11-19 17:35')]);
+    await p.page.goto(two.url, { waitUntil: 'load' });
+    let st = await p.page.evaluate(STATE);
+    expect(st.badges[A.finding[0]] === '1', 'the rebuilt page shows the note left on the version before it', trunc(st));
+    expect((await copyMap(p.page)).includes('Written on the first build.'), 'and the note is in its copy map');
+    await applyEdits(p.page, [del(A.finding, 'Written on the first build.')]);
+    await p.page.reload({ waitUntil: 'load' });
+    st = await p.page.evaluate(STATE);
+    expect(!st.badges[A.finding[0]], 'a note deleted on the rebuilt page stays deleted after a reload', trunc(st));
+    await p.page.goto(other.url, { waitUntil: 'load' });
+    st = await p.page.evaluate(STATE);
+    expect(st.noteCount === '0', 'a different brief does not take another brief\'s notes', trunc(st));
+    expect(!p.errors.length, 'no page errors', p.errors.join(' | '));
+    await p.ctx.close();
+  });
+
+test('a half-typed note survives a reload, and is gone once it is added (2026-11-19)',
+  'the note box held its text only in the page, so a refresh before Add lost whatever was being typed',
+  async (b, expect) => {
+    const f = file(buildBrief(REL, { notesFile: 'draft-dddddddddddd' }));
+    const p = await openPage(b, f.url);
+    const box = `[data-nid="${A.finding[0]}"] > .note-btn`;
+    await p.page.locator(box).click();
+    await p.page.fill('#note-text', 'Half of a thought, not yet added');
+    await p.page.reload({ waitUntil: 'load' });
+    await p.page.locator(box).click();
+    expect(await p.page.inputValue('#note-text') === 'Half of a thought, not yet added', 'the reopened box holds the text typed before the reload',
+      await p.page.inputValue('#note-text'));
+    await p.page.click('#d-note [data-note-action="add"]');
+    await p.page.click('#d-note .note-actions [data-close]');
+    await p.page.reload({ waitUntil: 'load' });
+    await p.page.locator(box).click();
+    expect(await p.page.inputValue('#note-text') === '', 'after Add the draft is cleared', await p.page.inputValue('#note-text'));
+    const other = `[data-nid="${A.card[0]}"] > .note-btn`;
+    await p.page.click('#d-note .note-actions [data-close]');
+    await p.page.locator(other).click();
+    expect(await p.page.inputValue('#note-text') === '', 'another section\'s box does not show this section\'s draft');
+    expect(!p.errors.length, 'no page errors', p.errors.join(' | '));
+    await p.ctx.close();
+  });
+
 // ---------------------------------------------------------------------------------------
 const b = await launch();
 console.log(`notes.js under test: ${rev ? rev : 'assets/notes.js (working tree)'}\n`);
