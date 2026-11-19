@@ -1,35 +1,63 @@
-# The alert and the sign-in page
+# Notices, status in rows, and the sign-in page
 
 Two patterns every app in a family repeats, and the two that drift first when each app's builder
 draws its own: how an error looks, and how a person gets in.
 
-## The alert: one error pattern
+## Notices: one pattern, four levels
 
-Every error in every app (a refused sign-in, a failed save, a lost connection) is one block: the
-alert colour, an icon, a heading in the display face naming what happened, and one sentence in the
-text face saying what to do.
+A notice tells a person something about the page they are on. One anatomy, four levels, and the
+level decides the colour roles, the icon, how it is announced and where it sits.
+
+| Level | For | Roles | Icon | Announced | Where |
+|---|---|---|---|---|---|
+| failed | something went wrong | danger | a disc with "!" | `role="alert"` | under the button that was pressed, or the top of its panel; until the next attempt |
+| attention | something needs the person | warning | a triangle | `role="status"` | the top of the section it concerns; until resolved |
+| mode | you are in an unusual mode | the mode band | a person | a labelled region | a strip above the header, on every page, never dismissable |
+| worked | it worked, and nothing else on screen shows it | success | a check | `role="status"` | where the action was; the person may close it |
 
 ```html
-<div class="hw-alert" role="alert" aria-live="assertive">
-  <span class="hw-alert-icon" aria-hidden="true">!</span>
-  <div><p class="hw-alert-title">This Google account is not on Stone's list</p>
-       <p class="hw-alert-text">Ask your practice's owner to add it, or choose another account.</p></div>
-</div>
+<div class="hw-notice attention" role="status"><span class="hw-notice-icon" aria-hidden="true"></span>
+  <div><p class="hw-notice-title">The card on file expires this month</p>
+       <p class="hw-notice-text">Ask the client for a new card at their next visit.</p></div></div>
 ```
 
-- It sits where the eye already is: under the button that was pressed, or at the top of the panel
-  the error belongs to. It stays until the next attempt and is announced to screen readers.
-- The heading names the cause, never "Something went wrong"; give each cause its own heading. It
-  is display-face words, so it holds no figures; a time or a count goes in the sentence.
-- Never red helper text, a toast or a modal for an error. Red helper text is easy to miss beside
-  the helper text around it; a toast leaves before it is read; a modal hides what went wrong.
-- Colours by role: the danger tint, a 1 px danger edge with a 4 px danger edge on the left, a 24 px
-  disc in the danger colour with the mark on it. Check R19 holds the words at 4.5:1 on the tint,
-  the mark at 4.5:1 on its disc, and the edge at 3:1 on the tint and on the card or page.
+- The in-page levels are one block: the level's tint, a 1 px edge and a 4 px left edge in the
+  level's ink (3:1 on any ground, light or dark), the icon, a display-face heading naming what
+  happened, one text-face sentence saying what to do or what it means. The heading holds no
+  figures; a time or a count goes in the sentence.
+- `.hw-alert` is the failed level, the one error pattern. The example took it from the dictation
+  app, whose builder had made every error one block after a sign-in failure on a tablet showed the
+  same sentence for three different causes, in plain helper text.
+- **The mode strip** says you are acting for someone else (support staff working in a customer's
+  account, every action recorded) or using a test instance. It belongs with the header: above
+  it, full width, sticky with it, so the folio tab still opens into the page. Its band is inverse
+  to the page in the product's deep tone (dark under a light page, light under a dark one), seen
+  at a glance without a status colour; names are content, so its words are the text face; its one
+  button leaves the mode. Prefix the page title too. The example's first try was the alert's shape
+  in the selection colour, inside the page: it scrolled away and read like a selected card.
+- **Never a notice:** a field's own error (its hint, under the field), a routine save (the state
+  shows itself), a row's state (below), a question before a destructive act (a dialog), tips, news
+  or promotion, loading, an empty page. A toast is never used for an error.
+- Checks: R19 (each in-page level's heading and sentence 4.5:1 on its tint, the icon's mark 4.5:1,
+  the edge 3:1 on the tint, surface, ground, raised and float) and R21 (the strip's words 7:1 on
+  the band, the band 3:1 against the page ground and the header's bare ground).
 
-The example took the pattern from the dictation app, whose builder had made every error one
-block after a sign-in failure on a tablet showed the same sentence for three different causes,
-in plain helper text.
+## Status in a row
+
+A row's state is not a notice. One vocabulary across every table: a word and an icon, never colour
+alone, with any reason beside it.
+
+| State | Roles | Icon | In the example |
+|---|---|---|---|
+| waiting | neutral | a clock | going out, not yet due, booked |
+| done | done | a check | delivered, paid, attended |
+| held | warning | a pause | held by a test instance (with why), no consent, card needed |
+| refused | danger | a cross | bounced, declined, no-show |
+| unknown | neutral, dashed | ? | no answer, and nothing will be guessed |
+
+`<span class="hw-status" data-status="held">Held</span> <span class="hw-status-why">a test server sends only to the people who sign in to it</span>`.
+Unknown is its own state: a message with no answer is counted as neither delivered nor failed.
+Check R22 holds each word at 4.5:1 and each icon at 3:1 on its tint.
 
 ## The sign-in page
 
@@ -52,6 +80,6 @@ The same page in every app, and only what works on that instance.
   account is not on the list (naming it), no connection, too many attempts. A sheet the person
   closed says nothing.
 
-A provider's own branding rules may ask for its button in its colours and with its mark; read them
-before shipping a custom button. The example's apps draw it as their primary button and name the
-provider in words.
+A provider's own branding rules ask for its mark on any custom button. The example draws the
+sign-in button as its primary button, with Google's "G" unaltered on a white square at its left
+(`.hw-signin-g`), the words in the display face.

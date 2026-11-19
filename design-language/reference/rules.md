@@ -36,9 +36,13 @@ the DOM.
 
 ## Errors and sign-in
 
-- E1 Every error is the alert: the alert colour, an icon, a display-face heading naming the cause,
-  one sentence saying what to do, under the button that was pressed, kept until the next attempt
+- E1 A notice is one of four levels, failed, attention, mode or worked, each with its roles, icon,
+  announcement and place; every error is the failed level, under the button that was pressed
   ([alert-and-sign-in.md](alert-and-sign-in.md)).
+- E3 Acting for someone else, or on a test instance, shows the mode strip above the header on
+  every page; it is never a block in the content.
+- E4 A row's state is a status chip from one vocabulary (waiting, done, held, refused, unknown),
+  word and icon, with its reason beside it; never a notice.
 - E2 The sign-in page is the same in every app and shows only what works on that instance: with
   only an identity provider on, its button and nothing else.
 

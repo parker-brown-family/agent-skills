@@ -22,7 +22,9 @@ ends bound every label position between them.
 | R14 | every role that asks for tabular figures is in a face whose figures line up |
 | R15 | each face's licence file present and OFL 1.1, with the copyright and reserved name the family file records, read from the file |
 | R18 | text on the header's buttons over the header's bare ground (no glow, the faint end of its sheet), in both modes: the gel's label at its top and foot, words in a frosted button; 4.5:1. A control must pass on the weakest ground it can meet at any width |
-| R19 | the alert: its heading and sentence 4.5:1 on its tint, the icon's mark 4.5:1 on its disc, its edge 3:1 on the tint and on the surface and ground |
+| R19 | the notice levels in the page (failed, attention, worked): heading and sentence 4.5:1 on the level's tint, the icon's mark 4.5:1, the left edge in the level's ink 3:1 on the tint, surface, ground, raised and float |
+| R21 | the mode strip: its words 7:1 on the band; the band 3:1 against the page ground and against the header's bare ground |
+| R22 | status in a row (waiting, done, held, refused, unknown): the word 4.5:1 and the icon 3:1 on its tint |
 | R17 | toggles: the on track 3:1 on surface, ground, raised and float; the off outline 3:1 on the same; each thumb 3:1 on its track |
 | R16 | the glass header: its ink (and at 82%) 4.5:1 on the glass, the folio bar 3:1, the gel's label 4.5:1 at both edges of its line over the glow and over clear glass, the switch icon 3:1 on the frosted button |
 
@@ -40,7 +42,7 @@ and the closest pair they accepted (3.91), with room.
   once wrong, and theme colours used raw. Each must make at least one check fail. Add an entry
   whenever a review finds a failure, so it can never come back unnoticed.
 
-In the example, the self-test restores twenty-five values: three outlines that failed on wells, a
+In the example, the self-test restores twenty-seven values: three outlines that failed on wells, a
 heavy sheen, a translucent brand subtitle, four theme accents used raw, two accents at the rule's
 starting lightness before step 6 moved them, six type values (the big number in the display face,
 DM Sans as the text face, a semibold Federo title, meta in Federo, a face recorded with no
@@ -48,4 +50,5 @@ reserved name, a unicode-range that leaves out only the digits), the three value
 settled by eye that a check then moved (two accents too close for colour-blind readers, a gel
 whose label fell under 4.5 on clear glass), buttons put back in the text face, a pale toggle
 whose on and off differ only by a faint colour, and two dark gels whose label failed over the
-header's bare ground (one measured at 3.89 in a live app, where it had passed only over the glow).
+header's bare ground (one measured at 3.89 in a live app, where it had passed only over the glow), a mode strip as dark
+as the dark page it sits on, and white on the amber attention mark.

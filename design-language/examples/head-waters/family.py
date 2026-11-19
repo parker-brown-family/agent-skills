@@ -115,6 +115,8 @@ OLD_VALUES = [
     ('ALIAS', None, 'toggle-on', 'accent-tint', 'a pale tinted on-state for the toggle: on and off differ only by a faint colour'),
     ('RAW', 'surge', ('dark', 'gel'), '#5ea5cd', 'Surge dark gel as the review kept it: the name on it read 3.89 live over bare dark ground'),
     ('RAW', 'home', ('dark', 'gel'), '#3fa6ac', 'Home dark gel before R18: 4.20 at its foot over bare ground'),
+    ('RAW', 'stone', ('dark', 'mode'), '#2a2f38', 'a dark mode strip in dark mode: the staff band disappears into the page'),
+    ('LIGHT', None, 'on-warning', '#ffffff', 'white on the attention mark in light mode: under 3:1 on amber'),
     ('TYPE', None, 'title-page', ((34, 40), 600, 'display', 0, False, False), 'a semibold Federo title: one weight, so the browser fakes it'),
     ('TYPE', None, 'meta', ('sm', 400, 'display', 0, False, False), 'meta (dates, times) in Federo'),
     ('FONT', None, 'Federo', None, 'Federo recorded with no reserved name: a subset would ship under a name its licence reserves'),
