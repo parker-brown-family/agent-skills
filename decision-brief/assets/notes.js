@@ -181,8 +181,48 @@
   var tookN = takeIn('notes', KEY, readIsland('report-notes'));
   var tookC = takeIn('concurs', CKEY, readIsland('report-concurs'));
   var N = tookN.map, C = tookC.map;
-  if (tookN.added) save();
-  if (tookC.added) saveConcurs();
+
+  /* ---- a rebuilt brief keeps what this browser wrote on the version before it ----
+     briefing names a page <id>-<12 hex of its content revision>, so notes stay with the
+     version a reader saw. That made every rebuild open an empty key: notes this browser
+     held only in storage stayed under the old one, and looked lost after a refresh. Parker,
+     2026-11-19, on the CS329Z clip library: "i added comments ... and refreshed - the
+     comments all died!!!!!!" (they were under the previous revision's key, recovered by hand).
+     So the first time a revision's key is opened, it takes in every note and concur this
+     browser holds under any other revision of the same brief, except notes deleted since,
+     which are remembered by brief id under GONE. Other briefs are never read. */
+  var ROOT = (/^(.*)-[0-9a-f]{12}$/.exec(FILE) || [])[1] || null;
+  var GONE = 'notes-gone:' + (ROOT || FILE);
+  var DRAFTS = 'notes-draft:' + (ROOT || FILE);
+  var carried = false, firstOpen = !!(ROOT && !SYNC.carried);
+  if (firstOpen) {
+    var gone = Object.create(null), mine = Object.create(null);
+    (stored(GONE) && stored(GONE).ids || []).forEach(function (x) { gone[x] = 1; });
+    idsOf('notes', N).forEach(function (x) { mine[x] = 1; });
+    var same = new RegExp('^(notes|concurs):' + ROOT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-[0-9a-f]{12}$');
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i), m = k && same.exec(k);
+      if (!m || k === KEY || k === CKEY) continue;
+      var old = stored(k);
+      if (!old) continue;
+      if (m[1] === 'concurs') {
+        Object.keys(old).forEach(function (q) { if (!has(C, q)) { C[q] = old[q]; carried = true; } });
+        continue;
+      }
+      Object.keys(old).forEach(function (nid) {
+        if (!Array.isArray(old[nid])) return;
+        old[nid].forEach(function (n) {
+          var id = n && noteId(nid, n);
+          if (!n || gone[id] || mine[id]) return;
+          (N[nid] = Array.isArray(N[nid]) ? N[nid] : []).push(n);
+          mine[id] = 1; carried = true;
+        });
+      });
+    }
+    SYNC.carried = 1;
+  }
+  if (tookN.added || carried || firstOpen) save();
+  if (tookC.added || carried) saveConcurs();
 
   var reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   var active = null, activeTitle = '';
@@ -407,11 +447,22 @@
     });
   }
 
+  /* A note is kept as it is typed: the box's text is stored per section under DRAFTS on
+     every keystroke and put back when that section's box opens, so a refresh, a crash or a
+     closed tab before Add costs nothing. Add clears it. */
+  function drafts() { return stored(DRAFTS) || {}; }
+  function keepDraft(nid, text) {
+    var d = drafts();
+    if (text) d[nid] = text; else delete d[nid];
+    try { localStorage.setItem(DRAFTS, JSON.stringify(d)); } catch (e) {}
+  }
+
   function open(el) {
     active = el.dataset.nid;
     activeTitle = el.dataset.ntitle;
     document.getElementById('note-title').textContent = activeTitle;
     document.getElementById('note-anchor').textContent = '#' + active;
+    document.getElementById('note-text').value = drafts()[active] || '';
     render();
     document.getElementById('d-note').showModal();
     document.getElementById('note-text').focus();
@@ -427,10 +478,16 @@
       ts: new Date().toISOString().slice(0, 16).replace('T', ' ')
     });
     ta.value = '';
+    keepDraft(active, '');
     save(); render(); badges();
   }
 
   function del(i) {
+    if (ROOT) {
+      var g = stored(GONE) || {}, ids = Array.isArray(g.ids) ? g.ids : [];
+      ids.push(noteId(active, N[active][i]));
+      try { localStorage.setItem(GONE, JSON.stringify({ ids: ids })); } catch (e) {}
+    }
     N[active].splice(i, 1);
     if (!N[active].length) delete N[active];
     save(); render(); badges();
@@ -634,6 +691,7 @@
       ta.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); add(); }
       });
+      ta.addEventListener('input', function () { if (active) keepDraft(active, ta.value); });
     }
     document.addEventListener('click', function (e) {
       var t = e.target.closest('[data-note-action]');
