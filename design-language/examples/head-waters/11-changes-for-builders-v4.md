@@ -1,7 +1,61 @@
+## 4.2, values only: copy tokens.css again (Piper: regenerate theme.ts)
+
+No markup changes. Text on a header button must pass on the header's weakest ground at any width,
+not only where the corner glow lends it light: Surge's account name read 3.89 over bare dark ground.
+Every dark gel is lifted until its label passes there at the button's top and foot; a new check
+(R18) measures text on the header's buttons over the bare ground in both modes and every product.
+`--check` passes 1,582, `--selftest` 25. Light mode is unchanged.
+
+| Product | Role that changed (dark) |
+|---|---|
+| Head Waters | `gel` `#3fa6ac` → `#51b6bc` |
+| Stone | `gel` `#8a9eb1` → `#9cb1c4` |
+| Silo | `gel` `#7ea595` → `#90b8a8` |
+| Surge | `gel` `#5ea5cd` → `#6db4de` (no longer held at version 4's value) |
+| Piper | `gel` `#a896cf` → `#bba9e3` |
+| Scythe | none (its linen gel already passed) |
+
+## 4.2, added: the alert and the sign-in page (copy tokens.css again)
+
+Two patterns every app now shares, drawn for all six in `screenshots/fig-sign-in.webp`. New in `tokens.css`:
+`--hw-type-alert-title` (Federo 18/24), `.hw-alert` with `-icon`, `-title`, `-text`;
+`.hw-header.single`, `.hw-signin`, `.hw-signin-card`, `-title`, `-lead`, `-or`. Check R19 holds the
+alert: its words 4.5:1 on its tint, the icon's mark 4.5:1, its edge 3:1. 1,658 checks, 25 self-test values.
+
+**The alert is the one error pattern.** Every error in every app (a refused sign-in, a failed save, a
+lost connection) is one block:
+`<div class="hw-alert" role="alert" aria-live="assertive"><span class="hw-alert-icon" aria-hidden="true">!</span><div><p class="hw-alert-title">What happened</p><p class="hw-alert-text">One sentence saying what to do.</p></div></div>`.
+It sits under the button that was pressed, or at the top of the panel the error belongs to, and
+stays until the next attempt. The heading is Federo and names what happened (no figures); the
+sentence is Plex and says what to do (a time or a count goes here). Never red helper text, a toast
+or a modal for an error. Piper's `ErrorBlock` is this pattern; native draws the same block.
+
+**The sign-in page is the same in every app.** Today four apps draw four layouts, each with an
+email and password form on an instance where only Google works. Replace them with:
+- `.hw-header.single`: one row, the wordmark (the product named in Federo, on a phone too) and the
+  theme switch. No tabs, no gel.
+- One `.hw-signin-card` (400 px wide at most, 14% of the window from the top; full width on a
+  phone): `<h1 class="hw-signin-title">Sign in to Stone</h1>` in Federo, one Plex line
+  `Use your practice's Google account.`, then the primary button, full width, "Continue with Google".
+- **Google only** (every instance today): nothing else. No field, no "or", no "Forgot password?", no
+  "Create account" unless that instance can create one.
+- **Password sign-in on** (an instance setting): under the Google button, "or", Email and Password
+  (labels above), an outlined "Sign in" (Google stays the one filled button), and "Forgot password?"
+  only where reset works.
+- **A refusal** is the alert under the button that was pressed. Google's causes, in Piper's words:
+  "Nothing came back from Google" / Press Continue with Google to try again; "<Product>'s server
+  refused the sign-in" / try again, and if it happens again tell the owner the time (the time is
+  in the sentence); "This Google account is not on <Product>'s list" / ask the practice's owner to
+  add it (naming it), or choose another; "No connection to <Product>" / check the Wi-Fi, then try
+  again; "Too many attempts" / wait a minute, then try again. A closed Google sheet says nothing.
+  A wrong password: "That email and password do not match" / Check both, then press Sign in again.
+- Light and dark, in each product's colours, come from the tokens; the card's top bar is the
+  product's signature, the folio tab's bar.
+
 ## 4.1, values only: copy tokens.css again (Piper: regenerate theme.ts)
 
 No markup changes. A second provider's review of the header on the five other products, all ten
-changes taken; `--check` still passes 1,546, `--selftest` 23. Head Waters, the faces and the toggles are unchanged.
+changes taken. Head Waters, the faces and the toggles are unchanged.
 
 | Product | Roles that changed |
 |---|---|
@@ -18,8 +72,8 @@ block) and in `tokens.json` under `products.<name>.header_glow`; Piper's native 
 
 You are on version 2; nobody applied version 3, so this one page takes you to version 4. Copy
 `tokens.css` (Piper: regenerate `theme.ts` from `tokens.json`) and work down. `python3
-scripts/tokens.py --family examples/head-waters/family.py --check` passes 1,546 checks; `--selftest`
-proves twenty-three wrong values fail. Everything here is settled by the owner.
+scripts/tokens.py --family examples/head-waters/family.py --check` passes the checks; `--selftest`
+proves the wrong values fail. Everything here is settled by the owner.
 
 ## Breaking
 
@@ -107,4 +161,4 @@ Header: `--hw-header-*`, `--hw-glass-*`, `--hw-glow-*`, `--hw-gel`, `--hw-on-gel
 `--hw-toggle-on`, `-off`, `-thumb-on`, `-thumb-off`; `.hw-toggle`, `.hw-toggle-row`. Shapes:
 `--hw-signature`, `--hw-line*`, `--hw-folio-*`, `.hw-folio`, `.hw-theme-switch`. Checks:
 `scripts/frame-digits.js`, `scripts/stray-checkboxes.js`, `scripts/stray-checkboxes.sh`. Drawn:
-`screenshots/fig-buttons-toggles.webp`, `screenshots/fig-glass-headers.webp`.
+`screenshots/fig-buttons-toggles.webp`, `screenshots/fig-glass-headers.webp`, `screenshots/fig-sign-in.webp`.

@@ -34,13 +34,22 @@ the DOM.
 - TG4 `scripts/stray-checkboxes.sh` finds checkboxes in source and `scripts/stray-checkboxes.js`
   on a rendered screen; both must come back empty.
 
+## Errors and sign-in
+
+- E1 Every error is the alert: the alert colour, an icon, a display-face heading naming the cause,
+  one sentence saying what to do, under the button that was pressed, kept until the next attempt
+  ([alert-and-sign-in.md](alert-and-sign-in.md)).
+- E2 The sign-in page is the same in every app and shows only what works on that instance: with
+  only an identity provider on, its button and nothing else.
+
 ## The header
 
 - H1 Where the family takes the glass header (the example: every product), it is 96 px in two rows: the name, the switch and
   the main button; then the tabs ([glass-header.md](glass-header.md)).
 - H2 The glow starts in the top right corner, behind the main button, and fades left and down;
   the name sits on clear glass.
-- H3 The main button's label reads 4.5:1 over clear glass, not only over the glow.
+- H3 Text on any header button reads 4.5:1 over the header's bare ground, at the button's top and
+  foot, not only over the glow (check R18).
 - H4 The selected tab opens into the page through the header's edge and shadow.
 
 Sources: [modular scale](https://alistapart.com/article/more-meaningful-typography/),

@@ -30,6 +30,7 @@
      Shapes: --hw-line-width (2), --hw-folio-radius (4), --hw-folio-chip (10), --hw-folio-bar (3)
      Toggles, never checkboxes: <button type="button" role="switch" aria-checked class="hw-toggle">.
      A figure inside a display-face label (a price on a button): <span class="hw-fig">.
+     Errors: .hw-alert (the one error pattern). Sign-in: .hw-header.single, .hw-signin, .hw-signin-card.
      Type: one class per role, .hw-text-<role> (or font: var(--hw-type-<role>) plus its tracking).
            The display face sets the frame roles only and never a digit (tokens.json behaviour.type);
            the ui face sets content, numbers and data included, in figures that line up.
@@ -120,6 +121,7 @@
   --hw-type-button: 400 18px/24px var(--hw-font-display);
   --hw-type-button-small: 400 16px/20px var(--hw-font-display);
   --hw-type-gel: 400 16px/20px var(--hw-font-display);
+  --hw-type-alert-title: 400 18px/24px var(--hw-font-display);
   --hw-type-title-card: 600 20px/28px var(--hw-font-ui);
   --hw-type-lead: 400 20px/28px var(--hw-font-ui);
   --hw-type-title-record: 600 30px/36px var(--hw-font-ui);
@@ -395,7 +397,7 @@
   --hw-header-tint: #33191d;
   --hw-glow-core: #70354b;
   --hw-glow-mid: #5a2c44b0;
-  --hw-gel: #a896cf;
+  --hw-gel: #bba9e3;
   --hw-on-gel: #131019;
   --hw-frost-ink: #f7e9d6;
   --hw-surface-fill: linear-gradient(180deg, #231915 0%, #1f1611 100%);
@@ -635,7 +637,7 @@
   --hw-header-tint: #1d222d;
   --hw-glow-core: #59677e;
   --hw-glow-mid: #36465da8;
-  --hw-gel: #8a9eb1;
+  --hw-gel: #9cb1c4;
   --hw-on-gel: #0a121a;
   --hw-frost-ink: #eef1f6;
   --hw-surface-fill: linear-gradient(180deg, #21252d 0%, #1c2027 100%);
@@ -753,7 +755,7 @@
   --hw-header-tint: #09281e;
   --hw-glow-core: #3f5c50;
   --hw-glow-mid: #2a473a98;
-  --hw-gel: #7ea595;
+  --hw-gel: #90b8a8;
   --hw-on-gel: #091410;
   --hw-frost-ink: #ecf2f0;
   --hw-surface-fill: linear-gradient(180deg, #1c2823 0%, #18221e 100%);
@@ -873,7 +875,7 @@
   --hw-header-tint: #182331;
   --hw-glow-core: #245c88;
   --hw-glow-mid: #145480cb;
-  --hw-gel: #5ea5cd;
+  --hw-gel: #6db4de;
   --hw-on-gel: #091319;
   --hw-frost-ink: #edf1f6;
   --hw-surface-fill: linear-gradient(180deg, #1f252d 0%, #1a2027 100%);
@@ -993,7 +995,7 @@
   --hw-header-tint: #2C1F15;
   --hw-glow-core: #6E553C;
   --hw-glow-mid: #3D2C1Ea0;
-  --hw-gel: #3fa6ac;
+  --hw-gel: #51b6bc;
   --hw-on-gel: #061416;
   --hw-frost-ink: #EAE2CC;
   --hw-surface-fill: linear-gradient(180deg, #2b2f2a 0%, #282c27 100%);
@@ -1142,6 +1144,44 @@
 .hw-toggle-row [data-hint] { display: block; font: var(--hw-type-meta); color: var(--hw-ink-3); }
 
 
+
+/* ════════════════════════════════════════════════════════════════════════════
+   7 · The alert: the family's one error pattern
+   A block in the alert colour with an icon, a Federo heading and one sentence saying what to do,
+   placed where the eye already is (under the button that was pressed), announced to screen
+   readers, kept until the next attempt. Never plain helper text, never a toast for an error.
+   <div class="hw-alert" role="alert" aria-live="assertive"><span class="hw-alert-icon" aria-hidden="true">!</span>
+     <div><p class="hw-alert-title">This Google account is not on Stone's list</p>
+     <p class="hw-alert-text">Ask your practice's owner to add it, or choose another account.</p></div></div>
+   ════════════════════════════════════════════════════════════════════════════ */
+.hw-alert { display: flex; gap: var(--hw-space-3); align-items: flex-start; padding: var(--hw-space-4);
+  background: var(--hw-danger-tint); color: var(--hw-ink); border: 1px solid var(--hw-danger-edge);
+  border-left: 4px solid var(--hw-danger); border-radius: var(--hw-radius-control); }
+.hw-alert-icon { flex: none; width: 24px; height: 24px; margin-top: 1px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--hw-danger); color: var(--hw-on-danger); font: 600 14px/1 var(--hw-font-ui); }
+.hw-alert-title { margin: 0; font: var(--hw-type-alert-title); color: var(--hw-danger-ink); }
+.hw-alert-text { margin: var(--hw-space-1) 0 0; font: var(--hw-type-body); color: var(--hw-ink); }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   8 · The sign-in page: the same in every app. A one-row glass header naming the product, one
+   card: the title "Sign in to <Product>" in Federo, one line saying which account, the Google
+   button, and the alert under it after a refusal. Only what works on this instance: with
+   password sign-in off there is no field, no "or", no "Forgot password?".
+   ════════════════════════════════════════════════════════════════════════════ */
+.hw-header.single { min-height: var(--hw-size-bar); justify-content: center; }
+@media (max-width: 599px) { .hw-header.single { min-height: var(--hw-size-bar-phone); } }
+.hw-signin { background: var(--hw-ground); color: var(--hw-ink);
+  padding: clamp(24px, 14vh, 128px) var(--hw-pad-page-phone) var(--hw-space-7); }
+.hw-signin-card { box-sizing: border-box; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--hw-gap-group);
+  padding: var(--hw-pad-card); background: var(--hw-surface-fill); border: 1px solid var(--hw-edge);
+  border-top: var(--hw-folio-bar) solid var(--hw-signature); border-radius: var(--hw-radius-card); box-shadow: var(--hw-elev-1); }
+@media (max-width: 599px) { .hw-signin-card { padding: var(--hw-pad-card-phone); } }
+.hw-signin-title { margin: 0; font: var(--hw-type-title-section); color: var(--hw-ink); }
+.hw-signin-lead { margin: calc(-1 * var(--hw-space-2)) 0 0; font: var(--hw-type-body); color: var(--hw-ink-2); }
+.hw-signin-or { display: flex; align-items: center; gap: var(--hw-space-3); font: var(--hw-type-meta); color: var(--hw-ink-3); }
+.hw-signin-or::before, .hw-signin-or::after { content: ""; flex: 1; border-top: 1px solid var(--hw-edge); }
+
+
 /* ════════════════════════════════════════════════════════════════════════════
    4 · Type: one class per role, carrying its face, size, case, tracking and figures
    ════════════════════════════════════════════════════════════════════════════ */
@@ -1160,6 +1200,7 @@
 .hw-text-button { font: var(--hw-type-button); }
 .hw-text-button-small { font: var(--hw-type-button-small); }
 .hw-text-gel { font: var(--hw-type-gel); }
+.hw-text-alert-title { font: var(--hw-type-alert-title); }
 .hw-text-title-card { font: var(--hw-type-title-card); }
 .hw-text-lead { font: var(--hw-type-lead); }
 .hw-text-title-record { font: var(--hw-type-title-record); }
