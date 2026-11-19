@@ -166,6 +166,62 @@ class ReadingTests(unittest.TestCase):
         self.assertNotIn('window.BRIEF_REVIEW=', after)
         self.assertEqual(brief.inspect(self.page)[2], self.revision)
 
+    def raw_get(self, server, path, extra=None):
+        connection = http.client.HTTPConnection('127.0.0.1', server.server_port, timeout=10)
+        try:
+            connection.request('GET', path, None, {'Host': server.origin.removeprefix('http://'), **(extra or {})})
+            result = connection.getresponse()
+            return result.status, result.read(), dict(result.getheaders())
+        finally:
+            connection.close()
+
+    def test_review_serves_the_files_beside_the_brief_and_nothing_else(self):
+        # 2026-11-19, the CS329Z clip library: 61 <video src="clips/..."> cards played from
+        # file:// but every clip and poster was a 404 in review mode, the one mode that saves
+        # notes into the original file (agent-skills#98).
+        (self.root / 'clips').mkdir()
+        clip = bytes(range(256)) * 40
+        (self.root / 'clips' / 'a b.mp4').write_bytes(clip)
+        (self.root / 'clips' / 'note.txt').write_text('the note')
+        (self.root / '.secret').write_text('hidden')
+        (self.root / 'clips' / '.stamp').write_text('hidden')
+        outside = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__('shutil').rmtree(outside, ignore_errors=True))
+        (outside / 'private.txt').write_text('outside')
+        (self.root / 'clips' / 'escape.txt').symlink_to(outside / 'private.txt')
+        server = self.start()
+        self.assertTrue(server.url.endswith(server.route + '/'), 'the page is opened at a URL its relative paths resolve under')
+        code, page, _ = self.raw_get(server, server.route + '/')
+        self.assertEqual(code, 200)
+        self.assertIn(b'window.BRIEF_REVIEW=', page)
+        code, body, head = self.raw_get(server, server.route + '/clips/a%20b.mp4')
+        self.assertEqual((code, body), (200, clip))
+        self.assertEqual(head.get('Content-Type'), 'video/mp4')
+        self.assertEqual(head.get('Accept-Ranges'), 'bytes')
+        code, body, head = self.raw_get(server, server.route + '/clips/a%20b.mp4', {'Range': 'bytes=100-199'})
+        self.assertEqual((code, body), (206, clip[100:200]))
+        self.assertEqual(head.get('Content-Range'), 'bytes 100-199/' + str(len(clip)))
+        code, body, _ = self.raw_get(server, server.route + '/clips/note.txt')
+        self.assertEqual((code, body), (200, b'the note'))
+        for refused in ('/.secret', '/clips/.stamp', '/clips/escape.txt', '/../fixture.html', '/%2e%2e/fixture.src.html',
+                        '/clips/..%2f..%2fetc/passwd', '/clips', '/missing.mp4', '//etc/passwd'):
+            code, body, _ = self.raw_get(server, server.route + refused)
+            self.assertEqual(code, 404, refused + ' ' + body[:80].decode('utf-8', 'replace'))
+            self.assertNotIn(b'outside', body)
+            self.assertNotIn(b'hidden', body)
+        code, _, _ = self.raw_get(server, '/review/' + 'x' * 43 + '/clips/note.txt')
+        self.assertEqual(code, 404, 'another capability does not reach the folder')
+        code, _, _ = self.raw_get(server, server.route + '/clips/note.txt', {'Host': 'evil.example'})
+        self.assertEqual(code, 403)
+
+    def test_review_page_may_show_its_own_media(self):
+        server = self.start()
+        _, _, head = self.raw_get(server, server.route + '/')
+        csp = head.get('Content-Security-Policy', '')
+        self.assertIn("media-src 'self'", csp)
+        self.assertIn("img-src 'self' data:", csp)
+        self.assertIn("default-src 'none'", csp)
+
     def test_retry_and_out_of_order_checkpoint_do_not_add_time(self):
         server = self.start()
         for ms in (12000, 12000, 7000, 15000):

@@ -2,6 +2,7 @@
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import mimetypes
 import os
 from pathlib import Path
 import re
@@ -11,7 +12,7 @@ import sys
 import time
 import urllib.request
 import urllib.error
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 import reading
 
@@ -56,7 +57,10 @@ class ReviewServer(ThreadingHTTPServer):
         self.route = '/review/' + secrets.token_urlsafe(32)
         super().__init__(('127.0.0.1', port), Handler)
         self.origin = 'http://127.0.0.1:' + str(self.server_port)
-        self.url = self.origin + self.route
+        # Opened with a trailing slash, so the brief's relative paths (clips/x.mp4) resolve under
+        # this capability and reach folder() below; the bare route still serves the page.
+        self.url = self.origin + self.route + '/'
+        self.folder_root = os.path.realpath(self.path.parent)
 
     def current(self):
         reading.checked_file(self.path)
@@ -78,7 +82,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store')
         self.send_header('Referrer-Policy', 'no-referrer')
         self.send_header('X-Content-Type-Options', 'nosniff')
-        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; media-src data:; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+        # The page shows its own folder's pictures and video (folder() below) and may call this
+        # machine's own loopback helpers, such as Cinema Delight's drag helper; nothing else.
+        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'self' data:; font-src data:; media-src 'self' data:; connect-src 'self' http://127.0.0.1:*; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
         self.end_headers()
         self.wfile.write(body)
 
@@ -98,7 +104,10 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if not self.allowed():
             return
-        if self.path != self.server.route:
+        route = urlsplit(self.path).path
+        if route not in (self.server.route, self.server.route + '/'):
+            if route.startswith(self.server.route + '/'):
+                return self.folder(route[len(self.server.route) + 1:])
             self.respond(404, {'state': 'failed', 'reason': 'not this review document'})
             return
         try:
@@ -113,6 +122,62 @@ class Handler(BaseHTTPRequestHandler):
             self.respond(200, text, 'text/html')
         except (OSError, ValueError) as exc:
             self.respond(409, {'state': 'pending', 'reason': str(exc)})
+
+    def folder(self, rel):
+        """A file beside the brief, read-only: the clips, pictures and notes its relative paths name.
+
+        2026-11-19 (agent-skills#98): review mode served only the document, so a brief that
+        plays its own video showed 61 broken players in the one mode that saves notes into
+        the original file. Refused, all as 404: anything outside the brief's folder once links
+        are resolved, any hidden name (.git, dot-files), a directory, and the brief's source."""
+        missing = lambda: self.respond(404, {'state': 'failed', 'reason': 'no such file beside this brief'})
+        rel = unquote(rel)
+        parts = rel.split('/')
+        if not rel or '\0' in rel or rel.startswith('/') or any(p in ('', '.', '..') or p.startswith('.') for p in parts):
+            return missing()
+        root = self.server.folder_root
+        target = os.path.realpath(os.path.join(root, rel))
+        if os.path.commonpath([root, target]) != root or not os.path.isfile(target) or target.endswith('.src.html'):
+            return missing()
+        size = os.path.getsize(target)
+        start, end, status = 0, size - 1, 200
+        wanted = self.headers.get('Range')
+        if wanted:
+            m = re.fullmatch(r'bytes=(\d*)-(\d*)', wanted.strip())
+            if not m or (not m[1] and not m[2]):
+                self.send_response(416); self.send_header('Content-Range', 'bytes */' + str(size)); self.end_headers(); return
+            if m[1]:
+                start, end = int(m[1]), min(int(m[2]) if m[2] else size - 1, size - 1)
+            else:
+                start = max(0, size - int(m[2]))
+            if start > end or start >= size:
+                self.send_response(416); self.send_header('Content-Range', 'bytes */' + str(size)); self.end_headers(); return
+            status = 206
+        kind = mimetypes.guess_type(target)[0] or 'application/octet-stream'
+        if kind.startswith('text/'):
+            kind += '; charset=utf-8'
+        self.send_response(status)
+        self.send_header('Content-Type', kind)
+        self.send_header('Content-Length', str(end - start + 1))
+        self.send_header('Accept-Ranges', 'bytes')
+        if status == 206:
+            self.send_header('Content-Range', 'bytes %d-%d/%d' % (start, end, size))
+        self.send_header('Cache-Control', 'private, max-age=60')
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('Referrer-Policy', 'no-referrer')
+        self.end_headers()
+        with open(target, 'rb') as stream:
+            stream.seek(start)
+            left = end - start + 1
+            try:
+                while left:
+                    chunk = stream.read(min(left, 1 << 20))
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+                    left -= len(chunk)
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # a player that seeks drops the connection it no longer needs
 
     def do_POST(self):
         if not self.allowed(post=True):
@@ -218,7 +283,7 @@ def live_session(path, api):
         url = urlsplit(info['url'])
         if (url.scheme != 'http' or url.hostname != '127.0.0.1' or not url.port or
                 url.netloc != '127.0.0.1:' + str(url.port) or url.query or url.fragment or
-                not re.fullmatch(r'/review/[A-Za-z0-9_-]{43}', url.path)):
+                not re.fullmatch(r'/review/[A-Za-z0-9_-]{43}/?', url.path)):
             return None
         # No redirects or environment proxy: this checks only the remembered local server.
         class NoRedirect(urllib.request.HTTPRedirectHandler):
