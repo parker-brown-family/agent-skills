@@ -113,6 +113,8 @@ OLD_VALUES = [
     ('RAW', 'home', ('dark', 'gel'), '#2F9AA0', 'Home dark gel as settled: its label under 4.5 at the bottom of its line over clear glass'),
     ('TYPE', None, 'button', ('md', 600, 'ui', 0, False, False), 'buttons in IBM Plex Sans, as the example first had them: a frame role in the content face'),
     ('ALIAS', None, 'toggle-on', 'accent-tint', 'a pale tinted on-state for the toggle: on and off differ only by a faint colour'),
+    ('RAW', 'surge', ('dark', 'gel'), '#5ea5cd', 'Surge dark gel as the review kept it: the name on it read 3.89 live over bare dark ground'),
+    ('RAW', 'home', ('dark', 'gel'), '#3fa6ac', 'Home dark gel before R18: 4.20 at its foot over bare ground'),
     ('TYPE', None, 'title-page', ((34, 40), 600, 'display', 0, False, False), 'a semibold Federo title: one weight, so the browser fakes it'),
     ('TYPE', None, 'meta', ('sm', 400, 'display', 0, False, False), 'meta (dates, times) in Federo'),
     ('FONT', None, 'Federo', None, 'Federo recorded with no reserved name: a subset would ship under a name its licence reserves'),
@@ -130,7 +132,7 @@ FACES = {
     'mono': 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
 }
 # Buttons are frame too (the owner: "remember how I said buttons get fedora? still stands").
-FRAME_ROLES = ('wordmark', 'eyebrow', 'tab', 'title-section', 'title-page', 'display', 'button', 'button-small', 'gel')
+FRAME_ROLES = ('wordmark', 'eyebrow', 'tab', 'title-section', 'title-page', 'display', 'button', 'button-small', 'gel', 'alert-title')
 # Federo's x-height is 0.46 em against Plex's 0.516: a Federo title is the step it replaces x 1.12.
 # The wordmark and tabs are the values of the header the owner settled.
 TYPE = {
@@ -145,6 +147,7 @@ TYPE = {
     'button': ((18, 24), 400, 'display', 0, False, False),        # Plex 16 semibold -> Federo 18
     'button-small': ((16, 20), 400, 'display', 0, False, False),
     'gel': ((16, 20), 400, 'display', 0, False, False),
+    'alert-title': ((18, 24), 400, 'display', 0, False, False),   # the alert's heading
     'title-card': ('lg', 600, 'ui', 0, False, False), 'lead': ('lg', 400, 'ui', 0, False, False),
     'title-record': ('2xl', 600, 'ui', 0, False, False),
     'figure': ('3xl', 600, 'ui', 0, False, False),
@@ -214,7 +217,7 @@ REVIEW = {
     ('scythe', 'dark', 'ground'): '#0e0e0e',
     ('surge', 'light', 'glow-core'): '#092548', ('surge', 'dark', 'glow-core'): '#245c88',
     ('surge', 'light', 'glow-mid'): '#205a80ae', ('surge', 'dark', 'glow-mid'): '#145480cb',
-    ('surge', 'dark', 'ground'): '#0c192b', ('surge', 'dark', 'gel'): '#5ea5cd',
+    ('surge', 'dark', 'ground'): '#0c192b',   # the review kept the dark gel at #5ea5cd; R18 later moved it
     ('piper', 'dark', 'glow-core'): '#70354b', ('piper', 'light', 'glow-mid'): '#653247a0', ('piper', 'dark', 'glow-mid'): '#5a2c44b0',
 }
 REVIEW_WHY = {

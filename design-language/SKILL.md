@@ -40,7 +40,8 @@ it, with three rounds of review by the product owner and one by a second AI prov
 6. **Give every app the same shapes.** The folio tab (the selected menu item opening into the
    page, a bar over its words in the product's colour), a 2 px line under a plain bar, and one theme
    switch, light, dark and system, remembered with the person's account and applied before
-   first paint; and toggles, never checkboxes. [reference/shapes-and-switch.md](reference/shapes-and-switch.md). Where the family
+   first paint; toggles, never checkboxes; one alert for every error and one sign-in page
+   ([reference/alert-and-sign-in.md](reference/alert-and-sign-in.md)). [reference/shapes-and-switch.md](reference/shapes-and-switch.md). Where the family
    wants depth, a glass header with a glow of the product's deep tone from the top right corner,
    after Terminal Delight's docs site. [reference/glass-header.md](reference/glass-header.md)
 7. **Type: a display face for the frame, a text face for content, digits only in a face whose

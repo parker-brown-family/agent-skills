@@ -59,6 +59,10 @@ the page's padding (24 px) so it can never lie over content.
   over clear glass, which is where a narrow header puts the button, past the glow's reach. In the
   example every dark gel failed this at first (3.8 to 4.2) and was lifted in lightness, the owner's
   settled one included, and recorded.
+- R18: text on any header button over the header's bare ground, at the button's very top and foot.
+  The model above had measured clear glass with the lit sheet at its brightest; a live app then
+  measured an account name on a dark gel at 3.89 over bare ground, and every dark gel was lifted
+  again until its foot passed there.
 - The switch's icon at 3:1 on the frosted button.
 - An advisory reports how far each glow's core stands from the ground, since in dark mode a
   glow close to the ground in brightness barely shows.
