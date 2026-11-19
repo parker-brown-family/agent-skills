@@ -166,9 +166,9 @@
     document.addEventListener('scroll',onFrame,{capture:true,passive:true});root.addEventListener('resize',onFrame);
     new MutationObserver(changed).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open','hidden']});
     document.addEventListener('brief:notes-changed',function(){enqueue();flush();paint();});
-    // The exact-file server has no sibling-file read API. Keep local references
-    // usable in the portable file and explain that boundary instead of navigating to a 404.
-    if(cfg)document.addEventListener('click',function(event){var a=event.target.closest('a[href]');if(!a)return;var raw=a.getAttribute('href');if(raw.startsWith('#')||/^[a-z][a-z0-9+.-]*:/i.test(raw)&&!raw.startsWith('file:'))return;event.preventDefault();statusText='Local reference · open the original HTML in Terminal Delight to follow this link';paint();});
+    // The review server serves the files beside the brief (agent-skills#98), so relative links work.
+    // A file: link cannot be followed from a loopback page; say so instead of failing silently.
+    if(cfg)document.addEventListener('click',function(event){var a=event.target.closest('a[href]');if(!a)return;var raw=a.getAttribute('href');if(!raw.startsWith('file:'))return;event.preventDefault();statusText='Local file link · use a relative link, or open the original HTML in Terminal Delight to follow it';paint();});
     paint(sample());
     if(enabled){setInterval(function(){paint(sample());},1000);setInterval(function(){enqueue();flush();},5000);flush();}
   }
