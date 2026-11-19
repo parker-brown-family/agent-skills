@@ -229,7 +229,8 @@ FAMILY = 'Family'
 PREFIX = '--fam-'
 INTENT_C = {'ink': 0.0, 'grey': 0.035, 'gentle': 0.05, 'bright': 0.13}
 SOURCES = {}        # product -> theme source (theme name, intent, slot or hue, colours read, why, licence)
-FIXED = {}          # product -> a palette given whole (a product whose brand predates the rule)
+FIXED = {}          # product -> a palette given whole (a product whose brand predates the rule):
+                    #   'light' hex, 'dark_lch' recipes and/or 'dark' hex, and optionally 'header' hex per mode
 ORDER = []          # placement order for rule step 6: fixed products first
 OFFSETS = [0, -0.02, 0.02, -0.04, 0.04, -0.06, 0.06, -0.08, 0.08, -0.10, 0.10]
 OLD_VALUES = []     # values that were wrong once; --selftest proves each still fails
@@ -469,7 +470,7 @@ def derive_all():
     products, record, placed = {}, {}, {'light': {}, 'dark': {}}
     for name, fx in FIXED.items():      # products whose palette is given whole come first
         pl = resolve({**LIGHT, **fx['light']})
-        pd = resolve({**DARK, **{k: hexof(*v) for k, v in fx['dark_lch'].items()}})
+        pd = resolve({**DARK, **{k: hexof(*v) for k, v in fx.get('dark_lch', {}).items()}, **fx.get('dark', {})})
         pl.setdefault('signature', pl['accent']); pd.setdefault('signature', pd['accent'])
         products[name] = {'light': pl, 'dark': pd}
         placed['light'][name], placed['dark'][name] = pl['accent'], pd['accent']
@@ -534,6 +535,9 @@ def derive_all():
             apply_review(name, mode, c, NEUTRAL_ROLES)
             c.update(header_roles(name, mode, c, products))
             apply_review(name, mode, c, ('glow-core', 'glow-mid', 'gel'))
+            for role, v in FIXED.get(name, {}).get('header', {}).get(mode, {}).items():   # a fixed product's header, given whole
+                if (name, mode, role) not in OVERRIDES:
+                    c[role] = v
             c.update(mode_roles(c, mode))
             for (p_, m, role), v in OVERRIDES.items():
                 if p_ == name and m == mode and role in ('mode', 'on-mode'):

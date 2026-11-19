@@ -40,4 +40,8 @@ says a palette is legible, not that it belongs to anybody. The reviewer proposed
 brown), ran each in a scratch copy of the generator against every check, and all ten were taken
 unchanged. Piper's turned out to be a rule, the brand brown at a fixed chroma on the old lightness
 steps, and went in as one. The round cost one review and no markup. It earned that cost by
-catching two identity collisions that the derivation had produced by design.
+catching two identity collisions that the derivation had produced by design. Later the owner chose
+the dictation app's colours himself in a workshop, and that choice replaced the reviewer's dark
+earth and burgundy glow for that product. An owner's settled choice outranks a reviewer's proposal,
+as it outranks the agent's; it still goes through the checks, and the one value that failed (a
+button label at 4.02:1) was lifted by the generator, not by bending the approved colours.
