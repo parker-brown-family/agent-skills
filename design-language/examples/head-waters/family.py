@@ -86,7 +86,14 @@ _PIPER_DARK_LCH = {
     'word': (0.78, 0.140, 78),
 }
 
-FIXED = {'piper': {'source': _PIPER_SOURCE, 'light': _PIPER_LIGHT, 'dark_lch': _PIPER_DARK_LCH}}
+# Piper settled by its owner: Iris Haze in light mode, Lavender Smoke with the Iris violet corner in
+# dark mode ("great - yep iris haze light + original lavender smoke as presentde with violet glow").
+# Given whole; it replaced the second provider's dark earth and burgundy glow.
+_PIPER_SETTLED = {'light': {'edge': '#d2c2e3', 'edge-control': '#82698e', 'field': '#fcf7ff', 'float': '#fcf7ff', 'ground': '#ede6f7', 'ink': '#281c34', 'ink-2': '#534562', 'ink-3': '#675576', 'inset': '#e8def2', 'raised': '#f4eefb', 'raised-bottom': '#eee6f6', 'surface': '#fcf7ff', 'surface-bottom': '#f9f3fc', 'surface-top': '#fffbff'}, 'dark': {'edge': '#403c48', 'edge-control': '#8a7d6b', 'field': '#14111a', 'float': '#302d38', 'ground': '#18151f', 'inset': '#120f18', 'neutral-edge': '#4a4753', 'neutral-tint': '#302d38', 'raised': '#2a2732', 'raised-bottom': '#28242f', 'surface': '#221e29', 'surface-bottom': '#221e29', 'surface-top': '#25222d'}}
+_PIPER_HEADER = {'light': {'glow-core': '#674285', 'glow-mid': '#8461a88c'}, 'dark': {'glow-core': '#7549ab', 'glow-mid': '#63379baa', 'header-tint': '#4a345f'}}
+_PIPER_LIGHT.update(_PIPER_SETTLED['light'])
+FIXED = {'piper': {'source': _PIPER_SOURCE, 'light': _PIPER_LIGHT, 'dark_lch': _PIPER_DARK_LCH,
+                    'dark': _PIPER_SETTLED['dark'], 'header': _PIPER_HEADER}}
 
 # ── values that were wrong once; --selftest proves each still fails ─────────────
 OLD_VALUES = [
@@ -220,13 +227,11 @@ REVIEW = {
     ('surge', 'light', 'glow-core'): '#092548', ('surge', 'dark', 'glow-core'): '#245c88',
     ('surge', 'light', 'glow-mid'): '#205a80ae', ('surge', 'dark', 'glow-mid'): '#145480cb',
     ('surge', 'dark', 'ground'): '#0c192b',   # the review kept the dark gel at #5ea5cd; R18 later moved it
-    ('piper', 'dark', 'glow-core'): '#70354b', ('piper', 'light', 'glow-mid'): '#653247a0', ('piper', 'dark', 'glow-mid'): '#5a2c44b0',
 }
 REVIEW_WHY = {
     'stone': 'a slate glow with a shorter reach (32%)', 'silo': 'a grey-jade glow',
     'scythe': 'an ink-black dark ground and a tighter gold glow (28% by 92%)',
     'surge': 'navy to azure in the glow, a navy dark ground and a wider reach (46% by 122%)',
-    'piper': 'a deeper burgundy glow, and dark neutrals of dark earth from the brand brown in place of green-black',
 }
 GLOW_REACH = {'stone': {'reach-x': '32%'}, 'scythe': {'reach-x': '28%', 'reach-y': '92%'},
               'surge': {'reach-x': '46%', 'reach-y': '122%'}}

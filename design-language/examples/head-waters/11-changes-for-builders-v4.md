@@ -1,8 +1,54 @@
+## 4.4, Piper only: copy tokens.css again in every app that carries Piper's block, and regenerate theme.ts
+
+The owner settled Piper's colours: **Iris Haze in light mode, Lavender Smoke with the Iris violet
+corner in dark mode**. It replaces 4.1's dark earth and
+burgundy glow. No markup changes; Head Waters and the other four products do not change.
+`--check` and `--selftest` pass.
+
+| Role | Light (Iris Haze) | Dark (Lavender Smoke) |
+|---|---|---|
+| `ground` / `page` | `#ede6f7` | `#18151f` |
+| `surface` / `-top` / `-bottom` | `#fcf7ff` / `#fffbff` / `#f9f3fc` | `#221e29` / `#25222d` / `#221e29` |
+| `raised` / `-bottom` (and `assist-surface`) | `#f4eefb` / `#eee6f6` | `#2a2732` / `#28242f` |
+| `float`, `field`, `inset` (and `toggle-off`) | `#fcf7ff`, `#fcf7ff`, `#e8def2` | `#302d38`, `#14111a`, `#120f18` |
+| `edge` (and `line`), `edge-control` | `#d2c2e3`, `#82698e` | `#403c48`, `#8a7d6b` |
+| `ink`, `ink-2`, `ink-3` | `#281c34`, `#534562`, `#675576` | unchanged |
+| `neutral-tint` (`avatar-bg`, `done-tint`), `neutral-edge` | unchanged | `#302d38`, `#4a4753` |
+| `glow-core`, `glow-mid` | `#674285`, `#8461a88c` | `#7549ab`, `#63379baa` |
+| `header-tint` | unchanged | `#4a345f` |
+| `gel` (Dictate), the generator's | `#907eb5` | `#b8a6df` (label 4.58:1 at its foot) |
+| `mode` / `on-mode` (the staff strip) | `#352741` / `#f7f3fc` | `#c3b7d9` / `#100e14` |
+
+Everything that follows Piper's roles was measured on the new grounds: the notice levels (tightest
+5.01, the attention mark), the staff strip (words 10.1:1 or more), row status (the held icon 3.21),
+the toggle's off outline (3.35 on float, dark), the folio bar (5.56), the header's buttons (4.58).
+No derived value had to move except the strip and the dark gel, which the rules derive.
+
+**For the Piper builder: judge device screenshots against the approved specimen.** Take system screenshots, not photographs, with True Tone and Night
+Shift off on the iPad and Android's colour mode on Natural (or sRGB); an iPad screenshot is often
+tagged Display P3, so convert it to sRGB before measuring. The screens most at risk:
+1. **Today, dark, iPad landscape:** the corner glow drawn without SVG. Sample 4 px in from the top
+   right corner and at the ellipse's mid stop; check the reach (38% of the header's width, 112% of
+   its height).
+2. **The Dictate gel, dark, in the header and the dock:** the white sheet's gradient over the gel
+   at 62% over the glow. Measure the label against the gel at its foot.
+3. **Lavender Smoke under translucent glass, dark:** the frosted switch, the dock and any panel
+   that lets the ground through; sample the composite colour, not the token.
+4. **Iris Haze, light, on the Android phone:** sign-in with a refusal, and Today. The ground and
+   surface are close (`#ede6f7` against `#fcf7ff`), and vivid colour modes push lavender toward
+   pink or grey.
+
+Tolerance: solid fills (ground, surface, ink, a card) within 2 (100 × OKLab distance) of the token
+on the iPad and 3 on Android; gradients and the glow within 4 at the sampled points, with the reach
+within 5% of the header's size. Contrast has no tolerance: every word and mark measured from the
+device's own pixels meets its floor (4.5 for text, 3 for marks and outlines), the Dictate label
+included. A screen outside these numbers goes back with the measured value beside the specimen's.
+
 ## 4.3: notices with levels, the staff strip, status in rows (copy tokens.css again; Piper: regenerate theme.ts)
 
 New roles, and one changed rule: `.hw-alert`'s left edge is now its ink (`danger-ink`), so it reads
 3:1 on every ground; its markup is unchanged. Every product also gains `on-warning` and `on-success`
-(the marks on the attention and worked icons). `--check` passes 2,030, `--selftest` 27.
+(the marks on the attention and worked icons).
 
 | Product | `mode` / `on-mode`, light | `mode` / `on-mode`, dark |
 |---|---|---|
