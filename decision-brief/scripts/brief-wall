@@ -5,11 +5,18 @@ Prints one <style id="brief-wall"> block. Paste it straight after base.css and t
 wears that theme: the wallpaper, blurred, sits under a scrim of the theme's own ground,
 every glass surface is tinted by it, and the ink is the theme's ink.
 
-    brief-wall                      a random theme, then a random wallpaper from it
-    brief-wall --theme tokyo-night  that theme, a random wallpaper from it
+    brief-wall                      a random theme from the rolodex, then a random wallpaper from it
+    brief-wall --theme tokyo-night  that theme (installed, or fetched if the rolodex names it)
     brief-wall --image PATH         that exact file (its theme is read from the path)
-    brief-wall --list               every theme and how many wallpapers it has
+    brief-wall --list               the draw: every rolodex theme and where its wallpapers are
     brief-wall --json               what was picked and measured, instead of the CSS
+
+The draw is decision-brief/theme-rolodex.txt: only themes on a live line in it are picked,
+so commenting a line out takes a theme out. A rolodex theme installed here is read from disk;
+any other has its colors.toml and one wallpaper fetched from its git repository into
+~/.cache/brief-wall, kept under 300 MB (BRIEF_WALL_CACHE_MB) by dropping the wallpapers used
+longest ago. Offline, the draw uses what is already here. Without the rolodex file, every
+installed theme is in the draw.
 
 The pick is made once, at build time, and baked in as a data URI, so the brief stays one
 self-contained file and looks the same on every machine it is mailed to. The theme is
@@ -25,6 +32,7 @@ because the figures a brief draws are drawn for a dark page.
 Needs `vips` (libvips). Standard library otherwise.
 """
 import argparse, base64, json, os, random, re, subprocess, sys, tempfile
+from pathlib import Path
 
 THEME_ROOTS = [
     '/usr/share/omarchy/themes',
@@ -32,6 +40,15 @@ THEME_ROOTS = [
     os.path.expanduser('~/.config/omarchy/themes'),
 ]
 IMAGE_EXT = ('.jpg', '.jpeg', '.png', '.webp')
+
+# The rolodex is the draw: only themes on a live line in it are picked at random. Without the
+# file, every installed theme is in the draw, as before it existed.
+ROLODEX = os.environ.get('BRIEF_WALL_ROLODEX') or os.path.join(
+    os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'theme-rolodex.txt')
+# A rolodex theme that is not installed is fetched here, one wallpaper at a time.
+CACHE = os.environ.get('BRIEF_WALL_CACHE') or os.path.join(
+    os.environ.get('XDG_CACHE_HOME') or os.path.expanduser('~/.cache'), 'brief-wall')
+CACHE_MB = float(os.environ.get('BRIEF_WALL_CACHE_MB') or 300)
 
 # The role names the Terminal Delight kiosk family paints with (assets/kiosk-theme.js),
 # read straight out of an Omarchy colors.toml.
@@ -77,9 +94,9 @@ WHITE, BLACK = (255, 255, 255), (0, 0, 0)
 
 
 # ---------------------------------------------------------------- themes
-def themes():
+def themes(roots=None):
     found = {}
-    for root in THEME_ROOTS:
+    for root in roots or THEME_ROOTS:
         if not os.path.isdir(root):
             continue
         for name in sorted(os.listdir(root)):
@@ -136,6 +153,143 @@ def roles_for(vals):
         for k in ('red', 'grn', 'yel', 'blu', 'mag', 'cyn'):
             r[k] = r[k] or r['acc']
     return mode, r
+
+
+# ---------------------------------------------------------------- the rolodex
+class Unavailable(Exception):
+    """A rolodex theme that could not be brought here: not installed, and the fetch failed."""
+    def __init__(self, msg, offline=False):
+        super().__init__(msg)
+        self.offline = offline  # the network, not this one repository, is what failed
+
+NETWORK_DOWN = ('could not resolve host', 'failed to connect', 'network is unreachable',
+                'connection timed out', 'timed out after')
+
+def rolodex(path=None):
+    """{name: (git url or None, path inside the repository or '')}, or None when there is no file.
+
+    A line is `name source [path]  # note`; a source of "-" means installed here only.
+    """
+    path = path or ROLODEX
+    if not os.path.isfile(path):
+        return None
+    entries = {}
+    with open(path, encoding='utf-8') as f:
+        lines = f.read().splitlines()
+    for line in lines:
+        parts = line.split('#', 1)[0].split()
+        if not parts:
+            continue
+        src = parts[1] if len(parts) > 1 and parts[1] != '-' else None
+        if src and '://' not in src and not src.startswith('git@') and not os.path.isabs(src):
+            src = f'https://github.com/{src}.git'
+        entries[parts[0]] = (src, parts[2].strip('/') if len(parts) > 2 else '')
+    return entries
+
+def git(*args, cwd=None, text=True):
+    env = {**os.environ, 'GIT_TERMINAL_PROMPT': '0'}  # a private or vanished repo fails, never prompts
+    return subprocess.run(['git', *args], cwd=cwd, check=True, capture_output=True, text=text,
+                          timeout=90, env=env).stdout
+
+def write_atomic(path, data):
+    tmp = f'{path}.{os.getpid()}.part'  # two builds fetching at once never share a half-written file
+    with open(tmp, 'wb' if isinstance(data, bytes) else 'w') as f:
+        f.write(data)
+    os.replace(tmp, path)
+
+def cached_theme(name):
+    d = os.path.join(CACHE, name)
+    return themes([CACHE]).get(name) if os.path.isdir(d) else None
+
+def fetch(name, url, sub, rng):
+    """One wallpaper of a rolodex theme, from the cache or else from its repository.
+
+    Only colors.toml, the list of wallpaper names and the one wallpaper picked cross the
+    network: the clone is bare, one commit deep and carries no file contents until asked.
+    A wallpaper already in the cache is used without touching the network at all.
+    """
+    d = os.path.join(CACHE, name)
+    bgdir, listing, colors = os.path.join(d, 'backgrounds'), os.path.join(d, 'wallpapers.txt'), os.path.join(d, 'colors.toml')
+    names = Path(listing).read_text(encoding='utf-8').splitlines() if os.path.isfile(listing) else []
+    choice = rng.choice(names) if names else None
+    if choice and os.path.isfile(colors) and os.path.isfile(os.path.join(bgdir, choice)):
+        return os.path.join(bgdir, choice)
+    if not url:
+        raise Unavailable(f'{name} is not installed here and the rolodex gives no source for it')
+    prefix = sub + '/' if sub else ''
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = os.path.join(tmp, 'r.git')
+            git('clone', '--bare', '--quiet', '--depth', '1', '--filter=blob:none', url, repo)
+            listed = [n for n in git('ls-tree', '-z', '--name-only', f'HEAD:{prefix}backgrounds', cwd=repo).split('\0')
+                      if n.lower().endswith(IMAGE_EXT)]
+            if not listed:
+                raise Unavailable(f'{name}: {url} has no wallpapers in {prefix}backgrounds/')
+            os.makedirs(bgdir, exist_ok=True)
+            write_atomic(listing, ''.join(n + '\n' for n in listed))
+            if choice not in listed:
+                choice = rng.choice(listed)
+            if not os.path.isfile(colors):
+                write_atomic(colors, git('cat-file', 'blob', f'HEAD:{prefix}colors.toml', cwd=repo))
+            target = os.path.join(bgdir, choice)
+            if not os.path.isfile(target):
+                write_atomic(target, git('cat-file', 'blob', f'HEAD:{prefix}backgrounds/{choice}', cwd=repo, text=False))
+            return target
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+        why = (getattr(e, 'stderr', None) or str(e))
+        why = why.decode(errors='replace') if isinstance(why, bytes) else why
+        have = cached_theme(name)
+        if have:  # offline, or the repository moved: a wallpaper already here still serves
+            return rng.choice(have['images'])
+        last = why.strip().splitlines()[-1] if why.strip() else 'git failed'
+        raise Unavailable(f'{name}: could not fetch {url}: {last}',
+                          offline=any(m in why.lower() for m in NETWORK_DOWN))
+
+def prune(keep, cap_mb=None):
+    """Keep the cache under its cap by dropping the wallpapers used longest ago, never `keep`."""
+    cap = (CACHE_MB if cap_mb is None else cap_mb) * 1e6
+    files = []
+    for t in themes([CACHE]).values():
+        files += [(os.path.getmtime(p), os.path.getsize(p), p) for p in t['images']]
+    total = sum(f[1] for f in files)
+    for _, size, p in sorted(files):
+        if total <= cap:
+            break
+        if os.path.realpath(p) != os.path.realpath(keep):
+            os.remove(p)
+            total -= size
+    return total
+
+def draw(rng, pool, installed, warn=lambda m: print(m, file=sys.stderr)):
+    """(theme, image): a theme from the rolodex, evenly, then one of its wallpapers.
+
+    An installed theme is used from disk. Any other is fetched; if that fails the draw moves
+    on, and once the network has failed it only considers themes already on this machine.
+    """
+    offline = False
+    for name in rng.sample(sorted(pool), len(pool)):
+        if name in installed:
+            return installed[name], rng.choice(installed[name]['images'])
+        url, sub = pool[name]
+        if offline:
+            have = cached_theme(name)
+            if have:
+                return have, rng.choice(have['images'])
+            continue
+        try:
+            image = fetch(name, url, sub, rng)
+        except Unavailable as e:
+            warn(f'brief-wall: {e}; drawing again')
+            offline = offline or e.offline
+            continue
+        os.utime(image)  # the cache drops what was used longest ago
+        prune(image)
+        return cached_theme(name), image
+    if installed:
+        warn('brief-wall: nothing on the rolodex could be reached; using an installed theme')
+        name = rng.choice(sorted(installed))
+        return installed[name], rng.choice(installed[name]['images'])
+    raise Unavailable('nothing on the rolodex could be reached, and no Omarchy theme is installed')
 
 
 # ---------------------------------------------------------------- the wallpaper
@@ -218,6 +372,32 @@ def css_block(pick, r, scrim, dim, wall_b64, measured, lifted):
             f'  --wall-label: "wallpaper · {label}";\n'
             f'  --wall: url("data:image/webp;base64,{wall_b64}");\n}}\n</style>')
 
+def list_draw(installed, pool):
+    """Print the draw: every rolodex theme and where its wallpapers come from."""
+    if pool is None:
+        for t in installed.values():
+            print(f"{t['name']:<20} {len(t['images']):>2}  {read_colors(t['colors']).get('mode', 'dark'):<5}  {t['dir']}")
+        return
+    cached = themes([CACHE])
+    for name, (url, sub) in pool.items():
+        t = installed.get(name) or cached.get(name)
+        listing = os.path.join(CACHE, name, 'wallpapers.txt')
+        if name in installed:
+            where = f"installed, {len(t['images'])} wallpapers"
+        elif t:
+            total = len(Path(listing).read_text(encoding='utf-8').splitlines()) if os.path.isfile(listing) else '?'
+            where = f"cached, {len(t['images'])} of {total} wallpapers"
+        else:
+            where = 'not fetched yet' if url else 'MISSING: not installed and no source'
+        mode = read_colors(t['colors']).get('mode', 'dark') if t else ''
+        print(f"{name:<26} {mode:<5}  {where:<26} {(url or '-') + (':' + sub if sub else '')}")
+    left = sorted(set(installed) - set(pool))
+    size = sum(os.path.getsize(p) for t in cached.values() for p in t['images']) / 1e6
+    print(f"\n{len(pool)} themes in the draw, from {ROLODEX}")
+    print(f"cache {size:.0f} MB of {CACHE_MB:.0f} MB at {CACHE}")
+    if left:
+        print(f"installed but not in the draw ({len(left)}): {' '.join(left)}")
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n\n')[0])
     ap.add_argument('--theme')
@@ -232,26 +412,41 @@ def main():
     ap.add_argument('--out')
     a = ap.parse_args()
 
-    all_themes = themes()
-    if not all_themes:
-        sys.exit('brief-wall: no Omarchy themes with backgrounds found under ' + ', '.join(THEME_ROOTS))
+    installed = themes()
+    pool = rolodex()
     if a.list:
-        for t in all_themes.values():
-            print(f"{t['name']:<20} {len(t['images']):>2}  {read_colors(t['colors']).get('mode', 'dark'):<5}  {t['dir']}")
-        return
+        return list_draw(installed, pool)
+    if not installed and not pool:
+        sys.exit('brief-wall: no Omarchy themes with backgrounds found under ' + ', '.join(THEME_ROOTS))
     rng = random.Random(a.seed)
 
     if a.image:
         image = os.path.realpath(a.image)
-        owner = next((t for t in all_themes.values() if image.startswith(t['dir'] + os.sep)), None)
+        known = {**themes([CACHE]), **installed}
+        owner = next((t for t in known.values() if image.startswith(t['dir'] + os.sep)), None)
         if owner is None and not a.theme:
             sys.exit(f'brief-wall: {a.image} is not inside a theme; name the palette with --theme')
-        theme = all_themes[a.theme] if a.theme else owner
+        theme = (known.get(a.theme) or sys.exit(f"brief-wall: no theme '{a.theme}' here — try --list")) if a.theme else owner
     else:
-        if a.theme and a.theme not in all_themes:
-            sys.exit(f"brief-wall: no theme '{a.theme}' — try --list")
-        theme = all_themes[a.theme] if a.theme else all_themes[rng.choice(sorted(all_themes))]
-        image = rng.choice(theme['images'])
+        try:
+            if a.theme:  # named outright: any installed theme, or anything the rolodex can fetch
+                if a.theme in installed:
+                    theme = installed[a.theme]
+                    image = rng.choice(theme['images'])
+                elif pool and a.theme in pool:
+                    image = fetch(a.theme, *pool[a.theme], rng)
+                    os.utime(image)
+                    prune(image)
+                    theme = cached_theme(a.theme)
+                else:
+                    sys.exit(f"brief-wall: no theme '{a.theme}' — try --list")
+            elif pool is None:  # no rolodex: every installed theme is in the draw
+                theme = installed[rng.choice(sorted(installed))]
+                image = rng.choice(theme['images'])
+            else:
+                theme, image = draw(rng, pool, installed)
+        except Unavailable as e:
+            sys.exit(f'brief-wall: {e}')
 
     mode, r = roles_for(read_colors(theme['colors']))
     try:

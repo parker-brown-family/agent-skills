@@ -296,5 +296,7 @@ reader scrolled past.
 - `reference/notes-markup.html` — the markup block the notes system needs
 - `scripts/brief-wall` — picks the wallpaper and the palette, measures the contrast, and
   prints the block that follows `base.css`; its docstring says how
+- `theme-rolodex.txt` — the themes the wallpaper is drawn from, one per line; a `#` takes
+  one out. A theme not installed is fetched one wallpaper at a time into a 300 MB cache
 - `fixtures/notes-format/README.md` — the notes format in bytes, the cases that pin it,
   and how to run them
