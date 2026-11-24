@@ -1,0 +1,49 @@
+{
+  "name": "bright-future",
+  "about": "Hot magenta and electric cyan over a planet at night.",
+  "wallpaper": "bright-future.jpg",
+  "wallpaper_blurred": "bright-future-blur.jpg",
+  "colours": {
+    "accent": "#ff4fd1",
+    "link": "#45e5ff",
+    "good": "#67f454",
+    "waiting": "#45e5ff",
+    "building": "#e8c77a",
+    "text": "#d9cfe8",
+    "bright": "#fbf0fb",
+    "dim": "#8b93c4",
+    "heart": "#ff4fd1",
+    "heart_text": "#f3b9e6",
+    "line": "#565da0",
+    "panel": "#10122f",
+    "shade": "#0a0b22",
+    "edge": "#04040b",
+    "glare": "#cfeee0",
+    "note": "#ff62cf",
+    "note_ink": "#2a0a22",
+    "projects": [
+      "#ff7a59",
+      "#45e5ff",
+      "#ff4fd1",
+      "#67f454",
+      "#b48cff",
+      "#e8c77a",
+      "#7fb2ff",
+      "#ef637e"
+    ]
+  },
+  "glass": {
+    "tint": 0.55,
+    "phosphor": 0.05,
+    "smoke": 0.2,
+    "vignette": 0.82,
+    "scanlines": 0.3,
+    "glare": 0.2,
+    "bend": 0.018,
+    "bulge": 0.035,
+    "corner": 0.09,
+    "panel_tint": 0.62,
+    "frame_tint": 0.4,
+    "wallpaper_dim": 0.3
+  }
+}
