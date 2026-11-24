@@ -1,0 +1,49 @@
+{
+  "name": "deep-quiet",
+  "about": "Forest green, ivory and jade over a mining robot and a green planet. The default.",
+  "wallpaper": "deep-quiet.jpg",
+  "wallpaper_blurred": "deep-quiet-blur.jpg",
+  "colours": {
+    "accent": "#A1C57F",
+    "link": "#A5CEC6",
+    "good": "#B3D39B",
+    "waiting": "#A5CEC6",
+    "building": "#D9C695",
+    "text": "#E4DEC9",
+    "bright": "#F3EEDD",
+    "dim": "#9FA997",
+    "heart": "#D9A296",
+    "heart_text": "#EBC9BF",
+    "line": "#6d7a66",
+    "panel": "#1D241F",
+    "shade": "#141a16",
+    "edge": "#050806",
+    "glare": "#e6f2dc",
+    "note": "#A9CB86",
+    "note_ink": "#1a2415",
+    "projects": [
+      "#D1A37F",
+      "#A5CEC6",
+      "#A1C57F",
+      "#B3D39B",
+      "#C4B0C3",
+      "#D9C695",
+      "#8FBEB7",
+      "#D9A296"
+    ]
+  },
+  "glass": {
+    "tint": 0.4,
+    "phosphor": 0.05,
+    "smoke": 0.2,
+    "vignette": 0.82,
+    "scanlines": 0.3,
+    "glare": 0.2,
+    "bend": 0.018,
+    "bulge": 0.035,
+    "corner": 0.09,
+    "panel_tint": 0.5,
+    "frame_tint": 0.4,
+    "wallpaper_dim": 0.16
+  }
+}

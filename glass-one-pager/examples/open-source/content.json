@@ -1,0 +1,244 @@
+{
+  "name": "Parker Brown",
+  "title": "open source, and why I love it",
+  "file": "parker-brown-open-source",
+  "theme": "deep-quiet",
+  "heading": "why they exist, and what I love about them",
+  "links": [
+    {
+      "label": "parker.brownfamilysports.com",
+      "url": "https://parker.brownfamilysports.com"
+    },
+    {
+      "label": "github.com/parker-brown-family",
+      "url": "https://github.com/parker-brown-family"
+    }
+  ],
+  "states": {
+    "done": {
+      "mark": "✓",
+      "means": "merged, fixed or shipped",
+      "colour": "good",
+      "pull_request": "MERGED"
+    },
+    "open": {
+      "mark": "○",
+      "means": "open",
+      "colour": "waiting",
+      "pull_request": "OPEN"
+    },
+    "building": {
+      "mark": "●",
+      "means": "being built",
+      "colour": "building",
+      "pull_request": null
+    }
+  },
+  "projects": [
+    {
+      "name": "Rio",
+      "by": "raphamorim",
+      "url": "https://github.com/raphamorim/rio",
+      "why": "A GPU terminal in Rust, for the desktop and the browser.",
+      "love": "Raphael is doing something special, and I want more people using it.",
+      "items": [
+        {
+          "state": "done",
+          "text": "six security issues reported, all fixed",
+          "url": "https://github.com/raphamorim/rio/security/advisories/GHSA-gpqv-v5wv-3frf"
+        },
+        {
+          "state": "done",
+          "text": "launch keys, carried into Rio",
+          "url": "https://github.com/raphamorim/rio/pull/2019"
+        },
+        {
+          "state": "open",
+          "text": "Rio in Omarchy’s terminal picker",
+          "url": "https://github.com/omacom/omarchy/pull/19952"
+        },
+        {
+          "state": "open",
+          "text": "CPU fallback when Vulkan is missing",
+          "url": "https://github.com/raphamorim/rio/pull/2018"
+        },
+        {
+          "state": "open",
+          "text": "pick the integrated GPU",
+          "url": "https://github.com/raphamorim/rio/pull/2037"
+        }
+      ]
+    },
+    {
+      "name": "lean-ctx",
+      "by": "yvgude",
+      "url": "https://github.com/yvgude/lean-ctx",
+      "why": "A context gateway: agents read only what the task needs.",
+      "love": "It treats attention as the scarce thing, for agents too.",
+      "items": [
+        {
+          "state": "done",
+          "text": "a file read twice comes back as its changes",
+          "url": "https://github.com/yvgude/lean-ctx/pull/463"
+        },
+        {
+          "state": "done",
+          "text": "one index build at a time, not nineteen",
+          "url": "https://github.com/yvgude/lean-ctx/pull/470"
+        },
+        {
+          "state": "done",
+          "text": "index threads kept in bounds",
+          "url": "https://github.com/yvgude/lean-ctx/pull/468"
+        },
+        {
+          "state": "done",
+          "text": "Augment support, in two parts",
+          "url": "https://github.com/yvgude/lean-ctx/pull/264"
+        },
+        {
+          "state": "done",
+          "text": "a leaner build for contributors",
+          "url": "https://github.com/yvgude/lean-ctx/pull/467"
+        }
+      ]
+    },
+    {
+      "name": "Omarchy",
+      "by": "omacom",
+      "url": "https://github.com/omacom/omarchy",
+      "why": "The agentic operating system: beautiful, modern Linux.",
+      "love": "Somebody decided a computer should be lovely to use.",
+      "items": [
+        {
+          "state": "building",
+          "text": "hands-free: install and use it by voice",
+          "url": "https://github.com/parker-brown-family/omarchy-accessibility"
+        },
+        {
+          "state": "done",
+          "text": "two themes in the gallery",
+          "url": "https://github.com/omacom/omarchy-site/pull/200"
+        },
+        {
+          "state": "done",
+          "text": "Crook: which agent needs you",
+          "url": "https://github.com/parker-brown-family/omarchy-crook"
+        },
+        {
+          "state": "done",
+          "text": "localization skill, with Reel as first proof",
+          "url": "https://github.com/parker-brown-family/omarchy-localization"
+        },
+        {
+          "state": "open",
+          "text": "Terminal Delight under Install > AI",
+          "url": "https://github.com/omacom/omarchy/pull/17625"
+        }
+      ]
+    },
+    {
+      "name": "Terminal Delight",
+      "by": "mine",
+      "url": "https://docs.terminal-delight.brownfamilysports.com",
+      "why": "A home for running many agents at once.",
+      "love": "It is where every idea here gets lived in.",
+      "items": [
+        {
+          "state": "done",
+          "text": "terminals that outlive the window",
+          "url": "https://github.com/parker-brown-family/terminal-delight"
+        },
+        {
+          "state": "done",
+          "text": "twelve model-checked state machines",
+          "url": "https://github.com/parker-brown-family/terminal-delight/tree/main/verify"
+        },
+        {
+          "state": "done",
+          "text": "agents that can see and prompt each other",
+          "url": "https://docs.terminal-delight.brownfamilysports.com"
+        },
+        {
+          "state": "done",
+          "text": "nine languages, checked at build",
+          "url": "https://github.com/parker-brown-family/terminal-delight"
+        }
+      ]
+    },
+    {
+      "name": "h0",
+      "by": "mine",
+      "url": "https://github.com/parker-brown-family/fitting-room",
+      "why": "In goes a project, out comes a harness made for it.",
+      "love": "It lost its first evaluation, and that is how it got good.",
+      "items": [
+        {
+          "state": "done",
+          "text": "Omarchy harness: 6 of 6, at 47% less",
+          "url": "https://github.com/parker-brown-family/omarchy-h0-builds"
+        },
+        {
+          "state": "done",
+          "text": "evaluations registered before they run",
+          "url": "https://github.com/parker-brown-family/fitting-room"
+        },
+        {
+          "state": "done",
+          "text": "the fitting, open for anyone to use",
+          "url": "https://github.com/parker-brown-family/omarchy-fitted-harness"
+        }
+      ]
+    },
+    {
+      "name": "Neighbours",
+      "by": "small, good things",
+      "url": "https://github.com/nixfred/burnbar",
+      "why": "Tools made by people who use them.",
+      "love": "A small fix in someone’s favourite tool is a kind of thank-you.",
+      "items": [
+        {
+          "state": "done",
+          "text": "burnbar · pace flames on the token heat map",
+          "url": "https://github.com/nixfred/burnbar/pull/8"
+        },
+        {
+          "state": "done",
+          "text": "Reel · shortcuts on non-Latin keyboards",
+          "url": "https://github.com/tahadx/reel/pull/14"
+        },
+        {
+          "state": "done",
+          "text": "orb-audio, AI audio · a bell on a note",
+          "url": "https://github.com/stdevMac/orb-audio/pull/1"
+        }
+      ]
+    }
+  ],
+  "closed": [
+    {
+      "name": "Jev Brev",
+      "url": "https://github.com/parker-brown-family/jevbrev"
+    },
+    {
+      "name": "Agent Skills",
+      "url": "https://github.com/parker-brown-family/agent-skills"
+    },
+    {
+      "name": "CUDA CRT",
+      "url": "https://github.com/parker-brown-family/cuda-crt"
+    },
+    {
+      "name": "Crossfire",
+      "url": "https://github.com/parker-brown-family/crossfire-skill"
+    }
+  ],
+  "note": {
+    "title": "GO AND SEE",
+    "lines": [
+      "Every row on the",
+      "left is a link."
+    ]
+  },
+  "prompt": "which project should I look at first?"
+}

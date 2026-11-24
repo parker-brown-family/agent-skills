@@ -1,0 +1,3 @@
+examples/*/*.html
+examples/*/*.png
+__pycache__/

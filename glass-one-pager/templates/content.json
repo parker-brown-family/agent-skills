@@ -1,0 +1,64 @@
+{
+  "name": "<your name>",
+  "title": "<a short line under it>",
+  "file": "<output file name, no extension>",
+  "theme": "deep-quiet",
+  "heading": "why they exist, and what I love about them",
+  "links": [
+    {
+      "label": "<your site>",
+      "url": "https://<your site>"
+    }
+  ],
+  "states": {
+    "done": {
+      "mark": "✓",
+      "means": "merged, fixed or shipped",
+      "colour": "good",
+      "pull_request": "MERGED"
+    },
+    "open": {
+      "mark": "○",
+      "means": "open",
+      "colour": "waiting",
+      "pull_request": "OPEN"
+    },
+    "building": {
+      "mark": "●",
+      "means": "being built",
+      "colour": "building",
+      "pull_request": null
+    }
+  },
+  "projects": [
+    {
+      "name": "<project>",
+      "by": "<who makes it, or mine>",
+      "url": "https://<link>",
+      "why": "<why it exists, in one line>",
+      "love": "<what you love about it, in your words>",
+      "items": [
+        {
+          "state": "done",
+          "text": "<what you did, five words or so>",
+          "url": "https://<the pull request, release or page>"
+        }
+      ]
+    }
+  ],
+  "closed": [
+    {
+      "name": "<a project shown as a name only>",
+      "url": "https://<link>"
+    }
+  ],
+  "note": {
+    "title": "GO AND SEE",
+    "lines": [
+      "Every row on the",
+      "left is a link."
+    ]
+  },
+  "prompt": "which project should I look at first?",
+  "contact_is_public": false
+}
