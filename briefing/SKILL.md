@@ -67,6 +67,17 @@ A decision card holds what the reader needs to stamp, in 80 words at most: the q
 
 If the host keeps a house style or a list of flagged phrases, read it before drafting and again before delivery. A proposed mechanism stays proposed until it is tested.
 
+## Know the Stage
+
+Work planned in stages has a status file, usually `docs/plans/<feature>/00-status.md`, with a line naming the stage it is on. Read it before writing, and say the stage in the eyebrow: `stage 4 of 10 · architecture`. The brief is about that stage.
+
+- **This stage:** the work in full, and the decision asked for.
+- **The next stage:** a glance, in one short section headed *Coming next*, naming what it will have to settle.
+- **Further ahead:** a thought, one line, and only where it changes today's decision.
+- **Behind:** a link. Approved work is not argued again.
+
+Never deliver a later stage's document, or ask for its approval. A low grade folds stages together, and a folded group counts as one stage. With no status file, or none that names a stage, the stage is unknown: write the brief on its own terms and do not invent one. [`graded-gates`](../graded-gates/SKILL.md) is one workflow with stages; any other is read the same way.
+
 ## Link the Evidence
 
 Give a material claim a link to an evidence note, and let that note go on to the measurement, the test and the source. The brief stays short however deep the chain runs. Missing evidence gets one plain sentence in the brief. Use ordinary relative Markdown links; `check` follows every local link, image, `file://` URL and `#fragment`, and counts the external ones it did not fetch. Keep source paths openable and put symbols, revisions and line numbers in the surrounding text.
