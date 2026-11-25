@@ -73,6 +73,8 @@ Before building, one reader who did not write the plan looks for what it missed:
 
 Build one slice at a time, prove it by running it, commit it, record it in the status file, and go on to the next. **Do not ask whether to continue.** Stop and ask only when a slice breaks something the person approved, or when a step cannot be undone without them. Any other decision the plan left open is yours: make it and record it for the completion brief.
 
+**Keep one agent on the build.** In two measured jobs, of three slices and seven, a fresh agent for each slice passed the same tests as one agent doing all of them and cost 1.7 and 2.4 times as much, because each one paid to start and to read the code again. Both jobs took one agent under 30 turns. Hand over to a fresh agent, from the status file, only when a session has grown genuinely long; whether that pays has not been measured.
+
 A test must fail against the code before the change. Never skip or weaken one to get to green.
 
 ### Two reviews
