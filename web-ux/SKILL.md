@@ -1,6 +1,6 @@
 ---
 name: web-ux
-description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, a page switch changes the page but never the ground behind it, and a document shown inside a themed site wears the theme with the original one click away. Each rule names the failure that earned it and the check that catches it, including scripts that measure whether an overlay holds still, whether its keys work the moment it opens, and what a page switch looks like frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, a PDF that \"looks too white\" in a dark theme, keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
+description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, a page switch changes the page but never the ground behind it, and a document shown inside a themed site wears the theme with the original one click away, and an effect that draws a picture of the page (a CRT bend, a lens) puts every pixel where the live page is, at every browser zoom. Each rule names the failure that earned it and the check that catches it, including scripts that measure whether an overlay holds still, whether its keys work the moment it opens, and what a page switch looks like frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, a PDF that \"looks too white\" in a dark theme, a WebGL or canvas layer over the page, a CRT effect, clicks that \"land beside\" what is drawn, a \"pixel target offset\", something wrong \"only at 90% zoom\", keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
 license: MIT
 ---
 
@@ -30,7 +30,8 @@ test that fails on a duplicate declaration (`scripts/dup-functions.sh`).
 canvas, a glass sheen) passes every click through to what is under it, mapped through any distortion it draws, and the
 page under it stays see-through while the layer waits for its first frame, so the page never flashes flat in between.
 Where the effect cannot run (no WebGL2, a page taller than the GPU's largest texture, a narrow screen), a flat stand-in
-takes its place and the page still works.
+takes its place and the page still works. When the layer draws a *picture* of the page, the picture and the page must
+agree to the pixel: section 7.
 
 ## 2. Find what a person types
 
@@ -152,6 +153,52 @@ measured 4.2 : 1 over a bright painting; the built reader, where its own dimming
 8.7 : 1 at worst across five themes and seven wallpapers. Only the live number decides. Sample the ground beside the text
 in a headless screenshot and compute it against the theme's ink.
 
+## 7. A picture of the page lands where the page is
+
+An effect that bends or tints the page (a CRT tube, a lens, a page curl) usually draws a *snapshot*: the page cloned into
+an SVG `foreignObject`, rasterised, uploaded as a texture. Clicks still go to the live page, mapped back through the
+distortion. So every pixel the reader aims at in the picture must be the same element in the live page. When they
+disagree, the click lands beside what the reader sees, and nothing errors. *Specimen:* a reading shelf under a CRT bend
+at 90% browser zoom put buttons up to 58 px from where they were live. The report was a "pixel target offset", and it
+took six rounds to fix, because each fix was measured in a setup that could not show the fault.
+
+**P1. Lay the snapshot out at the device pixel ratio, not at 1.** Chrome on Linux shapes text in whole device pixels,
+so where a line wraps depends on device pixels per CSS pixel: the screen's scale times the browser's zoom. A snapshot
+laid out at 1 wrapped differently, so it drifted 58 px down the page at 90% zoom, and 16 px at 100% on a 1.6 screen.
+Put `zoom: devicePixelRatio` on the snapshot's wrapper, size the SVG to the zoomed layout, and draw it back with source
+`(0, 0, W*Z, H*Z)`. `devicePixelRatio` already carries the zoom, so there is nothing to detect. Take a new snapshot when
+`matchMedia('(resolution: Xdppx)')` changes: moving the window to another screen fires no resize.
+
+**P2. Copy the live line breaks; do not let the snapshot work them out.** Even at the same zoom, Chrome under page zoom
+broke a title a word early ("…Hypernetwork-Generated | Adapters", where by its own measure "Adapters" ended at 252 px in a
+258 px box), and the snapshot did not, so that card and everything below it sat 19 px off. Only some zoom levels
+trip it, which is why the report read "90% is the only offender". No CSS reproduces it (`text-rendering:
+geometricPrecision` changed nothing). So walk the live page and the clone together; for each text node, binary-search
+the character boxes for where each line starts. In the clone, put a `<br>` at each start and hold each line in a
+`white-space: nowrap` span. Two ways to get this wrong:
+- Do not set nowrap on the whole clone. One line the walk missed then can never break, widens its grid column, and
+  moved every card 90 px.
+- "On a new line" means the character's top is below the *middle* of the line before. A fixed 6 px step read the
+  smaller count text in "Our papers 10" as a new line, and added 100 px.
+
+**P3. Nothing in the snapshot may read its own size.** Once the snapshot is wider than the window (P1), its `@media`
+rules and `vw`/`vh` lengths answer for the wrong width. Settle each `@media` with the live `matchMedia(query).matches`
+(`@media all` or `@media not all`), and rewrite each `vw`/`vh` as its live pixel value. A title at
+`clamp(36px, 5vw, 56px)` grew in the wider picture and pushed the page down 15 px. Rewrite before embedding fonts as
+base64, which can contain "3vw" by chance.
+
+**P4. Feedback comes from the live box every frame, never from a new snapshot.** Retaking the snapshot to show a hover
+cost about 0.7 s on a 12,000 px page, so the lit button trailed the pointer onto the one it had just left. Pass the hovered
+element's live `getBoundingClientRect()` to the shader each frame and draw the ring there. That also makes it a
+diagnostic: a ring that sits beside the drawn button is the disagreement, made visible.
+
+**P5. Forward the click to an element that can take it.** The element under the mapped point is often an icon's SVG
+path, and `SVGElement` has no `click()`. The forwarded click threw after the original was cancelled, so the button did
+nothing. Climb to the nearest `HTMLElement` first.
+
+**P6. A snapshot that is never retaken never heals.** With hover no longer retaking it (P4), one bad snapshot stays
+until the page changes. Take a second one about 1.5 s after a start, a resize or a zoom change.
+
 ## Check before handing over
 
 Run checks headless (Playwright against a local preview), never on someone's live desktop: focus changes and key
@@ -187,6 +234,20 @@ It clicks the opener and checks that focus is inside the overlay, that ↓ scrol
 page, and that Esc puts focus back on the opener (rules K6 and K7). It exits 1 on any failure. Checked against a
 reader before and after the K6 fix: the old build exits 1 (focus on the button behind it, ↓ scrolls 0 px), the new one 0.
 
+For a picture-of-the-page effect (section 7), **measure under real browser zoom, or you have measured nothing.**
+Headless Chromium shows neither the zoom drift nor the early line break, and `deviceScaleFactor` emulation and CSS `zoom`
+on the root are not page zoom. All three said "within 1 px" while the reader's screen was 19 px off. The recipe:
+- Write the zoom into a fresh profile, the way Chrome stores it: `Default/Preferences` →
+  `{"partition":{"per_host_zoom_levels":{"x":{"localhost":{"zoom_level":-0.5778829311823857}}}}}`. That is 90%; the level
+  is log base 1.2 of the factor, and 80% is `-1.2239010857415447`.
+- Launch it headed with `chromium.launchPersistentContext(dir, { headless: false, viewport: { width, height } })`, under
+  `xvfb-run -a -s "-screen 0 1920x1200x24"`, with software GL.
+- Confirm `devicePixelRatio` reads 0.9 before trusting anything.
+- Paint the targets solid magenta in both the page and the snapshot. Read the effect's own snapshot canvas back, and
+  compare each target's top with its live top.
+- Cover the whole page in slices that fit an 8,192 px software texture, because a mismatch lives on one card, not all.
+- Make the test fail on the old build before you believe it passes on the new.
+
 Then do by hand what no script proves: search for the thing a person last failed to find, read the first card aloud, and
 reach the third result with the keyboard alone. Open every overlay with a click and press ↓ without touching the mouse
 again: if nothing scrolls, focus was left behind it. In a paged reader, press → twice quickly and check that the page
@@ -212,3 +273,11 @@ number and the page on screen agree.
   instead of blending over it, in headless Chromium. `drawImage(await createImageBitmap(src, x, y, w, h), …)` blends.
 - A dialog's default `max-width`/`max-height` and an inherited `li { max-width: 68ch }` make cards stop short of the
   dialog's edge. Reset both inside the results list.
+- `xvfb-run` with no `-s` gives a 640×480 screen. A headed window there comes out a few hundred pixels wide whatever
+  `--window-size` says, and a layout effect that needs 600 px quietly switches itself off. `Browser.setWindowBounds` does
+  not help without a window manager. Pass a full-size screen and set `viewport`.
+- Under real page zoom, Playwright's mouse coordinates are CSS pixels (measure it: move to two points and read back
+  `clientX`), but `page.screenshot` crops of a window taller than the virtual screen land in the wrong place. Trust the
+  in-page trace (mapped point, `elementFromPoint`, whether the click worked) over a cropped photo.
+- On a machine at a load average near 60, snapshot measurements drifted a few pixels per line in runs the same code
+  passed at 18. Note the load beside any pixel result, and rerun a surprising one before chasing it.
