@@ -1,6 +1,6 @@
 ---
 name: web-ux
-description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, a page switch changes the page but never the ground behind it, and a document shown inside a themed site wears the theme with the original one click away, and an effect that draws a picture of the page (a CRT bend, a lens) puts every pixel where the live page is, at every browser zoom. Each rule names the failure that earned it and the check that catches it, including scripts that measure whether an overlay holds still, whether its keys work the moment it opens, and what a page switch looks like frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, a PDF that \"looks too white\" in a dark theme, a WebGL or canvas layer over the page, a CRT effect, clicks that \"land beside\" what is drawn, a \"pixel target offset\", something wrong \"only at 90% zoom\", keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
+description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, a page switch changes the page but never the ground behind it, and a document shown inside a themed site wears the theme with the original one click away, and an effect that draws a picture of the page (a CRT bend, a lens) puts every pixel where the live page is, at every browser zoom. Each rule names the failure that earned it and the check that catches it, including scripts that measure whether an overlay holds still, whether its keys work the moment it opens, and what a page switch looks like frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, a PDF that \"looks too white\" in a dark theme, a WebGL or canvas layer over the page, a CRT effect, text that is \"hard to read\", \"low contrast\" or \"can't read the selected one\", checking colours across themes, clicks that \"land beside\" what is drawn, a \"pixel target offset\", something wrong \"only at 90% zoom\", keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
 license: MIT
 ---
 
@@ -153,6 +153,15 @@ measured 4.2 : 1 over a bright painting; the built reader, where its own dimming
 8.7 : 1 at worst across five themes and seven wallpapers. Only the live number decides. Sample the ground beside the text
 in a headless screenshot and compute it against the theme's ink.
 
+**D5. Sweep every look, with a real contrast engine, on the rendered page.** A site with themes and modes has as many
+colour schemes as their product, and a palette check at build time only sees the pairs someone thought to list. On a
+site with eleven themes in two modes, the build held small labels to the large-text line (3:1), and two light themes'
+labels shipped at 4.16 and 4.45. A sweep of the built pages found all twelve failures in three minutes. Run
+`scripts/contrast.mjs` over every page in every look (axe-core's colour-contrast rule, which composites see-through
+layers), open each tab or panel so hidden text is checked too, and then put each failure's colour pair into the
+build-time check so it cannot come back. Every role that carries text, small labels included, clears 4.5:1, and so does
+a *selected* state: text set on the accent (a filled pill, an active tab) is a pair of its own.
+
 ## 7. A picture of the page lands where the page is
 
 An effect that bends or tints the page (a CRT tube, a lens, a page curl) usually draws a *snapshot*: the page cloned into
@@ -196,13 +205,28 @@ diagnostic: a ring that sits beside the drawn button is the disagreement, made v
 path, and `SVGElement` has no `click()`. The forwarded click threw after the original was cancelled, so the button did
 nothing. Climb to the nearest `HTMLElement` first.
 
+**P7. Hold the snapshot's lines in a tag no stylesheet names.** The page's own CSS styles the clone, so a wrapper the
+snapshot adds is styled too. Lines held in `<span>`s took a pill rule written as `.parts span`: each line got a second
+border and the dim text colour, so the picture showed the selected pill with pale text on bright green while the live
+page was fine. Contrast tools read the live page and pass it. Use an element name nothing targets (`<snap-line>`), and
+write component rules with `>` where they mean a direct child.
+
+**P8. Copy images into the snapshot.** An SVG drawn as an image loads nothing from outside itself, so every `<img>` in the
+clone comes out blank (logos and figures vanished under the glass). Fetch each same-origin image once, cache it as a
+`data:` URL, and set it on the clone before serialising. Strip `srcset` and `loading`.
+
+**P9. Pin every block's height to its live height.** Frozen line breaks (P2) keep lines where they are, but a line box
+can still come out a fraction of a pixel off, and down a long page the fractions add up: 4.7 px at the foot of a 5,000 px
+page at 90% zoom. Copy each block-level element's computed `height` onto its clone, and the error stays inside the
+block it happened in (0.7 px on the same page).
+
 **P6. A snapshot that is never retaken never heals.** With hover no longer retaking it (P4), one bad snapshot stays
 until the page changes. Take a second one about 1.5 s after a start, a resize or a zoom change.
 
 ## Check before handing over
 
 Run checks headless (Playwright against a local preview), never on someone's live desktop: focus changes and key
-presses there interrupt whoever is typing.
+presses there interrupt whoever is typing, and a window that opens mid-dictation receives the dictated text.
 
 ```bash
 node scripts/hold-still.mjs http://localhost:8799/ --open Control+k --input '#q' --box '#find' --type 'p,pe,peking,the'
@@ -210,6 +234,14 @@ node scripts/hold-still.mjs http://localhost:8799/ --open Control+k --input '#q'
 
 It prints the input's and the box's top edge for each query and exits 1 if either moved by more than one pixel. Run it at
 desktop and phone width (`--width 390 --height 800`).
+
+```bash
+node scripts/contrast.mjs http://localhost:8799/ http://localhost:8799/writing/ --looks looks.json --root '#main' --open 'label.tab'
+```
+
+It runs axe-core's colour-contrast rule over each page in each look (rule D5) and prints every distinct failure with its
+colour pair, worst first; exit 1 on any. `looks.json` lists each look as the localStorage that selects it. Checked
+against a build whose light-theme labels sat at 4.16:1: it exits 1 there and 0 on the fixed build.
 
 ```bash
 scripts/dup-functions.sh src/app.js
@@ -241,7 +273,11 @@ on the root are not page zoom. All three said "within 1 px" while the reader's s
   `{"partition":{"per_host_zoom_levels":{"x":{"localhost":{"zoom_level":-0.5778829311823857}}}}}`. That is 90%; the level
   is log base 1.2 of the factor, and 80% is `-1.2239010857415447`.
 - Launch it headed with `chromium.launchPersistentContext(dir, { headless: false, viewport: { width, height } })`, under
-  `xvfb-run -a -s "-screen 0 1920x1200x24"`, with software GL.
+  `env -u WAYLAND_DISPLAY xvfb-run -a -s "-screen 0 1920x1200x24"`, with software GL, `--ozone-platform=x11` in its args
+  and `WAYLAND_DISPLAY` empty in its `env`. `xvfb-run` alone is not enough: Chromium picks Wayland whenever
+  `WAYLAND_DISPLAY` is set and opens on the live desktop, taking focus, whatever `DISPLAY` says. Make the test refuse
+  to start when `DISPLAY` is the session's own (`:0`), and before a long loop check `hyprctl clients` (or your
+  compositor's list) gains nothing during one run.
 - Confirm `devicePixelRatio` reads 0.9 before trusting anything.
 - Paint the targets solid magenta in both the page and the snapshot. Read the effect's own snapshot canvas back, and
   compare each target's top with its live top.
