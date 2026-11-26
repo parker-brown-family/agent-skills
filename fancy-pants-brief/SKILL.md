@@ -121,7 +121,7 @@ when it passes the gate.
 
 ## Dark, always
 
-`brief-wall` picks a random Omarchy theme and one of its wallpapers. When the theme is light, it
+`brief-wall` picks a random theme from the rolodex (`decision-brief/theme-rolodex.txt`) and one of its wallpapers. When the theme is light, it
 turns it dark: the ink becomes the ground and the paper becomes the ink. It also lightens the ink
 until body text clears 7:1 over the brightest tenth of the wallpaper. Take the random pick, and
 never choose a theme to match the subject; the variety is the point. `--theme` and `--image`

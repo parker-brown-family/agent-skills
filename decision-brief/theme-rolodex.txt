@@ -1,0 +1,189 @@
+# theme-rolodex — the themes brief-wall draws a brief's wallpaper from.
+#
+# This file is the draw. brief-wall picks a theme from the lines below, evenly, then one of
+# that theme's wallpapers. Nothing that is not on a live line here is drawn, so the stock
+# Omarchy themes are out simply because they are commented out at the bottom.
+#
+#   name   source   [path inside the repository]   # note
+#
+# source is owner/repo on GitHub, any git URL, or "-" for a theme that only exists installed
+# on this machine. A theme installed under that name (~/.config/omarchy/themes and the
+# like) is used from disk; otherwise brief-wall fetches its colors.toml and ONE wallpaper,
+# never the whole repository, into ~/.cache/brief-wall, which it keeps under 300 MB by
+# dropping the wallpapers used longest ago (BRIEF_WALL_CACHE_MB changes the cap).
+#
+# To take a theme out, put a # in front of it. To put one in, add a line or delete the #.
+# `brief-wall --list` shows the draw as it stands, and `brief-wall --theme NAME` still
+# reaches any theme, on the list or not.
+#
+# Curated 2026-11-20 from ~490 GitHub repositories (the awesome-omarchy list plus searches
+# for Omarchy themes): kept the ones with a colors.toml and wallpapers, a look of their own,
+# and art that will sit under glass. Notes are the theme author's own description.
+# Stars and wallpaper counts are as of that day.
+
+# ---- ours, and the community themes already installed here
+bright-future               parker-brown-family/omarchy-bright-future-theme     # ours
+deep-quiet                  parker-brown-family/omarchy-deep-quiet-theme        # ours
+praus                       parker-brown-family/omarchy-praus-theme             # ours
+terminal-delight            -                                                   # ours, installed only
+term-minimalist             -                                                   # installed only
+highlands                   nibra180/omarchy-highlands-theme                    # installed here
+pripyat                     nibra180/omarchy-pripyat-theme                      # installed here
+quattrocento                r-bart/omarchy-quattrocento-theme                   # walnut ground, worn brass signal
+
+# ---- community, most-starred first   (stars · wallpapers)
+giants                      dhh/omarchy-giants-theme                            # 135★ 11 · Standing on the shoulders of giants — a warm sepia-on-paper dark theme for Omarchy
+aetheria                    JJDizz1L/aetheria                                   # 129★  6 · Welcome to Aetheria
+hermarchy                   archer-clawbot/omarchy-hermarchy-theme              # 112★  3 · A restrained research-workstation theme for Omarchy with optional Hermes agent status
+coppernight                 hembramnishant50-glitch/omarchy-coppernight-theme   # 111★  5 · 夜 Copper Night — the last Omarchy rice you'll ever need
+akane                       Grenish/omarchy-akane-theme                         # 110★  9 · Omarchy theme based on japanese culture
+forest-night                ForrestKnight/omarchy-forest-night-theme            #  72★  2 · A mystical, nature-inspired Omarchy theme blending ethereal magic with moonlit forest ambi
+void                        vyrx-dev/omarchy-void-theme                         #  68★  2 · Void theme for omarchy
+blackgold                   HANCORE-linux/omarchy-blackgold-theme               #  64★  8 · BlackGold — A sleek black-and-gold Linux theme for omarchy.org
+blackturq                   HANCORE-linux/omarchy-blackturq-theme               #  63★  7 · BlackTurq — A bold black & turquoise Linux theme for omarchy.org
+mechanoonna                 HANCORE-linux/omarchy-mechanoonna-theme             #  62★  3 · Mecha no Onna (メカの女) the "Metal Woman”
+ibm                         DimaZbr/omarchy-ibm-theme                           #  62★  6 · IBM / ThinkPad theme for omarchy
+felix                       TyRichards/omarchy-felix-theme                      #  62★ 15 · Minimalist Omarchy Theme for Arch Linux
+city-783                    OldJobobo/omarchy-city-783-theme                    #  58★  7 · A Dark Cyber-Dystopia Sci-Fi Theme for Omarchy
+last-call                   OldJobobo/omarchy-last-call-theme                   #  53★ 11 · Last Call Theme for Omarchy
+harbordark                  HANCORE-linux/omarchy-harbordark-theme              #  51★  4 · Dark version of Harbor
+space-monkey                TyRichards/omarchy-space-monkey-theme               #  49★  3 · Omarchy Theme for Arch Linux
+sakura-mochi                OldJobobo/omarchy-sakura-mochi-theme                #  47★  9 · A dark Omarchy theme with soft pink accents, cool green structure, and a near-black base
+batou                       HANCORE-linux/omarchy-batou-theme                   #  45★  5 · A moody Linux theme inspired by Batou’s car and the iconic opening scene — crafted for oma
+futurism                    bjarneo/omarchy-futurism-theme                      #  45★  4 · This is the Futurism theme for Omarchy.org, providing a visually appealing configuration s
+matrix                      bjarneo/omarchy-matrix-theme                        #  43★  5 · An Omarchy theme built from the digital rain, with animated intros and endless code rain b
+inkypinky                   HANCORE-linux/omarchy-inkypinky-theme               #  40★  6 · Inky Pinky – where bold meets blush in a swirl of creative elegance
+greek-noir                  HANCORE-linux/omarchy-greek-noir-theme              #  39★  4 · Inverted Theme of my light Theme "The Greek"
+gold-rush                   tahayvr/omarchy-gold-rush-theme                     #  39★  2 · Inspired by the rich hues of gold
+zonda-zoom                  dhh/omarchy-zonda-zoom-theme                        #  39★  7 · A cool, carbon-black Pagani Zonda theme for Omarchy
+vhs80                       tahayvr/omarchy-vhs80-theme                         #  35★  3 · vhs80 theme for Omarchy Linux
+japan-night                 devgtv/omarchy-japan-night-theme                    #  34★  6 · Japan Night theme for Omarchy Linux - anime night street wallpapers with a dark ocean blue
+koyanagi                    YutaKoyanagi10/omarchy-koyanagi-theme               #  34★  4 · A minimalist and sober grayscale theme for Omarchy
+dos-moos                    HANCORE-linux/omarchy-dos-moos-theme                #  33★  4 · A Terminal , a carpet and moos
+diablo-dreams               dhh/omarchy-diablo-dreams-theme                     #  33★  9 · A dark, golden-brown Lamborghini Diablo theme for Omarchy
+nes                         bjarneo/omarchy-nes-theme                           #  32★  2 · This is the retro nes theme for Omarchy.org, providing a visually appealing configuration
+kanso                       HANCORE-linux/omarchy-kanso-theme                   #  31★ 12 · Kansō (簡素) is the Japanese principle of simplicity and the elimination of clutter
+firmitas-utilitas-venustas  OldJobobo/omarchy-firmitas-utilitas-venustas-theme  #  30★  4 · A Strong, Useful, & Beautiful Theme for Omarchy
+cumulus                     erikrjohansson/omarchy-cumulus-theme                #  28★  4 · A summer sky behind towering clouds: painted-sky blue, cloud cream and poppy orange
+turbonite                   HANCORE-linux/omarchy-turbonite-theme               #  27★ 11 · HyprCars related Theme
+thegreek                    HANCORE-linux/omarchy-thegreek-theme                #  27★  6 · “TheGreek” — a sleek, strategic spy theme blending classic espionage style with modern int
+waffle-cat                  OldJobobo/omarchy-waffle-cat-theme                  #  27★  6 · The Official Waffle-Cat Colorscheme Theme for Omarchy
+starship-to-orbit           erikrjohansson/omarchy-starship-to-orbit-theme      #  26★  3 · An Omarchy theme celebrating Starship's flight to orbit: white text on lightly frosted liq
+ame-quattro                 Shavanced/ame-quattro                               #  25★ 23 · One of the most beautiful Omarchy 4 theme: Ame
+sunset                      bjarneo/omarchy-sunset-theme                        #  24★ 11 · A dark, mid-century sunset theme for Omarchy Quattro
+pulsar                      bjarneo/omarchy-pulsar-theme                        #  23★  5 · Pulsar is a vibrant, cosmic-inspired dark theme for Omarchy that captures the brilliant en
+sunset-drive                tahayvr/omarchy-sunset-drive-theme                  #  22★  2 · Sunset Drive theme for Omarchy Linux
+castle-on-a-lake            shmall03/omarchy-castle-on-a-lake-theme             #  22★  4 · A warm, earthy dark theme for Omarchy 4 (Quattro)
+elysian                     bjarneo/omarchy-elysian-theme                       #  21★  3 · A desktop theme that translates the mythical serenity of an Elysian forest where ancient,
+quattro                     AlexZeitler/omarchy-quattro-theme                   #  21★  5 · An Omarchy theme based on the Audi Sport quattro rally livery
+netrunner                   Pierre-Aoki/omarchy-netrunner-theme                 #  21★ 12
+dazzle-dusk                 csfh/omarchy-dazzle-dusk-theme                      #  20★  4 · Dazzle Dusk, a dark Omarchy theme with black glass, blue light, hot pink alerts, acid gree
+venice-from-above           mattbbia/venice-from-above                          #  20★  6 · A Jacopo de' Barbari inspired theme for Omarchy
+medusa                      bjarneo/omarchy-medusa-theme                        #  19★  2 · Here's my strange, unique beauty: Medusa
+ochre                       bjarneo/omarchy-ochre-theme                         #  19★  5
+spacex-terrafab             AlexZeitler/omarchy-spacex-terrafab-theme           #  19★  9 · An Omarchy theme based on the SpaceX Terrafab
+x-1632                      OldJobobo/omarchy-x-1632-theme                      #  18★  6 · X-1632 Mecha Theme for Omarchy
+norrsken                    erikrjohansson/omarchy-norrsken-theme               #  18★  1 · Aurora green on deep green-black, with violet-edged windows, a translucent glass shell, an
+outpost                     simoz/omarchy-outpost-theme                         #  18★ 36 · A pixel art theme for Omarchy inspired by remote outposts, wild landscapes, and life along
+fire-and-shadow             mattbbia/fire-and-shadow                            #  17★  4 · A Joseph Wright inspired dark theme for Omarchy
+firesky                     bjarneo/omarchy-firesky-theme                       #  16★  5 · Firesky is a simple, elegant, and dark theme for Omarchy.org inspired by the dramatic cont
+kokemusu                    Arjun010011/kokemusu                                #  16★  9 · 苔むす Kokemusu: a faded-black and moss theme for Omarchy
+roseofdune                  HANCORE-linux/omarchy-roseofdune-theme              #  15★  6 · Rose of Dune — A soft rose-gold Linux theme touched by warm brown accents for omarchy.org
+terminus                    r-bart/omarchy-terminus-theme                       #  15★  5 · Omarchy 4 theme — Deep navy base, warm gold accent, dusty teal secondaries
+pissarro                    mattbbia/pissarro                                   #  14★  5 · A Camille Pissarro inspired theme for Omarchy
+omalaunch-dusk              DanielLemky/omarchy-omalaunch-dusk-theme            #  13★  2 · A cinematic aviation-inspired Omarchy theme with deep naval surfaces and sunset accents
+abyssal-cartographer        leaflessbranch/omarchy-abyssal-cartographer-theme   #  12★  2 · A bioluminescent deep-ocean cartography theme for Omarchy
+nous                        notkisk/omarchy-nous-theme                          #  12★  3 · An original Omarchy theme built around the Nous Research visual language
+ascii                       bjarneo/omarchy-ascii-theme                         #  11★  6 · ASCII: an Omarchy theme of ink, paper and one amber phosphor, with ASCII wallpapers and in
+black-sand                  pkovzz/omarchy-black-sand-theme                     #  11★  2 · A cold, near-monochrome Omarchy theme sampled from a black volcanic beach — very dark grey
+periphery                   r-bart/omarchy-periphery-theme                      #  10★  5 · Omarchy 4 theme — Cold governs; amber only warns
+p-bloom                     ncr/omarchy-p-bloom-theme                           #  10★ 10 · p(bloom): an Omarchy theme with 42 blueprint wallpapers of machines from a future worth bu
+larch                       nchudleigh/omarchy-larch-theme                      #  10★  4 · Omarchy theme
+cga                         tsak/omarchy-cga-theme                              #   9★ 15 · A brutalist theme for Omarchy Linux in glorious cyan, magenta, black and white
+sumi-night                  erikrjohansson/omarchy-sumi-night-theme             #   7★  4 · A charcoal and ivory Omarchy theme with vermilion accents and four 4K ink-wash wallpapers
+vault                       r-bart/omarchy-vault-theme                          #   7★  5 · Omarchy 4 theme — Sodium light on stone
+kimiko                      krymzonn/omarchy-kimiko-theme                       #   7★  3 · An elegant ancient newspaper bursts into a night of neon greens and purples, when expressi
+artemis                     steve-lohmeyer/omarchy-artemis-theme                #   7★ 22 · Omarchy theme honoring NASA’s Artemis moon missions with deep space colors, lunar visuals,
+flight-15                   yamz8/omarchy-flight-15-theme                       #   7★ 12 · Omarchy theme from Starship Flight 15: launch and catch backgrounds, each with its own int
+speedline                   bjarneo/omarchy-speedline-theme                     #   6★  3 · Speedline: an Omarchy theme with gradient borders, ink shadows and diagonal animations
+c64                         AlexZeitler/omarchy-c64-theme                       #   6★  6 · Omarchy C64 theme that pays homage to the iconic hardware
+haven                       simoz/omarchy-haven-theme                           #   6★ 12 · A light pixel art theme for Omarchy, inspired by quiet harbours, rooftop gardens, and smal
+grimshaw                    imanubdesigner/omarchy-grimshaw-theme               #   6★ 11 · Grimshaw: a dark Victorian nocturne theme for Omarchy, painted in the colors of John Atkin
+flower-fruit-mountain       monkeyking-hq/omarchy-flower-fruit-mountain-theme   #   6★  6 · Flower Fruit Mountain theme for Omarchy
+zhufeng-night               rwanglq-ctrl/omarchy-zhufeng-night-theme            #   6★  5 · 珠峰·夜 Zhufeng Night — Omarchy 深色主题：高原星空为底、雪白为字、冰川蓝为印
+bloom-protocol              OldJobobo/omarchy-bloom-protocol-theme              #   5★  9 · Bloom Protocol: a near-black Omarchy theme with cobalt focus, neon-pink signal, and nine o
+vikings                     csfh/omarchy-vikings-theme                          #   5★  5 · Vikings, a dark Omarchy theme of cold sea light, steel blue, amber, and rose on near-black
+ethiopia                    Eyasuk/omarchy-ethiopia-theme                       #   5★  6 · Ethiopia — an Omarchy theme built from Ethiopian Orthodox church painting: Gondar cherub c
+turbo-pascal                keylimesoda/omarchy-turbo-pascal-theme              #   5★ 17 · Turbo Pascal Theme for Omarchy with DOS-blue workspaces, 17 wallpapers, double-white borde
+piedmont-gold               wesleygrimes/omarchy-piedmont-gold-theme            #   5★  1 · Piedmont Gold: a warm dark Omarchy theme from a pixel-art autumn lake
+stills-in-motion            mattbbia/stills-in-motion                           #   4★  7 · A Eadweard Muybridge inspired theme for Omarchy
+apollo-after-dark           leaflessbranch/omarchy-apollo-after-dark-theme      #   4★  2 · An abandoned lunar mission-control theme for Omarchy
+cathedral-of-static         leaflessbranch/omarchy-cathedral-of-static-theme    #   4★  2 · A sacred analog-interference theme for Omarchy
+discovery-one               Devis99/omarchy-discovery-one-theme                 #   4★ 12 · Dark, architectural Omarchy theme inspired by 2001: A Space Odyssey — graphite panels, CRT
+ingolstadt-1792             nathankramm/omarchy-ingolstadt-1792-theme           #   4★ 13 · A plum dark theme for builders in the age of AI, with five scenes from Mary Shelley's Fran
+phosphor                    jankeesvw/omarchy-phosphor-theme                    #   4★  2 · Omarchy theme based on an illustration by Timo Kuilder
+clearance                   shaggyrs6-netizen/omarchy-clearance-theme           #   4★ 17 · Dark aviation-inspired Omarchy theme: graphite, warm ivory and muted teal, with seventeen
+cyber-ember                 berriosb/omarchy-cyber-ember-theme                  #   4★ 14 · Cyberpunk onyx + terracotta embers + steel-blue digital fog
+sumi-day                    erikrjohansson/omarchy-sumi-day-theme               #   3★  4 · A rice paper and ink Omarchy theme with vermilion accents and four 4K ink-wash wallpapers
+railroad-visions            mattbbia/railroad-visions                           #   3★ 12 · An Anthony J
+turner                      simoz/omarchy-turner-theme                          #   3★  9 · A William Turner theme for Omarchy
+paranormal                  imanubdesigner/omarchy-paranormal-theme             #   3★  7 · A horror theme for Omarchy: abandoned asylum, fog, cold and sickly light
+ozark                       itsMattGuenther/omarchy-ozark-theme                 #   3★  8 · An Omarchy theme from the Ozark mountains of Northwest Arkansas: indigo dusk, coral sunset
+amiga-500                   nerdislb/omarchy-amiga-500-theme                    #   3★  5 · Amiga 500 theme for Omarchy: Workbench 1.3 palette, copper-bar border, animated pixel back
+yakiiro                     toddvasquez/omarchy-yakiiro                         #   3★  5 · Yakiiro — temper colors of steel
+quattro-sonderklasse        spencerbull/omarchy-quattro-sonderklasse-theme      #   3★  3 · An Audi quattro upholstery-inspired Omarchy theme
+
+# ---- stock Omarchy themes: off ("we don't want vanilla themes for a while", 2026-11-20)
+# These are installed with Omarchy, so a line needs no source. Delete the # to bring one back.
+# catppuccin
+# catppuccin-latte
+# ethereal
+# everforest
+# flexoki-light
+# gruvbox
+# hackerman
+# jade-horse
+# kanagawa
+# last-horizon
+# lumon
+# lupine
+# matte-black
+# miasma
+# nord
+# osaka-jade
+# retro-82
+# ristretto
+# rose-pine
+# solitude
+# starship
+# tokyo-night
+# vantablack
+# white
+
+# ---- considered and left out, with the reason. Uncomment to try one.
+# familiar editor palettes: the palette is the whole idea, and it reads as stock under glass
+# one-dark-pro        sc0ttman/omarchy-one-dark-pro-theme
+# dracula             catlee/omarchy-dracula-theme
+# rose-pine-dark      guilhermetk/omarchy-rose-pine-dark
+# night-owl           janhesters/omarchy-night-owl-theme
+# oxocarbon           HANCORE-linux/omarchy-oxocarbon-theme
+# arc-blueberry       vale-c/omarchy-arc-blueberry
+# monokai-nightfall   xdanger/omarchy-monokai-nightfall-theme
+# cobalt2             hoblin/omarchy-cobalt2-theme
+# carbonfox           gchmel/carbonfox
+# pastelppuccin       imanubdesigner/omarchy-pastelppuccin-theme
+# copies of stock themes: lumon, miasma, retro-82, solitude, lasthorizon, osaka-jade, jade-horse
+# franchise art, which a brief shown outside the house should not carry
+# 01                  OldJobobo/omarchy-01-theme                 # Evangelion
+# florida-man         OldJobobo/omarchy-florida-man-theme        # GTA VI
+# spiderman           spandan11106/omarchy-spiderman-theme
+# hollow-knight       bjarneo/omarchy-hollow-knight-theme
+# sword-art           KitsuneForgering/omarchy-sword-art-theme
+# heavy: one wallpaper is 25-40 MB, a tenth of the cache on its own
+# liftoff                     tcballard/omarchy-theme-liftoff
+# camelot                     csfh/omarchy-camelot-theme
+# naysayer            brianblakely/omarchy-naysayer-theme
+# roadster-8k         tcballard/omarchy-theme-roadster-8k
+# text-heavy wallpapers that fight the page's own text
+# bash-the-linux-boss darwin1811-newdev/omarchy-bash-the-linux-boss-theme
+# live-wallpaper themes whose still is a placeholder: pulse, jarvis, omatrix, macos-classic, cupertino-dark

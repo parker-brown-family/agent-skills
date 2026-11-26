@@ -109,7 +109,7 @@ The current helper refuses MP4. The README earmark is the entire video scope of 
 
 ## Licence
 
-MIT, in [LICENSE](LICENSE); `decision-brief` and `fancy-pants-brief` carry the same licence. Wallpapers are not part of it: a built page embeds one from an Omarchy theme on the builder's machine, under that theme's terms.
+MIT, in [LICENSE](LICENSE); `decision-brief` and `fancy-pants-brief` carry the same licence. Wallpapers are not part of it: a built page embeds one from an Omarchy theme, installed on the builder's machine or fetched from the theme's own repository by the rolodex, under that theme's terms.
 
 ## Alongside the Other Brief Skills
 

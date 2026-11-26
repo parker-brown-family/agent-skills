@@ -17,8 +17,8 @@ Anything that is a machine (a command, a log, a terminal) is opaque black, becau
 screen you can see the wall through is not a screen. One element per page, the thing the
 reader must not miss, is milky glass: bright, lit from above, dark ink (`.glass`).
 
-The theme is picked at random when the brief is built, one of 27 Omarchy themes and one
-of its wallpapers, and nobody switches it afterwards. There is no theme switcher and no
+The theme is picked at random when the brief is built, one of the themes on the rolodex
+(`decision-brief/theme-rolodex.txt`, about a hundred community themes) and one of its wallpapers, and nobody switches it afterwards. There is no theme switcher and no
 pinning a theme to the subject; the variety is the point. `brief-wall --theme` and
 `--image` exist so a rebuild can keep the wallpaper it already has.
 
