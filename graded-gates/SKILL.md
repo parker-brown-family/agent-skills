@@ -58,7 +58,7 @@ Grade 4 and up. Before the gates, send a hello world through each system: the th
 
 ### The gates
 
-Each gate is one document in `docs/plans/<feature>/`. Summarise it in ten lines or fewer, or as a brief, and ask for approval. Anything but a clear yes means change it and ask again. A person can circle back to an earlier gate, and so can you: if a later gate shows an approved decision is wrong, say so, reopen that gate and get it approved again.
+Each gate is one document in `docs/plans/<feature>/`. Summarise it as a brief (see *Briefs on the page*) or in ten lines or fewer, and ask for approval. Anything but a clear yes means change it and ask again. A person can circle back to an earlier gate, and so can you: if a later gate shows an approved decision is wrong, say so, reopen that gate and get it approved again.
 
 - **Product.** The problem in the user's words, one measured result, and a mockup for anything a person will look at. No databases, endpoints or file names.
 - **Architecture.** Read the code first. What it touches, the data, the order things call each other, every seam and every security surface. Name the points that need common sense rather than code, and say for each who supplies it: a person, a model, or a rule. That is the judgement surface.
@@ -98,7 +98,7 @@ Turned out to be: <filled in at the end>
 
 - [x] 1 grade
 - [x] 2 tracer round — <where it ran>
-- [x] 3 gate: product — approved <date>
+- [x] 3 gate: product — approved <date> — [brief](03-product.html)
 - [ ] 4 gate: architecture
 - [ ] 5 gate: program design
 - [ ] 6 gate: slices
@@ -113,6 +113,24 @@ Turned out to be: <filled in at the end>
 ```
 
 A session that finds this file reads every document beside it and carries on from the first unchecked line. It never redoes an approved gate. Nothing important may live only in the conversation.
+
+## Briefs on the page
+
+A gate is a decision a person makes, so where the `briefing` skill is installed each gate's summary is a brief: an HTML page with drawings, a note on every section and figure, and a copy of the notes map that comes back to you. Without it, ten lines in chat or a Markdown page do the same job.
+
+| Stage | The brief | Made with |
+|---|---|---|
+| a gate (or the one plan at 4–6) | the gate's document told for a reader, with the decision asked for at the end | `brief.py new <page>.src.html --purpose decision --id <feature>-<gate>`, then `html` and `check` |
+| the next gate | a new page, never the last one edited | `brief.py new … --follows <last gate's page>`: it opens with what came of each note on the last one |
+| a reader's notes | each note answered by a change or a reason, in the next page | `brief.py resolve <page> <notes map>` |
+| decisions made while building | one row each, for the person to stamp or overturn | `brief.py call`, then `brief.py calls <ledger> --html` in the completion brief |
+| completion brief | what was done, proved, doubted and owed, and the grade it should have been | `brief.py new … --purpose summary --follows <last gate's page>` |
+
+The page lives beside the plans, as `docs/plans/<feature>/<nn>-<gate>.html` with its `.src.html`, and the status file links it on the gate's line. A notes map that ends in a clear yes is the approval: record the date. `brief.py attention <page>` names the passages the reader scrolled past; lead the next page with any that carried a decision.
+
+## Handing over
+
+A gate is an approval, not a handover. The agent that graded the work runs every gate and every slice, and the status file carries it across a pause, a compaction or a new day. A fresh agent takes over only when a session has grown genuinely long, and it starts from the status file and the documents beside it, never from a summary written for it. If the work does go to another agent, write `## For a fresh session` in the status file first: anything that was decided only in conversation.
 
 ## What a brief may say at each stage
 
