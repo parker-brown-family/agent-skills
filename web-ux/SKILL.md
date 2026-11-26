@@ -1,6 +1,6 @@
 ---
 name: web-ux
-description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse, and a page switch changes the page but never the ground behind it. Each rule names the failure that earned it and the check that catches it, including a script that measures whether an overlay holds still and one that records a page switch frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
+description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, and a page switch changes the page but never the ground behind it. Each rule names the failure that earned it and the check that catches it, including a script that measures whether an overlay holds still and one that records a page switch frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
 license: MIT
 ---
 
@@ -25,6 +25,12 @@ that will be filled (an image, a count, a results area) is reserved before it fi
 `function pick` declarations in the same IIFE hoist, and the later one wins silently: a search feature's `pick` replaced the
 wallpaper's, and the wallpaper vanished from every page. Give every function in a shared scope a unique name, and keep a
 test that fails on a duplicate declaration (`scripts/dup-functions.sh`).
+
+**H4. A layer drawn over the page never takes the page's input.** An effect laid over the content (a CRT bend, a
+canvas, a glass sheen) passes every click through to what is under it, mapped through any distortion it draws, and the
+page under it stays see-through while the layer waits for its first frame, so the page never flashes flat in between.
+Where the effect cannot run (no WebGL2, a page taller than the GPU's largest texture, a narrow screen), a flat stand-in
+takes its place and the page still works.
 
 ## 2. Find what a person types
 
@@ -56,6 +62,11 @@ emails, stamps) before excerpting.
 
 **O5. Clean what the source encodes.** LaTeX in a title (`$\{\pm1, \pm i\}$`) reads `{±1, ±i}` on the card.
 
+**O6. What the reader reaches for is open; the rest is folded, with a count.** A list that mixes the reader's own items
+with other people's leads with theirs and puts the rest in a closed `<details>` that says how many it holds. *Specimen:* a
+repositories flyout listed eight other people's repositories open beneath ours, and the flyout grew long when the ones
+reached for are ours. Opening the fold must not close the flyout that holds it.
+
 ## 4. The keyboard does everything
 
 **K1. Focus stays in the input.** Arrow keys move a highlight through the results while the reader keeps typing. Page
@@ -70,6 +81,24 @@ input. A bare digit there is typing, so the shortcut needs a modifier.
 just scrolled to. Esc closes, and the shortcut that opened it opens it again, empty.
 
 **K5. Pointer and keyboard agree.** Hovering a card moves the same highlight without scrolling it.
+
+**K6. Whatever opens takes the focus, and gives it back.** An overlay with no input of its own (a reader, a viewer, a
+lightbox) makes its scroller focusable (`tabindex="-1"`, no outline) and focuses it on open; Esc returns focus to the
+control that opened it. *Specimen:* with a paper open in a PDF reader, "the arrow key navigation is shut down". Focus had
+stayed on the shelf button hidden behind the reader, and the body's `overflow: hidden` left Up and Down nothing to scroll.
+Handle the overlay's keys wherever focus sits inside it, except in its own text fields and under Ctrl, Alt or Meta.
+
+**K7. A page turn lands on the page it names.** When a key turns the page with a smooth scroll, record where the scroll is
+headed, and keep the scroll watcher from recomputing the current page until the scroll ends there (`scrollend`, with a
+fallback of about 1.5 s). Otherwise a second press mid-scroll leaves the page number and the position disagreeing. Jump
+instantly when the distance is more than a few screens. When the scroller is at the bottom, the current page is the
+last, because a short last page never reaches the middle of the view.
+
+**K8. Single keys for a site you read; they rest while anything else wants the keys.** A reading site earns one-key
+shortcuts (`/` search, `[` `]` turn, `j` `k` sections, `?` the sheet of every key) and lists them all on the `?` sheet.
+They do nothing while focus is in a text field, under a modifier, or while an overlay with keys of its own is open. A
+site built on another site's shell brings that shell's keys with it, or the reader's habits from the first site fail on
+the second.
 
 ## 5. Pages change; the ground does not
 
@@ -123,7 +152,9 @@ exits 1 if the background changed on the switch or the scroll. It also records t
 and read them in order: through the switch the text should never sit behind the background.
 
 Then do by hand what no script proves: search for the thing a person last failed to find, read the first card aloud, and
-reach the third result with the keyboard alone.
+reach the third result with the keyboard alone. Open every overlay with a click and press ↓ without touching the mouse
+again: if nothing scrolls, focus was left behind it. In a paged reader, press → twice quickly and check that the page
+number and the page on screen agree.
 
 ## Traps
 
