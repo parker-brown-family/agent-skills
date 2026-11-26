@@ -1,6 +1,6 @@
 ---
 name: web-ux
-description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, and a page switch changes the page but never the ground behind it. Each rule names the failure that earned it and the check that catches it, including a script that measures whether an overlay holds still and one that records a page switch frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
+description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, a page switch changes the page but never the ground behind it, and a document shown inside a themed site wears the theme with the original one click away. Each rule names the failure that earned it and the check that catches it, including scripts that measure whether an overlay holds still, whether its keys work the moment it opens, and what a page switch looks like frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, a PDF that \"looks too white\" in a dark theme, keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
 license: MIT
 ---
 
@@ -124,6 +124,34 @@ instead of restarting.
 behind the text. Fade only when something new was chosen, and then slowly: about 4 s for a full-screen painting, eased in
 and out.
 
+## 6. A document shown inside the site wears the site
+
+**D1. A PDF opened in a themed site takes the theme, and the original is one click away.** A dark, glassy site that
+opens every paper as a white page drops a white slab in front of the reader ("the PDF colors are too white"). Eight
+treatments were rendered from real pages and compared; the one chosen flips each colour's lightness into the theme's
+ground-to-ink range and keeps its hue, so a diagram's colour coding survives, and puts photographs back as printed. The
+built-in alternatives fail on colour: PDF.js `pageColors` and every "night mode" that maps to one ink and one ground turn
+each figure and photo grey, and inverting turns photos into negatives. A Paper button prints the pages white again and
+is remembered per device; Download is always the original file. In a light look, multiply the page by the theme's paper
+colour instead.
+
+**D2. Recolour on the graphics card, never per pixel per page.** A JavaScript pass over the pixels costs 50–115 ms a page,
+and a reader that draws every page on open pays it for every page. An SVG filter on the page canvas does the same work
+for nothing: `feColorMatrix` invert, `hueRotate 180`, alpha from the inverted lightness (paper 0.65, ink 1.0, for glass),
+then `feComponentTransfer` stretched onto the theme's ground and ink. Rebuild the filter whenever the theme repaints. For
+photos, render with PDF.js `recordImages: true`: `page.imageCoordinates` then holds six numbers per image, three corners
+as fractions of the canvas, recorded once on the first render and unrotated. Copy those rectangles from the unfiltered
+canvas onto a layer above it, rotated to match.
+
+**D3. Marks drawn on a recoloured page change how they blend.** A highlighter that multiplies shows on white and vanishes
+on a dark page; there it screens. Ink chosen for paper (near-black) draws in the theme's ink. Decide at draw time, so the
+stored marks never change and switching back to Paper shows them as they were made.
+
+**D4. Measure contrast on the live surface, for every theme and every background.** A mock-up of a see-through page
+measured 4.2 : 1 over a bright painting; the built reader, where its own dimming layer sits under the glass, measured
+8.7 : 1 at worst across five themes and seven wallpapers. Only the live number decides. Sample the ground beside the text
+in a headless screenshot and compute it against the theme's ink.
+
 ## Check before handing over
 
 Run checks headless (Playwright against a local preview), never on someone's live desktop: focus changes and key
@@ -151,6 +179,14 @@ exits 1 if the background changed on the switch or the scroll. It also records t
 `animation-duration` slowed tenfold (`--slow`), so you can look for the snap yourself. Lay the frames out in a contact sheet
 and read them in order: through the switch the text should never sit behind the background.
 
+```bash
+node scripts/overlay-keys.mjs http://localhost:8799/library/ --click '.book button.gel' --box '#rd-box' --scroller '#rd-scroll' --next ArrowRight --target '.rd-wrap:nth-of-type(2)' --offset 18
+```
+
+It clicks the opener and checks that focus is inside the overlay, that ↓ scrolls it, that → comes to rest on the next
+page, and that Esc puts focus back on the opener (rules K6 and K7). It exits 1 on any failure. Checked against a
+reader before and after the K6 fix: the old build exits 1 (focus on the button behind it, ↓ scrolls 0 px), the new one 0.
+
 Then do by hand what no script proves: search for the thing a person last failed to find, read the first card aloud, and
 reach the third result with the keyboard alone. Open every overlay with a click and press ↓ without touching the mouse
 again: if nothing scrolls, focus was left behind it. In a paged reader, press → twice quickly and check that the page
@@ -168,5 +204,11 @@ number and the page on screen agree.
   (socket direct:1:default)"). Give the second its own `--inspector-port`.
 - Two agents in one working tree share one git index. Staging your own hunks with `git update-index` while another agent
   commits puts your change into their commit. Say before you stage, or work in a separate worktree.
+- Killing `workerd` by name stops every local Cloudflare preview on the machine, other agents' included. Stop your own
+  `wrangler dev` by its port (`pkill -f "[w]rangler@4 dev --port 8799"`).
+- Smooth scrolling over a reader's large canvases can take well over a second in headless Chromium. Wait for `scrollend`
+  or a generous timeout before reading the position, or a correct page turn reads as a failure.
+- Drawing a canvas that has transparent pixels (made with `willReadFrequently`) onto another canvas wiped what was beneath
+  instead of blending over it, in headless Chromium. `drawImage(await createImageBitmap(src, x, y, w, h), …)` blends.
 - A dialog's default `max-width`/`max-height` and an inherited `li { max-width: 68ch }` make cards stop short of the
   dialog's edge. Reset both inside the results list.
