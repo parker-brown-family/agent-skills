@@ -1,6 +1,6 @@
 ---
 name: web-ux
-description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, and the keyboard works without the mouse. Each rule names the failure that earned it and the check that catches it, including a script that measures whether an overlay holds still. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
+description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse, and a page switch changes the page but never the ground behind it. Each rule names the failure that earned it and the check that catches it, including a script that measures whether an overlay holds still and one that records a page switch frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
 license: MIT
 ---
 
@@ -71,6 +71,30 @@ just scrolled to. Esc closes, and the shortcut that opened it opens it again, em
 
 **K5. Pointer and keyboard agree.** Hovering a card moves the same highlight without scrolling it.
 
+## 5. Pages change; the ground does not
+
+**M1. A page switch never puts the page behind anything.** In a cross-document view transition (`@view-transition {
+navigation: auto }`), every element with a `view-transition-name` becomes its own group, drawn *above* the root
+snapshot. Name a full-screen background and it covers the page for the whole of its animation; when that ends, the live
+page is drawn again at full strength and the text snaps forward. *Specimen:* a wallpaper named with a 1.1 s fade, over a
+0.55 s page fade, read as "a slow fade in and a snap… the snap needs to be much smoother". Leave background layers
+unnamed so they fade inside the root snapshot. Do not push a named background under the page with `z-index: -1`
+instead: the root snapshot carries the canvas's opaque ground, so the background vanishes for the whole switch and pops in
+at the end, a snap of its own.
+
+**M2. An ambient layer is a setting, not content.** A wallpaper, a tint or a drifting backdrop does not change because
+the reader moved to another page or scrolled past a section heading. It changes only when the reader acts on it: a picker,
+or a deliberate reload. *Specimen:* a "Flow" mode that swapped the painting by section and by page was judged against
+"a big refresh, not switching between sections, headings or otherwise navigating should change the wallpaper". Keep what
+is on screen in `localStorage`. Read `performance.getEntriesByType('navigation')[0].type`: on `reload` choose anew, and on
+`navigate` or `back_forward` put the same layer straight back with its transition switched off for that one frame. Run
+its slow animation on the clock (`animation-delay: -(Date.now() / 1000 % period)s`) so it carries on across pages
+instead of restarting.
+
+**M3. What changes slowly does so on purpose.** A background that fades up from black on every page load reads as a throb
+behind the text. Fade only when something new was chosen, and then slowly: about 4 s for a full-screen painting, eased in
+and out.
+
 ## Check before handing over
 
 Run checks headless (Playwright against a local preview), never on someone's live desktop: focus changes and key
@@ -89,6 +113,15 @@ scripts/dup-functions.sh src/app.js
 
 It exits 1 and names any function declared twice in a file.
 
+```bash
+node scripts/page-switch.mjs http://localhost:8799/ideas/ --click 'nav a[href="/hypotheses/"]' --layer '.wall i' --out /tmp/switch
+```
+
+It clicks through to another page, scrolls, then reloads, and prints which background layer is showing after each. It
+exits 1 if the background changed on the switch or the scroll. It also records the screen as frames, with every
+`animation-duration` slowed tenfold (`--slow`), so you can look for the snap yourself. Lay the frames out in a contact sheet
+and read them in order: through the switch the text should never sit behind the background.
+
 Then do by hand what no script proves: search for the thing a person last failed to find, read the first card aloud, and
 reach the third result with the keyboard alone.
 
@@ -96,5 +129,13 @@ reach the third result with the keyboard alone.
 
 - `pgrep -f`/`pkill -f` with a pattern that also appears in your own command line matches your own shell. Bracket one
   letter (`"[w]rangler"`).
+- Playwright's default headless shell draws nothing during a view transition: every frame and screenshot is the blank
+  ground, so a snap is invisible to it. Launch full Chromium with software GL (`channel: 'chromium'`,
+  `--use-angle=swiftshader --enable-unsafe-swiftshader --enable-gpu`) and record with the CDP screencast;
+  `page.screenshot` also stalls mid-transition.
+- Two `wrangler dev` servers on one machine collide on an internal socket as well as on `--port` ("Address already in use
+  (socket direct:1:default)"). Give the second its own `--inspector-port`.
+- Two agents in one working tree share one git index. Staging your own hunks with `git update-index` while another agent
+  commits puts your change into their commit. Say before you stage, or work in a separate worktree.
 - A dialog's default `max-width`/`max-height` and an inherited `li { max-width: 68ch }` make cards stop short of the
   dialog's edge. Reset both inside the results list.
