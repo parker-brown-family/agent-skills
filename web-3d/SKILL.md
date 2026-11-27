@@ -199,6 +199,24 @@ These have come up, in roughly this order, on both scenes this skill has built:
 - An effect that draws a *picture* of the page (a CRT bend, a lens) cannot hold a live WebGL canvas. It stands down on
   that page (web-ux H4 and section 7).
 
+## 10a. Maps: what Canada in relief settled
+
+A map is the same method with the land as the bottom layer. What worked, from `canada-homeless-map` (`web/3d/scene.js`):
+
+- **Wear the 2D map's own painting.** Coloured hexes looked flat beside a painted 2D map. Bake the 2D renderer's
+  terrain once to an image covering the world rectangle (`dev-tools/bake-terrain.mjs`, 4096 and 8192 px, the larger
+  only where `MAX_TEXTURE_SIZE` allows), and sample it in the land's shader by world position, so every hex prism
+  wears its own patch and its sides a darkened copy. One draw call for the whole country.
+- **A bar is a stack of countable pieces, on a linear scale.** One hex piece per band (1,000 people, 500 beds, $50M),
+  the top one partial, a groove between pieces, drawn in the shader from a per-instance count. A small value is a
+  thin coin, which keeps it visible without the square-root scale that distorted every comparison. Parker, on plain
+  columns: *"the bars all look really yuk"*.
+- **Unknown is a little pin** (rule M2a).
+- **Lead with the overview.** A card with the national number for what is on screen, its run over the years and the
+  five largest places; a year slider on one fixed scale (so growth is real), with a play button. Parker: the map is
+  *"a tool for visual pass"*, for *"summary and overview and impact"*, the particulars secondary.
+- **Labels are HTML banners in the 2D map's style**, placed biggest first, a smaller one hidden where it would overlap.
+
 ## 11. Hand it over
 
 Deliver the reading, not the source: a brief with the screenshots from each view, a short clip (see `page-loop`), the
