@@ -5,7 +5,7 @@
 //
 //   node loop-render.mjs SCENE.mjs --out DIR [--frames 210] [--fps 30] [--width 960] [--scale 2] [--name loop]
 //                        [--webm-kbps 1100] [--crf 28] [--budget-kb 1200] [--seam-db 38] [--allow-software] [--allow-hold]
-//                        [--keep-frames]
+//                        [--keep-frames] [--clock virtual] [--crossfade K]
 //
 // SCENE.mjs is a small module (see ../examples/):
 //   export const url = 'http://127.0.0.1:8000/page/';     the real page, served from its own build
@@ -16,6 +16,10 @@
 //   export async function setup(page) {}                   optional: wait for ready, set the fixed parts of the shot
 //   export async function clip(page) { return {x, y, width, height}; }  or: export const clip = '#selector'
 //   export async function frame(page, t, i) {}             required: put the page in its state for t, 0 <= t < 1
+//   export const clock = 'virtual';                        optional: let the page's own ambient animation run, on a
+//                                                           clock that advances exactly one frame per screenshot
+//   export const crossfade = 15;                           optional: frames over which the seam is crossfaded, for
+//                                                           ambient motion that does not repeat within the loop
 //
 // Every state must be a function of t alone, and at t = 1 the scene must be back where it was at t = 0. The seam
 // check enforces it: one extra frame is drawn at t = 1 and must match frame 0 (or the loop jumps on every lap), and the
@@ -38,10 +42,13 @@ if (!sceneArg || !opt('out')) die(2, 'usage: loop-render.mjs SCENE.mjs --out DIR
 const N = +opt('frames', 210), FPS = +opt('fps', 30), W = +opt('width', 960), SCALE = +opt('scale', 2);
 const NAME = opt('name', 'loop'), OUT = resolve(opt('out')), KBPS = +opt('webm-kbps', 1100), CRF = +opt('crf', 28);
 const BUDGET = +opt('budget-kb', 1200) * 1024;
+let CLOCK, K;
 for (const tool of ['ffmpeg']) if (spawnSync(tool, ['-version']).status !== 0) die(2, `${tool} not found`);
 
 const scene = await import(pathToFileURL(resolve(sceneArg)).href);
 if (typeof scene.frame !== 'function') die(2, 'the scene must export frame(page, t, i)');
+CLOCK = opt('clock', scene.clock || 'real'); K = +opt('crossfade', scene.crossfade ?? (CLOCK === 'virtual' ? Math.round(FPS / 2) : 0));
+if (K >= N / 2) die(2, `crossfade ${K} is too long for ${N} frames`);
 const { chromium } = await import(process.env.PLAYWRIGHT || 'playwright').catch(() => die(2, 'Playwright not found: set PLAYWRIGHT=/path/to/playwright/index.mjs'));
 
 mkdirSync(OUT, { recursive: true });
@@ -51,7 +58,17 @@ const FR = mkdtempSync(join(tmpdir(), 'page-loop-'));
 const b = await chromium.launch({ headless: true, args: ['--enable-gpu', '--use-gl=angle', '--use-angle=gl-egl', '--ignore-gpu-blocklist'] });
 let exit = 0;
 try {
-  const p = await b.newPage({ viewport: scene.viewport || { width: 1400, height: 1000 }, deviceScaleFactor: SCALE, reducedMotion: 'reduce' });
+  // With the real clock, ask for reduced motion so the page's own animation holds still and every frame is a function
+  // of t. With the virtual clock, let it move: performance.now() and the animation-frame timestamp read a clock this
+  // script advances by exactly 1/fps before each screenshot, so the motion is smooth however slow a frame is to draw.
+  const p = await b.newPage({ viewport: scene.viewport || { width: 1400, height: 1000 }, deviceScaleFactor: SCALE, reducedMotion: CLOCK === 'virtual' ? 'no-preference' : 'reduce' });
+  if (CLOCK === 'virtual') await p.addInitScript(() => {
+    const real = performance.now.bind(performance), raf = window.requestAnimationFrame.bind(window);
+    let on = false, vt = 0;
+    window.__loopClock = { start() { vt = real(); on = true; return vt; }, set(v) { vt = v; }, get: () => vt };
+    performance.now = () => (on ? vt : real());
+    window.requestAnimationFrame = (cb) => raf(() => cb(on ? vt : real()));
+  });
   if (scene.storage) await p.addInitScript((s) => { for (const [k, v] of Object.entries(s)) localStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); }, scene.storage);
   for (const [pattern, rewrite] of scene.routes || []) {
     await p.route(pattern, async (r) => { const res = await r.fetch(); r.fulfill({ response: res, body: rewrite(await res.text()) }); });
@@ -75,21 +92,34 @@ try {
   if (!box || box.width < 2 || box.height < 2) die(2, 'clip is empty: ' + JSON.stringify(box));
   const clip = { x: Math.floor(box.x), y: Math.floor(box.y), width: Math.ceil(box.width), height: Math.ceil(box.height) };
 
-  const t0 = Date.now();
-  for (let i = 0; i < N; i++) {
-    await scene.frame(p, i / N, i);  // i / N, never i / (N - 1): t = 1 is frame 0 of the next lap
+  const t0 = Date.now(), vt0 = CLOCK === 'virtual' ? await p.evaluate(() => window.__loopClock.start()) : 0;
+  const shoot = async (t, i, path, vt) => {
+    if (CLOCK === 'virtual') await p.evaluate((v) => window.__loopClock.set(v), vt);
+    await scene.frame(p, t, i);
     await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-    await p.screenshot({ path: join(FR, `f${String(i).padStart(4, '0')}.png`), clip });
-    if (i === 4) console.log(`per frame ${Math.round((Date.now() - t0) / 5)} ms, ${N} frames`);
+    await p.screenshot({ path, clip });
+  };
+  // i / N, never i / (N - 1): t = 1 is frame 0 of the next lap. With a crossfade, K frames more run past t = 1 (the
+  // scene sees t >= 1 there and must stay periodic), to be blended into the first K.
+  for (let i = 0; i < N + K; i++) {
+    await shoot(i / N, i, join(FR, i < N ? `f${String(i).padStart(4, '0')}.png` : `tail${String(i - N).padStart(4, '0')}.png`), vt0 + (i * 1000) / FPS);
+    if (i === 4) console.log(`per frame ${Math.round((Date.now() - t0) / 5)} ms, ${N} frames${K ? ` + ${K} to crossfade the seam` : ''}, clock ${CLOCK}`);
   }
-  // One frame more, at t = 1: a closed loop is back at frame 0 there. Not encoded; only compared.
-  await scene.frame(p, 1, N);
-  await p.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
-  await p.screenshot({ path: join(FR, 'lap.png'), clip });
+  // One frame more, at t = 1 with the clock back at frame 0's time: the scene's state is back at frame 0 there. Not
+  // encoded; only compared. Resetting the clock keeps the ambient motion out of this comparison.
+  await shoot(1, N, join(FR, 'lap.png'), vt0);
   console.log('clip', JSON.stringify(clip), `${(N / FPS).toFixed(2)} s at ${FPS} fps`);
 } finally { await b.close(); }
 
-const ff = (a) => { const r = spawnSync('ffmpeg', ['-hide_banner', '-y', ...a], { encoding: 'utf8' }); if (r.status !== 0) die(2, 'ffmpeg failed: ' + r.stderr.split('\n').slice(-4).join('\n')); return r.stderr; };
+const ffRaw = (a) => { const r = spawnSync('ffmpeg', ['-hide_banner', '-y', ...a], { encoding: 'utf8' }); if (r.status !== 0) die(2, 'ffmpeg failed: ' + r.stderr.split('\n').slice(-4).join('\n')); return r.stderr; };
+const ff = ffRaw;
+// The crossfade: frame i < K becomes the frame drawn K frames past the seam, fading into frame i. The step from the
+// last frame into frame 0 is then an ordinary step forward in time, and by frame K the loop is back on its own frames.
+for (let i = 0; i < K; i++) {
+  const w = ((i + 1) / (K + 1)).toFixed(4), n = String(i).padStart(4, '0'), a = join(FR, `tail${n}.png`), b2 = join(FR, `f${n}.png`);
+  ff(['-i', a, '-i', b2, '-filter_complex', `[0]format=gbrp[x];[1]format=gbrp[y];[x][y]blend=all_expr='A*(1-${w})+B*${w}',format=rgb24`, join(FR, `x${n}.png`)]);
+}
+for (let i = 0; i < K; i++) { const n = String(i).padStart(4, '0'); spawnSync('mv', [join(FR, `f${n}.png`), join(FR, `raw${n}.png`)]); spawnSync('mv', [join(FR, `x${n}.png`), join(FR, `f${n}.png`)]); }
 const IN = ['-framerate', String(FPS), '-i', join(FR, 'f%04d.png')];
 const SCALE_VF = `scale=${W}:-2:flags=lanczos,format=yuv420p`;
 const mp4 = join(OUT, NAME + '.mp4'), webm = join(OUT, NAME + '.webm'), poster = join(OUT, NAME + '.webp');
@@ -105,7 +135,8 @@ ff(['-i', join(FR, 'f0000.png'), '-vf', `scale=${W}:-2:flags=lanczos`, '-quality
 const psnr = (a, b2) => { const m = /average:(inf|[\d.]+)/.exec(ff(['-i', a, '-i', b2, '-lavfi', 'psnr', '-f', 'null', '-'])); return m ? (m[1] === 'inf' ? Infinity : +m[1]) : NaN; };
 const f = (i) => join(FR, `f${String(i).padStart(4, '0')}.png`);
 const SEAM_DB = +opt('seam-db', 38);
-const closes = psnr(join(FR, 'lap.png'), f(0)), last = psnr(f(N - 1), f(0)), step = psnr(f(Math.floor(N / 2)), f(Math.floor(N / 2) + 1));
+const f0raw = K ? join(FR, 'raw0000.png') : f(0);
+const closes = psnr(join(FR, 'lap.png'), f0raw), last = psnr(f(N - 1), f(0)), step = psnr(f(Math.floor(N / 2)), f(Math.floor(N / 2) + 1));
 let seamVerdict = 'ok';
 if (closes < SEAM_DB) seamVerdict = 'jump';
 else if (!Number.isFinite(last) && Number.isFinite(step) && !flag('allow-hold')) seamVerdict = 'repeat';
@@ -130,7 +161,7 @@ ${order.map((x) => `    <source src="${web(x)}" type="video/${x}">`).join('\n')}
   </video>
   <figcaption>WHAT IT IS, in one sentence.</figcaption>
 </figure>`;
-writeFileSync(join(OUT, NAME + '.json'), JSON.stringify({ frames: N, fps: FPS, seconds: N / FPS, width: vw, height: vh, sizes, seam: { closesDb: Number.isFinite(closes) ? closes : 'identical', verdict: seamVerdict }, made: new Date().toISOString() }, null, 2) + '\n');
+writeFileSync(join(OUT, NAME + '.json'), JSON.stringify({ frames: N, fps: FPS, seconds: N / FPS, width: vw, height: vh, sizes, clock: CLOCK, crossfade: K, seam: { closesDb: Number.isFinite(closes) ? closes : 'identical', verdict: seamVerdict }, made: new Date().toISOString() }, null, 2) + '\n');
 console.log('\nembed (smaller source first; the paths are where the files will be served):\n' + snippet);
 
 if (flag('keep-frames')) { const kept = join(OUT, NAME + '-frames'); mkdirSync(kept, { recursive: true }); for (const n of readdirSync(FR)) if (n.endsWith('.png')) spawnSync('cp', [join(FR, n), kept]); console.log('frames kept in', kept); }

@@ -1,6 +1,6 @@
 ---
 name: page-loop
-description: "Record a live, interactive piece of a web page (a WebGL or three.js scene, a 3D model, a chart, a board, an animated SVG) as a short seamless looping video for another page: frame-exact rather than screen-recorded, headless on the real GPU, driven through the piece's own buttons and sliders, encoded to an MP4 and a WebM under a size budget with a poster, and embedded so it pauses off screen, respects less motion, and still plays under a CRT or lens effect that draws a picture of the page. Ships a renderer that refuses a software GPU and fails a loop that jumps or stutters at its seam, a worked example, and a self-test. Use when someone wants 'a video of the board', 'a GIF of this', 'an animated preview', 'a hero loop', 'spin the model', 'click through the layers as it turns', 'make it a 5–10 second loop', 'embed the real thing, lightweight', 'show the roadmap on the home page', or '/page-loop'. Not for screen recordings of a person using an app (that is a screencast), and not for a film with a story (that is cinema-delight)."
+description: "Record a live, interactive piece of a web page (a WebGL or three.js scene, a 3D model, a chart, a board, an animated SVG) as a short seamless looping video for another page: frame-exact rather than screen-recorded, headless on the real GPU, driven through the piece's own buttons and sliders, with the page's own animation left running on a virtual clock, the camera moved wide-in-out rather than spun, encoded to an MP4 and a WebM under a size budget with a poster, and embedded so it pauses off screen, respects less motion, and still plays under a CRT or lens effect that draws a picture of the page. Ships a renderer that refuses a software GPU and fails a loop that jumps or stutters at its seam, a worked example, and a self-test. Use when someone wants 'a video of the board', 'a GIF of this', 'an animated preview', 'a hero loop', 'spin the model', 'click through the layers as it turns', 'make it a 5–10 second loop', 'embed the real thing, lightweight', 'show the roadmap on the home page', or '/page-loop'. Not for screen recordings of a person using an app (that is a screencast), and not for a film with a story (that is cinema-delight)."
 license: MIT
 ---
 
@@ -13,7 +13,8 @@ recorded from the real piece in its own page, under a megabyte, playing silently
 The pipeline is three parts. A **scene file** says what happens at each moment t from 0 to 1. **`scripts/loop-render.mjs`**
 draws each frame headless on the GPU, checks the seam, and encodes the result. Then **the embed** decides when the
 video plays. Every rule below comes from a loop that actually shipped (a three.js roadmap board turning once while its
-four layers were shown in turn and its date ran forward, seven seconds, 919 KB) and from what went wrong on the way.
+four layers were shown in turn and its date ran forward, seven seconds, under 900 KB) and from what went wrong on the
+way, including the first cut, which its owner called *"kind of a little janky"*.
 
 ## Rules
 
@@ -80,6 +81,29 @@ rectangle, bent by the same mapping as everything else. Test it with two screens
 must differ between them and the rest of the page must not (see web-ux, "a picture of the page lands where the page
 is").
 
+**L12. Let the page live, on a virtual clock.** Reduced motion keeps every frame a function of t, and the first
+board loop was rendered that way. It froze every LED, every pulse running along a trace, and every breathing glow, so
+the board looked dead. Pass `clock = 'virtual'` instead. The renderer replaces `performance.now()` and the
+animation-frame timestamp with a clock that advances exactly 1/fps before each screenshot. The page's own animation
+then runs at its real speed, however long a frame takes to draw. That motion does not repeat within the loop, so
+`crossfade = K` draws K frames past t = 1 and blends them into the first K (half a second by default under the
+virtual clock). The seam check still holds: it draws t = 1 with the clock set back to frame 0's time, so the scene's
+state must close exactly. Only the ambient motion is blended. The clock covers script-driven animation (WebGL, canvas,
+anything timed by `performance.now()` or `requestAnimationFrame`); CSS animations and transitions run on the document
+timeline and are not on it, so a scene that needs them steps them itself (`document.getAnimations()`, set `currentTime`).
+
+**L13. Move the camera with intent: wide, in, out.** A camera circling at one distance reads as a turntable, and a
+full turn shows the piece from behind, with its labels mirrored. Shoot it the way a person would show it:
+- Open wide on the whole piece.
+- Pan to what is being shown and push in on it, aiming at where its parts actually are. The board's parts lift two
+  units when its layers spread apart, and aiming at the board left them cropped off the top of the frame.
+- Pull back out to the opening shot.
+- Swing side to side (±43° for the board) rather than turning all the way round.
+- Make each state change while the camera is moving, so the cut is carried by the motion (a cut on action), not a
+  pop on a still frame.
+- Interpolate between camera keys with smootherstep, and make the last key the first.
+- Measure targets in `setup` (show each layer alone, average its parts' positions). Never type coordinates in by eye.
+
 **L11. Nothing opens on the desktop.** The renderer is headless and needs no display. The self-test is too. Never
 check a loop by opening it in a browser or player on someone's live desktop; hand them the file or the page.
 
@@ -90,14 +114,18 @@ export const url = 'http://127.0.0.1:8000/roadmap/';      // the real page, serv
 export const viewport = { width: 1400, height: 1100 };     // optional
 export const storage = { 'site-look': { theme: 'dark', crt: 'off' } };  // optional: localStorage before the page runs
 export const routes = [['**/board.js', (src) => src.replace('R = {', 'R = window.__R = {')]];  // optional (L4)
+export const clock = 'virtual';  export const crossfade = 15;  // optional: the page's own motion runs (L12)
 export async function setup(page) { /* wait for ready, fix the parts of the shot that do not move, fit the chrome (L6) */ }
 export async function clip(page) { return { x, y, width, height }; }  // or: export const clip = '#stage'
 export async function frame(page, t, i) { /* put the page in its state for t, 0 <= t < 1 (L2, L5) */ }
 ```
 
-Write the storyboard as functions of t before writing any frame code. For example: *a full turn over the whole loop;
-each of four layers shown alone for 0.19 of it from t = 0.06; the date runs from twelve days ago to the close over the
-first 0.8, then holds.* `examples/orbit-board.scene.mjs` is that storyboard, complete.
+Write the storyboard as functions of t before writing any frame code. For example: *wide until 0.05; then each of
+four layers alone for 0.19 of the loop, the camera panning to it and pushing in; then all four back and the camera out
+to the wide shot by 0.93; a ±43° sway throughout; the date running from the slider's first day to the close over the
+first 0.86, then holding.* `examples/orbit-board.scene.mjs` is that storyboard, complete. Check the storyboard against
+the controls' real ranges: the first version started the date twelve days before the slider's first day, so it sat
+clamped on one date for a quarter of the loop.
 
 ## Run it
 
