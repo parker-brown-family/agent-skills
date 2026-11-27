@@ -152,6 +152,18 @@ measured 4.2 : 1 over a bright painting; the built reader, where its own dimming
 8.7 : 1 at worst across five themes and seven wallpapers. Only the live number decides. Sample the ground beside the text
 in a headless screenshot and compute it against the theme's ink.
 
+**D6. A cited source opens on the page, and its origin stays in plain sight.** A source list of outbound links sends
+the reader to someone else's site at the moment they wanted to check a claim, and most of them do not come back. Make the
+citation's main link open the source as a PDF in a dialog on the page, about four-fifths of the window (nearly all of a
+phone), with the original source and a download one click away in the dialog's header. Under each entry in the list,
+print the origin in italics as an ordinary visible link (*Source: pubmed.ncbi.nlm.nih.gov/…*), so the credit and the
+backlink are never hidden behind the dialog. Without JavaScript the main link's `href` is the PDF itself. Host a
+source's own PDF only where its licence allows a copy on your site (CC BY, CC0, public domain; *not* non-commercial
+licences on a business's site, and never a paywalled publisher PDF). For everything else, generate a short PDF of your own:
+what the source is, what you took from it, the exact lines you quoted, and where to read it, labelled as your summary.
+The dialog follows K6 (focus in on open, back to the link on close, Esc and the backdrop close it), H1 (every page's box
+is sized before it is drawn, so nothing moves while pages render) and a scroll lock on the page behind.
+
 ## Check before handing over
 
 Run checks headless (Playwright against a local preview), never on someone's live desktop: focus changes and key
