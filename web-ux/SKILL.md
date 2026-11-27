@@ -1,6 +1,6 @@
 ---
 name: web-ux
-description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, a page switch changes the page but never the ground behind it, and a document shown inside a themed site wears the theme with the original one click away. Each rule names the failure that earned it and the check that catches it, including scripts that measure whether an overlay holds still, whether its keys work the moment it opens, and what a page switch looks like frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, a PDF that \"looks too white\" in a dark theme, keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
+description: "How a web page should behave, as rules you can test: nothing moves under the reader while they type or read, search finds what a person would actually type, dense results arrive organised, the keyboard works without the mouse from the moment anything opens, a page turn lands on the page it names, a page switch changes the page but never the ground behind it, every site ships light and dark, and a document shown inside a themed site wears the theme with the original one click away. Each rule names the failure that earned it and the check that catches it, including scripts that measure whether an overlay holds still, whether its keys work the moment it opens, and what a page switch looks like frame by frame. Use when building or reviewing any interactive web surface — a search box or command palette, a dialog, a results list, a reader, a dashboard, a private project site — and when someone says it \"jumps around\", \"is too snappy\", \"snaps\" or \"throbs\" between pages, the wallpaper or background \"keeps changing\", view transitions, \"can't find X\", \"is too dense\", \"needs keyboard nav\", \"the arrow keys do nothing\", a PDF or document reader, a PDF that \"looks too white\" in a dark theme, keyboard shortcuts, \"web UX\", or \"/web-ux\". For how it looks (colour, type, spacing, depth, motion timings), use design-language; this skill is how it acts."
 license: MIT
 ---
 
@@ -151,6 +151,24 @@ stored marks never change and switching back to Paper shows them as they were ma
 measured 4.2 : 1 over a bright painting; the built reader, where its own dimming layer sits under the glass, measured
 8.7 : 1 at worst across five themes and seven wallpapers. Only the live number decides. Sample the ground beside the text
 in a headless screenshot and compute it against the theme's ink.
+
+## 8. Light and dark both ship
+
+Parker, 2026-11-27, reviewing a client site mock: *"Light mode, dark mode, I think is just a given for building any
+websites ever at all."* A site built in one scheme was being shown to a client with no way to see the other, so the
+first time she opened it on a phone set to dark she would have seen something nobody had looked at.
+
+**L1. Every site has both schemes, and the reader can choose.** Follow `prefers-color-scheme` on first load, offer a
+visible switch, and remember the choice (`localStorage`). Set the scheme before first paint (a class on `<html>` from an
+inline script in `<head>`), so a dark-mode reader never sees a white flash.
+
+**L2. Colours are tokens with a value for each scheme.** Write every colour once as a custom property and give it a
+light and a dark value. A literal colour in a rule is a colour that does not switch. Drawings and illustrations switch
+too: stroke and fill from the same tokens, or a dark variant of the picture; a light picture dropped onto a dark page
+reads as a hole.
+
+**L3. Check both, every time.** Render each page in both schemes and look at both, and run the contrast check in each
+(`page.emulateMedia({ colorScheme: 'dark' })` in Playwright). A scheme nobody rendered is a scheme that is broken.
 
 ## Check before handing over
 
