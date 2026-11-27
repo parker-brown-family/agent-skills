@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><title>page-loop demo</title>
+<style>body{margin:0;background:#101418;color:#d8e0e8;font:16px system-ui} #stage,#amb{display:block;margin:20px}</style>
+<canvas id="stage" width="320" height="200"></canvas>
+<script>
+const c = document.getElementById('stage'), g = c.getContext('2d');
+window.draw = (a, label) => {
+  g.fillStyle = '#101418'; g.fillRect(0, 0, 320, 200);
+  g.save(); g.translate(160, 100); g.rotate(a); g.fillStyle = '#6fb3d2'; g.fillRect(-50, -50, 100, 100);
+  g.fillStyle = '#e0a458'; g.fillRect(30, -50, 20, 20); g.restore();
+  g.fillStyle = '#d8e0e8'; g.fillText(label, 12, 190);
+};
+draw(0, 'start');
+// Ambient motion of the page's own, on the clock, as a real scene has: a dot that drifts and pulses. It holds still
+// for a reader who asks for less motion, as it should.
+const amb = document.createElement('canvas'); amb.id = 'amb'; amb.width = 320; amb.height = 24; document.body.appendChild(amb);
+const ag = amb.getContext('2d'), still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+(function tick(now) {
+  const s = still ? 0 : now / 1000;
+  ag.fillStyle = '#101418'; ag.fillRect(0, 0, 320, 24);
+  ag.fillStyle = '#e0a458'; ag.beginPath(); ag.arc(20 + ((s * 37) % 280), 12, 4 + 3 * Math.sin(s * 5.3), 0, 7); ag.fill();
+  requestAnimationFrame(tick);
+})(0);
+</script>
