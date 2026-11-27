@@ -1,0 +1,57 @@
+<!doctype html>
+<!-- web-3d fixture: the starter scene on made-up data, with the flat stand-in and the toolbar the e2e test drives.
+     A test page, not a page for a reader. Serve this folder (python3 -m http.server) with three-bundle.js beside it.
+     ?flat opens the flat view; ?gl opens 3D even on software WebGL. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>web-3d fixture</title><link rel="icon" href="data:,">
+<style>
+:root{--bg:#15171c;--fg:#d9dee6;--acc:oklch(0.78 0.13 230);--good:#5fd38a;--warn:#e8b04a;--none:#80868f;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px system-ui,sans-serif}
+.bar{display:flex;gap:6px;align-items:center;padding:8px 12px;flex-wrap:wrap}
+.bar button{background:#252932;color:inherit;border:1px solid #3a404c;border-radius:6px;padding:5px 10px;font:inherit}
+.bar button[aria-pressed=true]{border-color:var(--acc)}
+#stage{position:relative;height:calc(100vh - 90px);min-height:420px}
+#info{padding:4px 12px;min-height:1.4em}
+#stage svg{width:100%;height:100%}
+</style></head><body>
+<div class="bar" id="bar">
+  <span class="c3" hidden><button data-view="perspective">Perspective</button><button data-view="top">Top</button><button data-view="side">Side</button><button data-view="exploded">Exploded</button>
+  <label>Layers apart <input type="range" data-explode min="0" max="1.6" step=".01" value=".25"></label><button data-toflat>Flat</button></span>
+  <button data-to3d hidden>Open in 3D</button>
+</div>
+<div id="stage" data-model3d></div>
+<div id="info" aria-live="polite"></div>
+<script type="module">
+import { mountModel, gpuKind } from './scene.js';
+// Places come from a rule (columns by order, one row per layer slot), never from hand-typed coordinates.
+const L = [{ key: 'ground', name: 'Ground · what is true' }, { key: 'wiring', name: 'Wiring · how it connects' }, { key: 'modules', name: 'Modules · what plugs in' }];
+const raw = [
+  ['g1', 'ground', 'Data store', true], ['g2', 'ground', 'Auth', true], ['g3', 'ground', 'Queue', false], ['g4', 'ground', 'Metrics', null],
+  ['w1', 'wiring', 'API', true], ['w2', 'wiring', 'Events', false], ['w3', 'wiring', 'Sync', null], ['w4', 'wiring', 'Search index', true],
+  ['m1', 'modules', 'Editor', true], ['m2', 'modules', 'Reports', false], ['m3', 'modules', 'Mobile', false], ['m4', 'modules', 'Alerts', null], ['m5', 'modules', 'Billing', true],
+];
+const HUE = { ground: 150, wiring: 230, modules: 300 };   // colour by owner: one hue per layer here
+const col = {}; const parts = raw.map(([id, layer, label, known]) => { const i = col[layer] = (col[layer] ?? -1) + 1;
+  return { id, layer, label, known, x: (i % 3) * 2.4, z: Math.floor(i / 3) * 1.7, w: 1.9, d: 1.15, color: `oklch(0.78 0.13 ${HUE[layer]})` }; });
+const links = [['g1', 'w1', 'needs'], ['g2', 'w1', 'needs'], ['g3', 'w2', 'needs'], ['g1', 'w4', 'needs'], ['w1', 'm1', 'needs'], ['w4', 'm2', 'needs'],
+  ['w2', 'm4', 'needs'], ['w1', 'm5', 'needs'], ['g2', 'm5', 'needs'], ['w3', 'm3', 'needs'], ['g4', 'm4', 'helps'], ['w4', 'm1', 'helps'], ['w2', 'm2', 'helps']]
+  .map(([from, to, kind]) => ({ from, to, kind }));
+const MODEL = { layers: L, parts, links };
+const q = new URLSearchParams(location.search), stage = document.getElementById('stage'), bar = document.getElementById('bar'), info = document.getElementById('info');
+let ctl = null;
+function flat() {   // the stand-in: the same model, read from above
+  ctl?.dispose(); ctl = null;
+  const ns = 'http://www.w3.org/2000/svg', s = document.createElementNS(ns, 'svg'); s.setAttribute('viewBox', '-1.2 -1 24 6'); s.setAttribute('aria-label', 'The model, flat');
+  L.forEach((l, li) => parts.filter(p => p.layer === l.key).forEach(p => { const r = document.createElementNS(ns, 'rect');
+    Object.entries({ x: li * 7.6 + p.x - p.w / 2, y: p.z - p.d / 2, width: p.w, height: p.d, rx: .1, fill: p.known ? '#2a3a4a' : 'none', stroke: p.known === null ? '#80868f' : '#7ab8ff', 'stroke-width': .04, 'stroke-dasharray': p.known === null ? '.1 .08' : 'none' }).forEach(([k, v]) => r.setAttribute(k, v)); s.append(r); }));
+  stage.replaceChildren(s); stage.dataset.mode = 'flat'; stage.dataset.ready = '1';
+  bar.querySelector('.c3').hidden = true; bar.querySelector('[data-to3d]').hidden = gpuKind() === 'none';
+}
+function three(force) {
+  ctl = mountModel(stage, MODEL, { force, toolbar: bar, onPick: id => { info.textContent = id ? `${id}: needs-chain ${window.__model3d.chain(id).join(', ') || 'none'}` : ''; } });
+  if (!ctl) return flat();
+  bar.querySelector('.c3').hidden = false; bar.querySelector('[data-to3d]').hidden = true;
+}
+bar.querySelector('[data-toflat]').onclick = flat;
+bar.querySelector('[data-to3d]').onclick = () => three(true);
+q.has('flat') ? flat() : three(q.has('gl'));
+</script></body></html>
