@@ -39,6 +39,16 @@ and silently vanished from the board, until the unplaced check named them.
 knows) is grey and dashed, with UNKNOWN on its face. A missing value is never drawn as a value: an empty axis is
 hatched, not zero. The contract test fails any part whose `known` is not one of the three.
 
+**M2a. On a map, an unknown number is a big 3D question mark floating over the place.** When a place's value was
+never gathered or never published, stand a 3D "?" over it (a tube bent into the hook and a sphere for the dot, about
+as tall as a mid-sized column, turned to face the camera), in grey-white, with a "not published" banner on the largest
+ones. Never a hollow or wireframe bar: any bar has a height, and a height reads as a number that does not exist. Never a
+mark flat on the ground: it sinks into the terrain and is missed. This holds on every map of ours, 2D included (the 2D
+banner shows "?"). *Specimen:* Canada in relief drew unpublished homeless counts as grey wireframe columns, then as
+dashed rings lying flat; Parker: *"hollow bars are bad and misleading"*, then *"a big [3D] question mark right over the
+town makes the best sense"*, to be *"factored across all of our maps."* The working version is `questionGeometry()` in
+`canada-homeless-map/web/3d/scene.js`.
+
 **M3. A link says whether it is required.** `needs` is a solid line, and pulling its source darkens the target and
 everything that needs that, all the way down. `helps` is a dashed line, and pulling its source only weakens the
 target. The test works the darkened set out from the data itself and compares it with the set the scene actually lit, for every part.
