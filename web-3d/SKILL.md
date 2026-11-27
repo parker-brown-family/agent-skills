@@ -123,6 +123,9 @@ data puts there, which is usually nothing.
 ## 6. Motion and speed
 
 - One `requestAnimationFrame` loop, which stops and disposes everything when the canvas leaves the page.
+- **Queue the next frame before any work, and catch a frame's error** (report it once). A throw before
+  `requestAnimationFrame` stops drawing for good: Canada in relief froze until a refresh (*"it tends to lock the
+  screen requiring page refresh"*).
 - Draw only when something changed (`dirty`), except the few things that move on their own: LEDs breathe, `helps` lines
   crawl. Under reduced motion those stop, so an idle scene draws no frames at all. The test counts them.
 - Measure frames *drawn* a second, best of three two-second windows. A machine shared with a desktop and a score of
@@ -223,7 +226,12 @@ A map is the same method with the land as the bottom layer. What worked, from `c
   begins in 2019), and playback starts at a measure's first known year.
 - **Pressure is a division a visitor can see.** Beside the raw measures, give people per bed, dollars per person and
   dollars per bed their own buttons and stacks, each labelled as the plain division of two published numbers.
-- **Labels are HTML banners in the 2D map's style**, placed biggest first, a smaller one hidden where it would overlap.
+- **Labels are HTML banners in the 2D map's style, and they hold still.** Measure each plate once at its real size (a
+  plate hidden with `display: none` measures zero, seems not to collide, is shown, collides, is hidden: it flickers
+  every frame); let plates already on screen claim their room first; require a few frames clear before one appears and
+  a few blocked before it goes; fade rather than snap. Parker: *"flickering plates problem"*.
+- **A view must exist for every measure it can be asked to show, or not at all.** A layers-apart view with sheets for
+  three of seven measures looked up a missing sheet and threw every frame; it was removed.
 
 ## 11. Hand it over
 
