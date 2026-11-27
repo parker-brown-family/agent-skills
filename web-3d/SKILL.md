@@ -215,6 +215,14 @@ A map is the same method with the land as the bottom layer. What worked, from `c
 - **Lead with the overview.** A card with the national number for what is on screen, its run over the years and the
   five largest places; a year slider on one fixed scale (so growth is real), with a play button. Parker: the map is
   *"a tool for visual pass"*, for *"summary and overview and impact"*, the particulars secondary.
+- **Year over year, a stack grows from last year and each year is its own piece.** Never replay from zero when the
+  year changes: tween from the height on screen. Shade each point by the first year the stack reached it (light at
+  the bottom, one clear step darker per year, a bright seam where each year's piece begins), and mark last year's
+  height with a pale collar. Parker: *"every year that passes, the animation starts from zero ... This does not give
+  us a sense of going year over year."* A year a source does not cover is unknown, not zero (the agreements record
+  begins in 2019), and playback starts at a measure's first known year.
+- **Pressure is a division a visitor can see.** Beside the raw measures, give people per bed, dollars per person and
+  dollars per bed their own buttons and stacks, each labelled as the plain division of two published numbers.
 - **Labels are HTML banners in the 2D map's style**, placed biggest first, a smaller one hidden where it would overlap.
 
 ## 11. Hand it over
